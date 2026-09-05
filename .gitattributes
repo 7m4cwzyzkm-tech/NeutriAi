@@ -1,0 +1,21 @@
+# Normalise line endings so a Windows checkout can still deploy to Linux.
+# Without this, a CRLF shell script or entrypoint fails inside a container
+# with an error that points nowhere near the real cause.
+* text=auto eol=lf
+
+# These MUST stay CRLF -- Windows batch files can misbehave with LF endings.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Never touch binaries.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.pdf  binary
+*.ttf  binary
+*.otf  binary
+*.keystore binary
+*.jks  binary
+*.p8   binary
