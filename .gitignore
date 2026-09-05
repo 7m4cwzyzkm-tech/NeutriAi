@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.expo/
+dist/
+build/
+*.log
+.DS_Store
+photos/
+*.jpeg
+!mobile/assets/*
