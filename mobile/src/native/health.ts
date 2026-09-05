@@ -180,7 +180,7 @@ async function readHealthConnect(): Promise<DayPayload[]> {
 }
 
 /**
- * Read the last week from the platform health store and push it to NutriAI.
+ * Read the last week from the platform health store and push it to NeutriAI.
  * Returns the number of days uploaded. Safe to call repeatedly — the server
  * upserts on (user, day, provider).
  */

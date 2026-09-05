@@ -60,7 +60,7 @@ export function PaywallSheet() {
 
   /** Store price when we have it; our own catalogue as the fallback. */
   function priceFor(id: PlanId): string {
-    const productId = id === 'monthly' ? 'app.nutriai.pro.monthly' : 'app.nutriai.pro.annual';
+    const productId = id === 'monthly' ? 'app.neutriai.pro.monthly' : 'app.neutriai.pro.annual';
     const fromStore = storeProducts.find((p) => p.productId === productId);
     if (fromStore?.price) return fromStore.price;
     const fallback = plans?.find((p) => p.id === id);
@@ -77,7 +77,7 @@ export function PaywallSheet() {
       } else {
         const session = await api.billing.checkout(plan);
         const result = await WebBrowser.openAuthSessionAsync(
-          session.url, 'nutriai://billing/success',
+          session.url, 'neutriai://billing/success',
         );
         if (result.type === 'success') {
           setTimeout(refreshEntitlement, 1500);
@@ -99,7 +99,7 @@ export function PaywallSheet() {
         n > 0 ? 'Purchases restored' : 'Nothing to restore',
         n > 0
           ? 'Your subscription is active again.'
-          : `No active NutriAI subscription was found on this ${storeName()} account.`,
+          : `No active NeutriAI subscription was found on this ${storeName()} account.`,
       );
       if (n > 0) close();
     } catch (e: any) {
@@ -119,7 +119,7 @@ export function PaywallSheet() {
         <SafeAreaView style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 60 }}>
             <View>
-              <Label>NutriAI Pro</Label>
+              <Label>NeutriAI Pro</Label>
               <H1>
                 {sub?.is_active
                   ? 'Manage your plan'

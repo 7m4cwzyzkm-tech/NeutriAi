@@ -40,7 +40,7 @@ export function TrainScreen() {
       if (detected.fallback_to_calisthenics) {
         Alert.alert(
           'No equipment spotted',
-          "That's fine — NutriAI will build a bodyweight programme. You can add equipment later and it will rebuild around it.",
+          "That's fine — NeutriAI will build a bodyweight programme. You can add equipment later and it will rebuild around it.",
         );
       }
     } catch (e: any) {
@@ -81,7 +81,7 @@ export function TrainScreen() {
               <Card style={{ gap: space.md }}>
                 <H2>Start with what you have</H2>
                 <Body dim>
-                  Photograph your gym, garage or living room. NutriAI identifies the equipment and
+                  Photograph your gym, garage or living room. NeutriAI identifies the equipment and
                   writes a programme around it. No equipment at all is a perfectly good answer —
                   you'll get a real calisthenics progression, not a consolation prize.
                 </Body>

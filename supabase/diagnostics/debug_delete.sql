@@ -20,7 +20,7 @@ where proname in ('recompute_daily_summary', 'bump_streak');
 -- ---------- 2. what leftover test accounts exist? ----------
 select id, email, created_at
 from auth.users
-where email like 'nutriai.smoke%' or email like 'smoke+%'
+where email like 'neutriai.smoke%' or email like 'smoke+%'
 order by created_at desc;
 
 
@@ -55,7 +55,7 @@ order by on_delete desc, schema, table_name;
 delete from auth.users
 where id = (
   select id from auth.users
-  where email like 'nutriai.smoke%' or email like 'smoke+%'
+  where email like 'neutriai.smoke%' or email like 'smoke+%'
   order by created_at desc
   limit 1
 );
@@ -63,4 +63,4 @@ where id = (
 
 -- ---------- 5. if step 4 succeeded, clean up the rest ----------
 -- delete from auth.users
---  where email like 'nutriai.smoke%' or email like 'smoke+%';
+--  where email like 'neutriai.smoke%' or email like 'smoke+%';

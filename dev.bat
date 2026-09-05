@@ -1,6 +1,6 @@
 @echo off
 REM ===========================================================
-REM  NutriAI dev launcher
+REM  NeutriAI dev launcher
 REM
 REM  Handles the two things that are easy to forget in a fresh
 REM  terminal: being in backend\, and activating the venv.
@@ -91,7 +91,7 @@ goto :eof
 
 :usage
 echo.
-echo   NutriAI dev launcher
+echo   NeutriAI dev launcher
 echo.
 echo     dev api       start the API      (http://localhost:8000/docs)
 echo     dev worker    start the worker

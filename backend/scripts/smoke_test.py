@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end smoke test against a running NutriAI API.
+"""End-to-end smoke test against a running NeutriAI API.
 
     python -m scripts.smoke_test
 
@@ -87,10 +87,10 @@ def main() -> int:
     # .invalid. example.com is IANA-reserved for documentation but is a real
     # TLD, so it passes. --email lets you use your own if the project has
     # stricter rules (a domain allow-list, for instance).
-    email = a.email or f"nutriai.smoke.{int(time.time())}@example.com"
+    email = a.email or f"neutriai.smoke.{int(time.time())}@example.com"
     password = "smoke-test-password-123"
 
-    print(f"\n{HDR}NutriAI end-to-end smoke test{OFF}")
+    print(f"\n{HDR}NeutriAI end-to-end smoke test{OFF}")
     print(f"{DIM}  api: {api}{OFF}\n")
 
     # ---- 0. server is up ------------------------------------------------

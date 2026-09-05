@@ -1,7 +1,7 @@
 [project]
-name = "nutriai-api"
+name = "neutriai-api"
 version = "1.0.0"
-description = "NutriAI backend — AI nutrition, fitness and lifestyle API"
+description = "NeutriAI backend — AI nutrition, fitness and lifestyle API"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",

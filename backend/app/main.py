@@ -1,4 +1,4 @@
-"""NutriAI API entry point."""
+"""NeutriAI API entry point."""
 from __future__ import annotations
 
 import time
@@ -23,7 +23,7 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("nutriai_starting", env=settings.env, prefix=settings.api_prefix)
+    log.info("neutriai_starting", env=settings.env, prefix=settings.api_prefix)
     # supabase_jwt_secret is deliberately absent: projects using asymmetric
     # signing keys have no shared secret, and an empty value is correct there.
     # security.py picks the verification path from the token's own header.
@@ -36,11 +36,11 @@ async def lifespan(app: FastAPI):
     if missing:
         log.warning("config_incomplete", missing=missing)
     yield
-    log.info("nutriai_stopping")
+    log.info("neutriai_stopping")
 
 
 app = FastAPI(
-    title="NutriAI API",
+    title="NeutriAI API",
     version="1.0.0",
     description=(
         "AI nutrition, fitness and lifestyle platform. All endpoints except "
@@ -128,7 +128,7 @@ for r in ALL_ROUTERS:
 
 @app.get("/healthz", tags=["ops"])
 async def healthz():
-    return {"ok": True, "service": "nutriai-api", "version": app.version, "env": settings.env}
+    return {"ok": True, "service": "neutriai-api", "version": app.version, "env": settings.env}
 
 
 @app.get("/readyz", tags=["ops"])

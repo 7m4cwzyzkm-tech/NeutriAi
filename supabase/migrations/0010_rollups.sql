@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0010 rollup + streak automation
+-- NeutriAI :: 0010 rollup + streak automation
 -- ============================================================
 
 -- Recompute one user/day summary from source tables. Called by triggers and

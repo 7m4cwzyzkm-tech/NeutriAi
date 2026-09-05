@@ -15,7 +15,7 @@ Then in the dashboard:
 
 - **Authentication → Providers** — enable Email. Turn on "Confirm email" for
   production; leave it off in staging so test accounts are one step.
-- **Authentication → URL Configuration** — add `nutriai://` to the redirect
+- **Authentication → URL Configuration** — add `neutriai://` to the redirect
   allow-list, or magic links dead-end in a browser.
 - **Storage** — the five buckets are created by migration `0011`. Confirm
   `meal-photos` and `equipment-photos` are **private**.
@@ -38,14 +38,14 @@ Create two recurring prices on one product:
 
 | Price | Amount | Interval | Env var |
 |---|---|---|---|
-| NutriAI Pro Monthly | $6.99 | month | `STRIPE_PRICE_MONTHLY` |
-| NutriAI Pro Annual | $50.00 | year | `STRIPE_PRICE_ANNUAL` |
+| NeutriAI Pro Monthly | $6.99 | month | `STRIPE_PRICE_MONTHLY` |
+| NeutriAI Pro Annual | $50.00 | year | `STRIPE_PRICE_ANNUAL` |
 
 Do **not** set the trial on the price — the API sets `trial_period_days` per
 checkout session so a returning user cannot re-trial (`has_used_trial()` checks
 our own subscription history).
 
-Webhook endpoint → `https://api.nutriai.app/v1/webhooks/stripe`, events:
+Webhook endpoint → `https://api.neutriai.app/v1/webhooks/stripe`, events:
 
 ```
 checkout.session.completed
@@ -83,7 +83,7 @@ fetched once for the whole user base. Expect >90% cache hit rate within weeks.
 ## 4. Wearable OAuth
 
 **Fitbit** (`dev.fitbit.com/apps`): type Server, callback
-`https://api.nutriai.app/v1/integrations/callback/fitbit`, scopes
+`https://api.neutriai.app/v1/integrations/callback/fitbit`, scopes
 `activity heartrate profile sleep weight nutrition`.
 
 **Google Fit** (Cloud Console): enable the Fitness API, create an OAuth client,
@@ -140,7 +140,7 @@ if count > settings.rate_limit_per_minute:
 Set `expo.extra` in `app.json`:
 
 ```json
-{ "apiUrl": "https://api.nutriai.app/v1",
+{ "apiUrl": "https://api.neutriai.app/v1",
   "supabaseUrl": "https://YOUR-PROJECT.supabase.co",
   "supabaseAnonKey": "eyJ...",
   "stripePublishableKey": "pk_live_..." }
@@ -173,13 +173,13 @@ Store-review notes that save a rejection round:
 ## 7. Smoke test after deploy
 
 ```bash
-curl -s https://api.nutriai.app/healthz
-curl -s https://api.nutriai.app/readyz          # must say database: reachable
-curl -s https://api.nutriai.app/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
+curl -s https://api.neutriai.app/healthz
+curl -s https://api.neutriai.app/readyz          # must say database: reachable
+curl -s https://api.neutriai.app/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
 
 TOKEN=<a real supabase access token>
-curl -s -H "Authorization: Bearer $TOKEN" https://api.nutriai.app/v1/me
-curl -s -H "Authorization: Bearer $TOKEN" https://api.nutriai.app/v1/me/dashboard
+curl -s -H "Authorization: Bearer $TOKEN" https://api.neutriai.app/v1/me
+curl -s -H "Authorization: Bearer $TOKEN" https://api.neutriai.app/v1/me/dashboard
 ```
 
 Then, in the app: sign up → complete onboarding → confirm targets appear with a

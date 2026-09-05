@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0002 identity, profile, goals, targets
+-- NeutriAI :: 0002 identity, profile, goals, targets
 -- ============================================================
 
 create table profiles (

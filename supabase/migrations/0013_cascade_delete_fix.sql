@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0013 make the rollup triggers survive a cascade delete
+-- NeutriAI :: 0013 make the rollup triggers survive a cascade delete
 --
 -- Deleting an account failed with:
 --     500 unexpected_failure "Database error deleting user"

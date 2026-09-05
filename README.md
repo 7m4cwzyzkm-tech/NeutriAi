@@ -1,4 +1,4 @@
-# NutriAI
+# NeutriAI
 
 An AI nutrition, fitness and lifestyle platform: photograph a meal and get an
 honest calorie and macro estimate; get a training programme built around the

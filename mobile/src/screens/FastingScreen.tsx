@@ -126,7 +126,7 @@ export function FastingScreen() {
                 <H2>What actually happens</H2>
                 <Body dim>
                   Fasting shifts which fuel your body reaches for; it isn't magic and it doesn't
-                  override total calories. If you feel faint, dizzy or unwell, eat. NutriAI tracks
+                  override total calories. If you feel faint, dizzy or unwell, eat. NeutriAI tracks
                   fasts because the schedule helps some people eat consistently — not because
                   longer is better.
                 </Body>

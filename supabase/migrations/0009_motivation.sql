@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0009 motivation, celebration, notifications
+-- NeutriAI :: 0009 motivation, celebration, notifications
 -- ============================================================
 
 create table motivation_messages (

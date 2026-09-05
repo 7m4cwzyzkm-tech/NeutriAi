@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0005 hydration + intermittent fasting
+-- NeutriAI :: 0005 hydration + intermittent fasting
 -- ============================================================
 
 create table water_logs (

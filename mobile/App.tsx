@@ -1,4 +1,4 @@
-/** NutriAI app root. */
+/** NeutriAI app root. */
 import React, { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';

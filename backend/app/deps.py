@@ -83,7 +83,7 @@ async def require_pro(ent: EntitlementDep) -> dict:
     """Hard paywall. Trialing counts as Pro — that is the point of a trial."""
     if not ent.get("is_active"):
         raise PaymentRequired(
-            "This feature needs an active NutriAI subscription.",
+            "This feature needs an active NeutriAI subscription.",
             detail={"tier": ent.get("tier"), "trial_available": ent.get("tier") == "free"},
         )
     return ent

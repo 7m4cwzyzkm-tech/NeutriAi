@@ -197,7 +197,7 @@ def check_optional() -> None:
 
 
 def main() -> int:
-    print(f"\n{HDR}NutriAI -- API key check{OFF}")
+    print(f"\n{HDR}NeutriAI -- API key check{OFF}")
     print(f"{DIM}  Values are never printed. Free endpoints only -- this costs nothing.{OFF}\n")
 
     def safely(label: str, fn) -> None:

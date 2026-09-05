@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0003 food scans, meals, nutrition cache
+-- NeutriAI :: 0003 food scans, meals, nutrition cache
 -- ============================================================
 
 -- Provider-agnostic food fact cache. Keyed by a normalized name so

@@ -58,7 +58,7 @@ function Tabs() {
 }
 
 const linking = {
-  prefixes: ['nutriai://'],
+  prefixes: ['neutriai://'],
   config: {
     screens: {
       Main: {

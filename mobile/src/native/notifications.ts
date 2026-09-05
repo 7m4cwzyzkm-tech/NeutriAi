@@ -75,8 +75,8 @@ export function usePushNotifications(navigate: (route: string, params?: object) 
       if (responded.current) return;
       const data = response.notification.request.content.data as Record<string, unknown>;
       const link = String(data?.deep_link ?? '');
-      // nutriai://post/123 -> ['post', '123']
-      const [route, id] = link.replace('nutriai://', '').split('/');
+      // neutriai://post/123 -> ['post', '123']
+      const [route, id] = link.replace('neutriai://', '').split('/');
       const map: Record<string, string> = {
         home: 'Home', fasting: 'Fasting', billing: 'Paywall',
         post: 'Feed', profile: 'Profile', train: 'Train',

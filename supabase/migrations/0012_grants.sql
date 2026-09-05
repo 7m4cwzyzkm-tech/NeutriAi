@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0012 role privileges
+-- NeutriAI :: 0012 role privileges
 --
 -- Supabase normally grants the API roles access to new tables in `public`
 -- through ALTER DEFAULT PRIVILEGES. That did not happen for tables created by

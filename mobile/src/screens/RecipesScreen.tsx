@@ -108,7 +108,7 @@ export function RecipesScreen() {
             ListEmptyComponent={
               <Empty
                 title="No recipes yet"
-                subtitle="Post one and NutriAI calculates the macros for you automatically."
+                subtitle="Post one and NeutriAI calculates the macros for you automatically."
               />
             }
           />

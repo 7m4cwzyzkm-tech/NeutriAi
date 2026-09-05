@@ -264,8 +264,8 @@ async def on_event(user_id: str, trigger: str, ctx: dict | None = None) -> dict 
         return None
 
     sb.table("notifications").insert({
-        "user_id": user_id, "kind": "motivation", "title": "NutriAI",
-        "body": body, "deep_link": "nutriai://home",
+        "user_id": user_id, "kind": "motivation", "title": "NeutriAI",
+        "body": body, "deep_link": "neutriai://home",
         "payload": {"trigger": trigger, "message_id": msg["id"]},
     }).execute()
     return msg

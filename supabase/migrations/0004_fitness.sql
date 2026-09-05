@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0004 wearables, workouts, coaching
+-- NeutriAI :: 0004 wearables, workouts, coaching
 -- ============================================================
 
 create table device_connections (

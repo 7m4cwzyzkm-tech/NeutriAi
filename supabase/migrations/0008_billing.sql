@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0008 Stripe billing
+-- NeutriAI :: 0008 Stripe billing
 -- ============================================================
 
 create table billing_customers (

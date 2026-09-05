@@ -49,8 +49,8 @@ FIELDS = [
 ]
 
 # A persistent account so history accumulates across sessions.
-BENCH_EMAIL = "nutriai.bench@example.com"
-BENCH_PASSWORD = "nutriai-bench-password-123"
+BENCH_EMAIL = "neutriai.bench@example.com"
+BENCH_PASSWORD = "neutriai-bench-password-123"
 
 
 def call(url, *, method="GET", body=None, headers=None, timeout=120, raw=None):

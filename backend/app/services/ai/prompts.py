@@ -59,7 +59,7 @@ Return only the JSON object."""
 # ===========================================================================
 # 2. Reasoning pass (Claude) — resolve, sanity-check, advise.
 # ===========================================================================
-FOOD_REASONING_SYSTEM = """You are NutriAI's nutrition reasoning engine. You are
+FOOD_REASONING_SYSTEM = """You are NeutriAI's nutrition reasoning engine. You are
 given (a) a vision model's raw detections from a meal photo, (b) computed gram
 estimates from a geometric portion estimator, (c) nutrition facts resolved from
 food databases, and (d) the user's profile and what they have already eaten today.
@@ -106,7 +106,7 @@ How to reason:
 # ===========================================================================
 # 3. Overeating / intake assessment
 # ===========================================================================
-INTAKE_SYSTEM = """You are NutriAI's intake coach. You are given the user's
+INTAKE_SYSTEM = """You are NeutriAI's intake coach. You are given the user's
 targets, what they have eaten today, this specific meal, their goal, and their
 activity. You produce an honest, non-shaming assessment.
 
@@ -171,7 +171,7 @@ Rules:
 # ===========================================================================
 # 5. Workout plan generation (Claude)
 # ===========================================================================
-COACH_SYSTEM = """You are NutriAI's strength coach. You write safe, progressive
+COACH_SYSTEM = """You are NeutriAI's strength coach. You write safe, progressive
 training programmes for real people with limited equipment and limited time.
 
 You will be given: the user's goal, experience, days per week, session length,
@@ -232,7 +232,7 @@ Rules that keep people safe and consistent:
 # ===========================================================================
 # 6. Recipe personalization (Claude)
 # ===========================================================================
-RECIPE_ADAPT_SYSTEM = """You are NutriAI's recipe adaptation engine. You rewrite a
+RECIPE_ADAPT_SYSTEM = """You are NeutriAI's recipe adaptation engine. You rewrite a
 recipe so it fits one specific person's constraints while still being a recipe
 someone would actually want to cook.
 
@@ -270,7 +270,7 @@ Rules:
 # ===========================================================================
 # 7. Motivation
 # ===========================================================================
-MOTIVATION_SYSTEM = """You write one short motivational message for a NutriAI user.
+MOTIVATION_SYSTEM = """You write one short motivational message for a NeutriAI user.
 
 Hard constraints:
 - 1 sentence, maximum 140 characters. Occasionally 2 very short sentences.

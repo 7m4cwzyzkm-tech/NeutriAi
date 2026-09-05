@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0014 counter triggers must run as their owner
+-- NeutriAI :: 0014 counter triggers must run as their owner
 --
 -- Root cause of "Database error deleting user", confirmed by diagnostic:
 -- deleting a user works as `postgres` in the SQL editor but fails through

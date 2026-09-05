@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0011 Row Level Security
+-- NeutriAI :: 0011 Row Level Security
 -- Default posture: deny-all, then grant the narrowest thing that works.
 -- The FastAPI service role bypasses RLS; the mobile client does not.
 -- ============================================================

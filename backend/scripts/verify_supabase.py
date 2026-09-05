@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify a Supabase project is correctly set up for NutriAI.
+"""Verify a Supabase project is correctly set up for NeutriAI.
 
     python -m scripts.verify_supabase
 
@@ -85,7 +85,7 @@ def check(
 
 
 def main() -> int:
-    print("\n\033[1mNutriAI — Supabase verification\033[0m\n")
+    print("\n\033[1mNeutriAI — Supabase verification\033[0m\n")
 
     # ---- 1. credentials -------------------------------------------------
     print("\033[1m1. Credentials\033[0m")
@@ -174,7 +174,7 @@ def main() -> int:
             check("SUPABASE_JWT_SECRET holds a legacy secret", True,
                   fatal=False,
                   pass_detail="unused while JWKS is available; safe to clear")
-        print("       NutriAI will verify tokens against the JWKS endpoint.")
+        print("       NeutriAI will verify tokens against the JWKS endpoint.")
     else:
         # No asymmetric keys: the legacy shared secret is the only path, so now
         # it genuinely is required.

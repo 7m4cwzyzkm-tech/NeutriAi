@@ -30,12 +30,12 @@ export function ProfileScreen() {
     try {
       const res = await api.fitness.connect(provider);
       if (res.flow === 'oauth' && res.authorize_url) {
-        await WebBrowser.openAuthSessionAsync(res.authorize_url, 'nutriai://integrations');
+        await WebBrowser.openAuthSessionAsync(res.authorize_url, 'neutriai://integrations');
         refetchIntegrations();
       } else {
         // Push-only providers: ask the OS for permission, then upload.
         const count = await syncHealthToServer(provider as 'apple_health' | 'samsung_health');
-        Alert.alert('Synced', `${count} days sent to NutriAI.`);
+        Alert.alert('Synced', `${count} days sent to NeutriAI.`);
         refetchIntegrations();
       }
     } catch (e: any) {

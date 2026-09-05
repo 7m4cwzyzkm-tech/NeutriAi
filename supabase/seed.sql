@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: exercise library seed (bodyweight-first so the
+-- NeutriAI :: exercise library seed (bodyweight-first so the
 -- calisthenics fallback always has something to prescribe)
 -- ============================================================
 insert into exercises (slug,name,kind,primary_muscle,secondary_muscles,equipment,difficulty,cues,regression_slug,progression_slug,met) values

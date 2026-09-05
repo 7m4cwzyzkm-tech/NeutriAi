@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # ---- app ----
     env: Literal["local", "staging", "production"] = "local"
-    app_name: str = "NutriAI"
+    app_name: str = "NeutriAI"
     api_prefix: str = "/v1"
     log_level: str = "INFO"
     cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=lambda: ["*"])
@@ -51,17 +51,17 @@ class Settings(BaseSettings):
     stripe_price_monthly: str = ""          # $6.99 / month
     stripe_price_annual: str = ""           # $50.00 / year
     stripe_trial_days: int = 15
-    stripe_portal_return_url: str = "nutriai://billing/return"
-    stripe_success_url: str = "nutriai://billing/success"
-    stripe_cancel_url: str = "nutriai://billing/cancel"
+    stripe_portal_return_url: str = "neutriai://billing/return"
+    stripe_success_url: str = "neutriai://billing/success"
+    stripe_cancel_url: str = "neutriai://billing/cancel"
 
     # ---- in-app purchase (StoreKit / Play Billing) ----
     # Required only for the mobile purchase path. Stripe still serves the web.
-    apple_bundle_id: str = "app.nutriai.mobile"
+    apple_bundle_id: str = "app.neutriai.mobile"
     apple_key_id: str = ""                  # App Store Connect -> Integrations -> IAP
     apple_issuer_id: str = ""
     apple_private_key: str = ""             # .p8 contents, \n-escaped
-    android_package_name: str = "app.nutriai.mobile"
+    android_package_name: str = "app.neutriai.mobile"
     google_play_service_account: str = ""   # service-account JSON, one line
 
     # ---- wearables ----
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     garmin_consumer_secret: str = ""
     google_fit_client_id: str = ""
     google_fit_client_secret: str = ""
-    oauth_redirect_base: str = "https://api.nutriai.app/v1/integrations/callback"
+    oauth_redirect_base: str = "https://api.neutriai.app/v1/integrations/callback"
 
     # ---- infra ----
     redis_url: str = "redis://localhost:6379/0"

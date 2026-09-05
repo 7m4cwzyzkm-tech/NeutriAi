@@ -20,8 +20,8 @@ import * as IAP from 'expo-in-app-purchases';
 import { request } from '../api/client';
 
 export const PRODUCTS = {
-  monthly: 'app.nutriai.pro.monthly',
-  annual: 'app.nutriai.pro.annual',
+  monthly: 'app.neutriai.pro.monthly',
+  annual: 'app.neutriai.pro.annual',
 } as const;
 
 export type PlanId = keyof typeof PRODUCTS;

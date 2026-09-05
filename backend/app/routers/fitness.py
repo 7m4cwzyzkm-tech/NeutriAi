@@ -331,7 +331,7 @@ async def oauth_callback(provider: str, code: str, state: str):
 
     # Deep-link back into the app rather than leaving a blank browser tab.
     return Response(
-        content=f'<html><body><script>location.replace("nutriai://integrations/{provider}/connected")'
+        content=f'<html><body><script>location.replace("neutriai://integrations/{provider}/connected")'
                 f'</script><p>Connected. You can close this window.</p></body></html>',
         media_type="text/html",
     )

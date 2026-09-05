@@ -107,7 +107,7 @@ async def fasting_notifications() -> None:
             mark, title, body = fire
             service().table("notifications").insert({
                 "user_id": f["user_id"], "kind": "reminder", "title": title,
-                "body": body, "deep_link": "nutriai://fasting",
+                "body": body, "deep_link": "neutriai://fasting",
             }).execute()
             service().table("fasts").update(
                 {"note": ",".join(sorted(marks | {mark}) - {""})}

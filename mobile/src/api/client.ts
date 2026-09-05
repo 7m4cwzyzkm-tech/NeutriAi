@@ -94,7 +94,7 @@ export async function request<T>(path: string, opts: Options = {}): Promise<T> {
   const message =
     lastError instanceof Error && lastError.name === 'AbortError'
       ? 'That took too long. Check your connection and try again.'
-      : 'Could not reach NutriAI.';
+      : 'Could not reach NeutriAI.';
   throw new ApiError(0, 'network_error', message);
 }
 

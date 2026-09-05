@@ -215,7 +215,7 @@ export function ScanScreen() {
         <SafeAreaView style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}>
           <H1>Camera access</H1>
           <Body dim>
-            NutriAI needs the camera to identify what's on your plate. Photos are uploaded to your
+            NeutriAI needs the camera to identify what's on your plate. Photos are uploaded to your
             own private folder and are never public.
           </Body>
           <Button title="Allow camera" onPress={requestPermission} />

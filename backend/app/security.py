@@ -212,7 +212,7 @@ def _fernet() -> Fernet:
     if settings.is_prod:
         raise RuntimeError("TOKEN_ENCRYPTION_KEY must be set in production.")
     # Deterministic dev key so local runs work without extra setup.
-    digest = hashlib.sha256(b"nutriai-dev-only").digest()
+    digest = hashlib.sha256(b"neutriai-dev-only").digest()
     return Fernet(base64.urlsafe_b64encode(digest))
 
 

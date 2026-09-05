@@ -285,7 +285,7 @@ def handle_event(event: dict) -> str:
                         "user_id": uid, "kind": "system",
                         "title": "Your trial ends in 3 days",
                         "body": "Add a payment method to keep unlimited AI scans and coaching.",
-                        "deep_link": "nutriai://billing",
+                        "deep_link": "neutriai://billing",
                     }).execute()
             else:
                 apply_subscription(obj)
@@ -309,7 +309,7 @@ def handle_event(event: dict) -> str:
                     "user_id": uid, "kind": "system",
                     "title": "Payment didn't go through",
                     "body": "Update your card to keep your subscription active.",
-                    "deep_link": "nutriai://billing",
+                    "deep_link": "neutriai://billing",
                 }).execute()
 
         sb.table("stripe_events").update({
@@ -331,7 +331,7 @@ def handle_event(event: dict) -> str:
 def pricing_table() -> list[dict]:
     return [
         {
-            "id": "monthly", "name": "NutriAI Pro", "interval": "month",
+            "id": "monthly", "name": "NeutriAI Pro", "interval": "month",
             "amount_cents": 699, "currency": "usd",
             "trial_days": settings.stripe_trial_days,
             "features": [
@@ -342,7 +342,7 @@ def pricing_table() -> list[dict]:
             ],
         },
         {
-            "id": "annual", "name": "NutriAI Pro (Annual)", "interval": "year",
+            "id": "annual", "name": "NeutriAI Pro (Annual)", "interval": "year",
             "amount_cents": 5000, "currency": "usd",
             "trial_days": settings.stripe_trial_days,
             "savings_note": "Save $33.88 — about 40% off monthly",

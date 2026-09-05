@@ -47,7 +47,7 @@ export function HomeScreen() {
         <SafeAreaView style={{ flex: 1, padding: space.lg, justifyContent: 'center' }}>
           <Empty
             title="Let's set your targets"
-            subtitle="A few details about you and NutriAI can calculate exactly what to aim for."
+            subtitle="A few details about you and NeutriAI can calculate exactly what to aim for."
           />
           <Button title="Finish setup" onPress={() => nav.navigate('Onboarding')} />
         </SafeAreaView>

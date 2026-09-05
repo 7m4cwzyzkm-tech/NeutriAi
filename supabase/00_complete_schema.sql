@@ -1,11 +1,11 @@
--- NutriAI complete schema: 11 migrations in order, then the seed.
+-- NeutriAI complete schema: 11 migrations in order, then the seed.
 -- Run once. 'create type' has no IF NOT EXISTS, so a second run will
 -- fail on the first enum. If it stops partway, note the last
 -- migration that succeeded and resume from the next file.
 
 -- ---------- 0001_extensions_and_enums.sql ----------
 -- ============================================================
--- NutriAI :: 0001 extensions, enums, shared helpers
+-- NeutriAI :: 0001 extensions, enums, shared helpers
 -- ============================================================
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
@@ -44,12 +44,12 @@ begin
 end $$;
 
 -- ---------- helper: current user id from Supabase JWT ----------
-create or replace function nutriai_uid() returns uuid
+create or replace function neutriai_uid() returns uuid
 language sql stable as $$ select auth.uid() $$;
 
 -- ---------- 0002_identity.sql ----------
 -- ============================================================
--- NutriAI :: 0002 identity, profile, goals, targets
+-- NeutriAI :: 0002 identity, profile, goals, targets
 -- ============================================================
 
 create table profiles (
@@ -164,7 +164,7 @@ create table streaks (
 
 -- ---------- 0003_nutrition.sql ----------
 -- ============================================================
--- NutriAI :: 0003 food scans, meals, nutrition cache
+-- NeutriAI :: 0003 food scans, meals, nutrition cache
 -- ============================================================
 
 -- Provider-agnostic food fact cache. Keyed by a normalized name so
@@ -312,7 +312,7 @@ create index on intake_assessments(user_id, day desc);
 
 -- ---------- 0004_fitness.sql ----------
 -- ============================================================
--- NutriAI :: 0004 wearables, workouts, coaching
+-- NeutriAI :: 0004 wearables, workouts, coaching
 -- ============================================================
 
 create table device_connections (
@@ -482,7 +482,7 @@ create index on plan_days(plan_id, week_index, day_index);
 
 -- ---------- 0005_lifestyle.sql ----------
 -- ============================================================
--- NutriAI :: 0005 hydration + intermittent fasting
+-- NeutriAI :: 0005 hydration + intermittent fasting
 -- ============================================================
 
 create table water_logs (
@@ -538,7 +538,7 @@ create unique index one_active_fast on fasts(user_id) where status = 'active';
 
 -- ---------- 0006_recipes.sql ----------
 -- ============================================================
--- NutriAI :: 0006 recipes + AI personalization
+-- NeutriAI :: 0006 recipes + AI personalization
 -- ============================================================
 
 create table recipes (
@@ -619,7 +619,7 @@ create index on shopping_lists(user_id, created_at desc);
 
 -- ---------- 0007_social.sql ----------
 -- ============================================================
--- NutriAI :: 0007 social graph + feed
+-- NeutriAI :: 0007 social graph + feed
 -- ============================================================
 
 create table follows (
@@ -707,7 +707,7 @@ create trigger t_recipe_saves after insert or delete on recipe_saves
 
 -- ---------- 0008_billing.sql ----------
 -- ============================================================
--- NutriAI :: 0008 Stripe billing
+-- NeutriAI :: 0008 Stripe billing
 -- ============================================================
 
 create table billing_customers (
@@ -778,7 +778,7 @@ $$;
 
 -- ---------- 0009_motivation.sql ----------
 -- ============================================================
--- NutriAI :: 0009 motivation, celebration, notifications
+-- NeutriAI :: 0009 motivation, celebration, notifications
 -- ============================================================
 
 create table motivation_messages (
@@ -862,7 +862,7 @@ create index on ai_usage(pipeline, created_at desc);
 
 -- ---------- 0010_rollups.sql ----------
 -- ============================================================
--- NutriAI :: 0010 rollup + streak automation
+-- NeutriAI :: 0010 rollup + streak automation
 -- ============================================================
 
 -- Recompute one user/day summary from source tables. Called by triggers and
@@ -1011,7 +1011,7 @@ $$;
 
 -- ---------- 0011_rls.sql ----------
 -- ============================================================
--- NutriAI :: 0011 Row Level Security
+-- NeutriAI :: 0011 Row Level Security
 -- Default posture: deny-all, then grant the narrowest thing that works.
 -- The FastAPI service role bypasses RLS; the mobile client does not.
 -- ============================================================
@@ -1176,7 +1176,7 @@ create policy public_bucket_read on storage.objects for select to authenticated
 
 -- ---------- seed.sql ----------
 -- ============================================================
--- NutriAI :: exercise library seed (bodyweight-first so the
+-- NeutriAI :: exercise library seed (bodyweight-first so the
 -- calisthenics fallback always has something to prescribe)
 -- ============================================================
 insert into exercises (slug,name,kind,primary_muscle,secondary_muscles,equipment,difficulty,cues,regression_slug,progression_slug,met) values

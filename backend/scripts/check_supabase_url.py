@@ -90,7 +90,7 @@ def main() -> int:
     print(f"\n{HDR}Probing JWKS{OFF}\n  {jwks_url}\n")
 
     try:
-        req = urllib.request.Request(jwks_url, headers={"User-Agent": "nutriai-setup"})
+        req = urllib.request.Request(jwks_url, headers={"User-Agent": "neutriai-setup"})
         with urllib.request.urlopen(req, timeout=12) as resp:
             body = json.load(resp)
         keys = body.get("keys") or []
@@ -108,7 +108,7 @@ def main() -> int:
             print(f"    kid {k.get('kid')}   alg {k.get('alg')}   kty {k.get('kty')}"
                   f"   crv {k.get('crv', '-')}")
         print(f"\n{HDR}VERDICT: asymmetric signing{OFF}")
-        print(f"  Leave the secret EMPTY. NutriAI fetches these public keys automatically.\n")
+        print(f"  Leave the secret EMPTY. NeutriAI fetches these public keys automatically.\n")
         print(f"    SUPABASE_JWT_SECRET=\n")
     else:
         print(f"  {YEL}No keys published.{OFF}")

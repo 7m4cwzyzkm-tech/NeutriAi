@@ -147,7 +147,7 @@ export function OnboardingScreen() {
                   <Label>Step 1 of 5</Label>
                   <H1>About you</H1>
                   <Body dim>
-                    Energy needs differ by sex and age. This is the only place NutriAI asks,
+                    Energy needs differ by sex and age. This is the only place NeutriAI asks,
                     and it is used for one thing: the BMR equation.
                   </Body>
                 </View>

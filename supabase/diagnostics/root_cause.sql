@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: account-deletion root cause
+-- NeutriAI :: account-deletion root cause
 --
 -- One paste. Returns a table of facts, including the REAL Postgres error
 -- behind GoTrue's generic "Database error deleting user".
@@ -8,7 +8,7 @@
 -- so nothing is destroyed either way.
 -- ============================================================
 
-create or replace function _nutriai_diag()
+create or replace function _neutriai_diag()
 returns table(step text, finding text)
 language plpgsql
 security definer
@@ -70,7 +70,7 @@ begin
 
   -- 4. a test account to try
   select id into uid from auth.users
-   where email like 'nutriai.smoke%' or email like 'smoke+%'
+   where email like 'neutriai.smoke%' or email like 'smoke+%'
    order by created_at desc limit 1;
 
   step := '4. test account';
@@ -87,10 +87,10 @@ begin
   begin
     delete from auth.users where id = uid;
     -- Deliberate abort: we only wanted to know whether it works.
-    raise exception 'NUTRIAI_ROLLBACK';
+    raise exception 'NEUTRIAI_ROLLBACK';
   exception
     when others then
-      if SQLERRM = 'NUTRIAI_ROLLBACK' then
+      if SQLERRM = 'NEUTRIAI_ROLLBACK' then
         finding := 'DELETE SUCCEEDS -- the database is fine; the failure is in GoTrue or the API layer';
       else
         finding := format('%s  [SQLSTATE %s]', SQLERRM, SQLSTATE);
@@ -100,4 +100,4 @@ begin
 end
 $func$;
 
-select * from _nutriai_diag();
+select * from _neutriai_diag();

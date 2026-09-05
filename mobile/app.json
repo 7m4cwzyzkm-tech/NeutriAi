@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "NutriAI",
-    "slug": "nutriai",
-    "scheme": "nutriai",
+    "name": "NeutriAI",
+    "slug": "neutriai",
+    "scheme": "neutriai",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -13,13 +13,13 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.nutriai.mobile",
+      "bundleIdentifier": "app.neutriai.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "NutriAI uses the camera to identify your meals and the equipment in your gym.",
+        "NSCameraUsageDescription": "NeutriAI uses the camera to identify your meals and the equipment in your gym.",
         "NSPhotoLibraryUsageDescription": "Choose an existing photo of a meal to analyse.",
-        "NSHealthShareUsageDescription": "NutriAI reads steps, workouts, heart rate and sleep so your calorie targets reflect how active you actually are.",
-        "NSHealthUpdateUsageDescription": "NutriAI writes your logged water and workouts back to Apple Health.",
-        "NSUserTrackingUsageDescription": "NutriAI does not track you across other apps."
+        "NSHealthShareUsageDescription": "NeutriAI reads steps, workouts, heart rate and sleep so your calorie targets reflect how active you actually are.",
+        "NSHealthUpdateUsageDescription": "NeutriAI writes your logged water and workouts back to Apple Health.",
+        "NSUserTrackingUsageDescription": "NeutriAI does not track you across other apps."
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,
@@ -30,7 +30,7 @@
       }
     },
     "android": {
-      "package": "app.nutriai.mobile",
+      "package": "app.neutriai.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#0B0F14"
       },
@@ -59,7 +59,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://api.nutriai.app/v1",
+      "apiUrl": "https://api.neutriai.app/v1",
       "supabaseUrl": "https://YOUR-PROJECT.supabase.co",
       "supabaseAnonKey": "YOUR_ANON_KEY",
       "stripePublishableKey": "pk_live_YOUR_KEY"

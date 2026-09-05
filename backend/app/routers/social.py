@@ -83,7 +83,7 @@ async def create_post(body: PostIn, user: CurrentUserDep):
             {
                 "user_id": f["follower_id"], "kind": "social",
                 "title": f"{name} posted", "body": body.body[:120],
-                "actor_id": user.id, "deep_link": f"nutriai://post/{post['id']}",
+                "actor_id": user.id, "deep_link": f"neutriai://post/{post['id']}",
             }
             for f in followers
         ]).execute()
@@ -149,7 +149,7 @@ async def like(post_id: str, user: CurrentUserDep):
         service().table("notifications").insert({
             "user_id": author["author_id"], "kind": "social",
             "title": "Someone liked your post", "actor_id": user.id,
-            "deep_link": f"nutriai://post/{post_id}",
+            "deep_link": f"neutriai://post/{post_id}",
         }).execute()
     return Ok(message="Liked.")
 
@@ -186,7 +186,7 @@ async def add_comment(post_id: str, body: CommentIn, user: CurrentUserDep):
         service().table("notifications").insert({
             "user_id": author["author_id"], "kind": "social",
             "title": "New comment on your post", "body": body.body[:120],
-            "actor_id": user.id, "deep_link": f"nutriai://post/{post_id}",
+            "actor_id": user.id, "deep_link": f"neutriai://post/{post_id}",
         }).execute()
     return comment
 
@@ -207,7 +207,7 @@ async def follow(handle: str, user: CurrentUserDep):
     service().table("notifications").insert({
         "user_id": target["id"], "kind": "social",
         "title": "You have a new follower", "actor_id": user.id,
-        "deep_link": f"nutriai://profile/{user.id}",
+        "deep_link": f"neutriai://profile/{user.id}",
     }).execute()
     return Ok(message=f"Following {handle}.")
 

@@ -31,7 +31,7 @@ export function AuthScreen() {
           style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}
         >
           <View>
-            <Label>NutriAI</Label>
+            <Label>NeutriAI</Label>
             <H1>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</H1>
             <Body dim>
               {mode === 'signup'

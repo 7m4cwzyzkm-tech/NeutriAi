@@ -1,4 +1,4 @@
-# NutriAI founder runbook
+# NeutriAI founder runbook
 
 Ten sections, in the order you asked for them. Each is a checklist you can work
 through; nothing here is aspirational — every command was run against this repo.
@@ -10,7 +10,7 @@ through; nothing here is aspirational — every command was run against this rep
 
 ---
 
-# 1. Get NutriAI running locally
+# 1. Get NeutriAI running locally
 
 `docs/ARCHITECTURE.md` describes a three-tier system: an Expo app, a FastAPI
 service plus a separate worker process, and Supabase holding the data. Photos go
@@ -170,7 +170,7 @@ fetch it.
 
 ### Auth settings people forget
 
-- **Authentication → URL Configuration** → add `nutriai://` to redirects, or
+- **Authentication → URL Configuration** → add `neutriai://` to redirects, or
   magic links dead-end in a browser.
 - **Authentication → Providers → Email** → turn Confirm Email *off* in dev so
   test accounts are one step; *on* for production.
@@ -229,16 +229,16 @@ STRIPE_WEBHOOK_SECRET=whsec_...      # from `stripe listen`
 STRIPE_PRICE_MONTHLY=price_...       # $6.99/month recurring
 STRIPE_PRICE_ANNUAL=price_...        # $50.00/year recurring
 STRIPE_TRIAL_DAYS=15                 # set here, NOT on the price — see §10
-STRIPE_SUCCESS_URL=nutriai://billing/success
-STRIPE_CANCEL_URL=nutriai://billing/cancel
-STRIPE_PORTAL_RETURN_URL=nutriai://billing/return
+STRIPE_SUCCESS_URL=neutriai://billing/success
+STRIPE_CANCEL_URL=neutriai://billing/cancel
+STRIPE_PORTAL_RETURN_URL=neutriai://billing/return
 
 # ---- in-app purchase (mobile billing; see §9) ---------------------------
-APPLE_BUNDLE_ID=app.nutriai.mobile
+APPLE_BUNDLE_ID=app.neutriai.mobile
 APPLE_KEY_ID=                        # App Store Connect → Integrations → IAP
 APPLE_ISSUER_ID=
 APPLE_PRIVATE_KEY=                   # .p8 contents, one line, \n-escaped
-ANDROID_PACKAGE_NAME=app.nutriai.mobile
+ANDROID_PACKAGE_NAME=app.neutriai.mobile
 GOOGLE_PLAY_SERVICE_ACCOUNT=         # service-account JSON, one line
 
 # ---- wearables (all optional) -------------------------------------------
@@ -304,7 +304,7 @@ uvicorn app.main:app --reload --port 8000
 Healthy startup looks like:
 
 ```
-nutriai_starting   env=local prefix=/v1
+neutriai_starting   env=local prefix=/v1
 Uvicorn running on http://127.0.0.1:8000
 ```
 
@@ -327,7 +327,7 @@ blank.
 
 ```bash
 curl -s localhost:8000/healthz | jq
-# {"ok":true,"service":"nutriai-api","version":"1.0.0","env":"local"}
+# {"ok":true,"service":"neutriai-api","version":"1.0.0","env":"local"}
 
 curl -s localhost:8000/readyz | jq
 # {"ok":true,"database":"reachable"}   ← proves Supabase connectivity
@@ -419,9 +419,9 @@ Open `mobile/app.json`. The block is at the **bottom**, `expo.extra`:
 ```jsonc
 {
   "expo": {
-    "name": "NutriAI",
-    "slug": "nutriai",
-    "scheme": "nutriai",
+    "name": "NeutriAI",
+    "slug": "neutriai",
+    "scheme": "neutriai",
     // ... plugins, ios, android ...
     "extra": {
       "apiUrl": "http://192.168.1.42:8000/v1",        // ← 1
@@ -924,15 +924,15 @@ after an outage.
 
 1. **App Store Connect → your app → Subscriptions.** Create a group and two
    products. The ids must match `PRODUCT_TIERS` in `iap.py`:
-   `app.nutriai.pro.monthly` ($6.99) and `app.nutriai.pro.annual` ($50).
+   `app.neutriai.pro.monthly` ($6.99) and `app.neutriai.pro.annual` ($50).
 2. Add a **15-day free trial** as an Introductory Offer on each.
 3. **Users and Access → Integrations → In-App Purchase** → generate a key.
    Save the `.p8` (downloadable once), the Key ID and the Issuer ID.
 4. **App Information → App Store Server Notifications** → set the production
-   *and* sandbox URLs to `https://api.nutriai.app/v1/webhooks/apple`.
+   *and* sandbox URLs to `https://api.neutriai.app/v1/webhooks/apple`.
 
 ```ini
-APPLE_BUNDLE_ID=app.nutriai.mobile
+APPLE_BUNDLE_ID=app.neutriai.mobile
 APPLE_KEY_ID=ABC123XYZ
 APPLE_ISSUER_ID=57246542-96fe-1a63-e053-0824d011072a
 APPLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIGT...\n-----END PRIVATE KEY-----
@@ -946,10 +946,10 @@ APPLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIGT...\n-----END PRIVATE KEY----
    Download the JSON.
 3. **Monetization setup → Real-time developer notifications** → create a
    Pub/Sub topic, then a **push** subscription to
-   `https://api.nutriai.app/v1/webhooks/google`.
+   `https://api.neutriai.app/v1/webhooks/google`.
 
 ```ini
-ANDROID_PACKAGE_NAME=app.nutriai.mobile
+ANDROID_PACKAGE_NAME=app.neutriai.mobile
 GOOGLE_PLAY_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
 pip install google-auth      # already added to requirements.txt
 ```
@@ -962,7 +962,7 @@ import { Platform } from 'react-native';
 import * as IAP from 'expo-in-app-purchases';   // or react-native-iap
 import { request } from '../api/client';
 
-const PRODUCTS = ['app.nutriai.pro.monthly', 'app.nutriai.pro.annual'];
+const PRODUCTS = ['app.neutriai.pro.monthly', 'app.neutriai.pro.annual'];
 
 async function startPurchase(plan: 'monthly' | 'annual') {
   // Web keeps Stripe. Native must use the platform's billing.
@@ -1054,7 +1054,7 @@ psql "$PROD_DATABASE_URL" -f supabase/seed.sql
 ```
 
 - [ ] Confirm Email **on**
-- [ ] Redirect allow-list includes `nutriai://` and your web origin
+- [ ] Redirect allow-list includes `neutriai://` and your web origin
 - [ ] Point-in-time recovery on (Pro plan)
 - [ ] Run §2's RLS impersonation test against production
 - [ ] `python -m scripts.verify_supabase` against production env → exit 0
@@ -1087,7 +1087,7 @@ Either way:
 - [ ] Live mode, two prices: $6.99/month, $50/year
 - [ ] Trial set **per checkout session**, not on the price — otherwise a user
       who cancels and returns gets a second free trial
-- [ ] Webhook → `https://api.nutriai.app/v1/webhooks/stripe`, the 7 events from
+- [ ] Webhook → `https://api.neutriai.app/v1/webhooks/stripe`, the 7 events from
       `HANDLED` in `stripe_service.py`
 - [ ] Customer Portal enabled, cancellation allowed
 - [ ] `stripe trigger checkout.session.completed` → confirm the entitlement flips
@@ -1096,12 +1096,12 @@ Either way:
 
 | Provider | Redirect URI | Lead time |
 |---|---|---|
-| Fitbit | `https://api.nutriai.app/v1/integrations/callback/fitbit` | Same day |
+| Fitbit | `https://api.neutriai.app/v1/integrations/callback/fitbit` | Same day |
 | Google Fit | `.../callback/google_fit` | **Weeks** — verified consent screen |
 | Garmin | Health API + push to `/v1/health/push` | Weeks — approval-gated |
 | Apple / Samsung | none | — |
 
-Set `OAUTH_REDIRECT_BASE=https://api.nutriai.app/v1/integrations/callback` and
+Set `OAUTH_REDIRECT_BASE=https://api.neutriai.app/v1/integrations/callback` and
 make sure every provider's registered URI matches **exactly**, trailing slash
 included.
 
@@ -1143,10 +1143,10 @@ eas build --platform android --profile production
 ### 10.7 Final verification
 
 ```bash
-curl -s https://api.nutriai.app/healthz | jq
-curl -s https://api.nutriai.app/readyz | jq            # database: reachable
-curl -s https://api.nutriai.app/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
-curl -s https://api.nutriai.app/docs                    # 404 — correct in prod
+curl -s https://api.neutriai.app/healthz | jq
+curl -s https://api.neutriai.app/readyz | jq            # database: reachable
+curl -s https://api.neutriai.app/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
+curl -s https://api.neutriai.app/docs                    # 404 — correct in prod
 ```
 
 Then, on a real device from a store build:

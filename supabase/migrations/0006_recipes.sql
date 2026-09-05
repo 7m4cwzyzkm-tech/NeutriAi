@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0006 recipes + AI personalization
+-- NeutriAI :: 0006 recipes + AI personalization
 -- ============================================================
 
 create table recipes (

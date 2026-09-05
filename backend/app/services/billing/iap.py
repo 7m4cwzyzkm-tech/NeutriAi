@@ -41,8 +41,8 @@ log = structlog.get_logger()
 
 # Product ids must match App Store Connect and Play Console exactly.
 PRODUCT_TIERS: dict[str, tuple[str, str]] = {
-    "app.nutriai.pro.monthly": ("pro", "month"),
-    "app.nutriai.pro.annual": ("pro_annual", "year"),
+    "app.neutriai.pro.monthly": ("pro", "month"),
+    "app.neutriai.pro.annual": ("pro_annual", "year"),
 }
 
 APPLE_PROD = "https://api.storekit.itunes.apple.com/inApps/v1"
@@ -151,7 +151,7 @@ def _apple_jwt() -> str:
     key_id = getattr(settings, "apple_key_id", "")
     issuer = getattr(settings, "apple_issuer_id", "")
     private_key = getattr(settings, "apple_private_key", "").replace("\\n", "\n")
-    bundle = getattr(settings, "apple_bundle_id", "app.nutriai.mobile")
+    bundle = getattr(settings, "apple_bundle_id", "app.neutriai.mobile")
     if not (key_id and issuer and private_key):
         raise UpstreamError("Apple IAP credentials are not configured.")
 
@@ -305,7 +305,7 @@ async def _google_token() -> str:
 
 async def verify_google(user_id: str, product_id: str, purchase_token: str) -> dict:
     """Verify a Play purchase token and apply the entitlement."""
-    package = getattr(settings, "android_package_name", "app.nutriai.mobile")
+    package = getattr(settings, "android_package_name", "app.neutriai.mobile")
     token = await _google_token()
     url = (f"{GOOGLE_API}/applications/{package}/purchases/subscriptionsv2/"
            f"tokens/{purchase_token}")

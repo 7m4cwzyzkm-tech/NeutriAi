@@ -1,5 +1,5 @@
 -- ============================================================
--- NutriAI :: 0001 extensions, enums, shared helpers
+-- NeutriAI :: 0001 extensions, enums, shared helpers
 -- ============================================================
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
@@ -38,5 +38,5 @@ begin
 end $$;
 
 -- ---------- helper: current user id from Supabase JWT ----------
-create or replace function nutriai_uid() returns uuid
+create or replace function neutriai_uid() returns uuid
 language sql stable as $$ select auth.uid() $$;
