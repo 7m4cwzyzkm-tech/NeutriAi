@@ -1530,6 +1530,109 @@ def test_with_no_group_a_name_match_still_beats_the_default():
     )
 
 
+# ---------------------------------------------------------------------------
+# THE DENSITY LOOKUP ACCEPTANCE TABLE -- docs/HANDOFF.md, 12 Sep 2026.
+#
+# Every food name the bench and the weighed-plate fits use. Checked with no
+# group, which is how the heights were fitted. The old rule failed 18 of these.
+#
+# This commit changes WHICH KEY MATCHES and adds only aliases to existing
+# rows. Six names that need a NEW VALUE -- brussels sprouts, grapes, trail
+# mix, spaghetti squash, cheeseburger, tortilla chips -- resolve through the
+# fallback here and get their values in the next commit, which is data.
+#
+#   * the squash row resolves to pasta's 0.65 here. That is the trap: a
+#     later-word rule reads "squash, winter, spaghetti" as spaghetti, and
+#     only a spaghetti squash key can put it right.
+#   * steamed carrots and steamed zucchini stay at the 0.85 default in both
+#     commits: they are the two foods SEPARATE_PIECES_HEIGHT_MM was solved
+#     against, and it is frozen. See
+#     test_the_calibration_foods_keep_their_fitted_densities.
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("name,expected", [
+    ("bbq chicken thigh", 1.05),
+    ("beef posole", 1.02),
+    ("brussels sprouts", 0.85),
+    ("caesar salad", 0.22),
+    ("cheese and broccoli soup", 1.00),
+    ("cheeseburger slider", 0.85),
+    ("chicken drumstick with mole sauce", 1.05),
+    ("chicken drumstick, grilled with sauce", 1.05),
+    ("chicken drumstick, rotisserie", 1.05),
+    ("chicken noodle soup", 1.00),
+    ("dinner roll", 0.28),
+    ("egg, whole, cooked, scrambled", 1.03),
+    ("fried french fries", 0.42),
+    ("grapes", 0.85),
+    ("grilled cheeseburger", 0.85),
+    ("grilled chicken drumstick", 1.05),
+    ("macaroni salad", 0.85),
+    ("mexican rice", 0.67),
+    ("pizza slice", 0.55),
+    ("pot roast", 1.05),
+    ("potato, french fries, from fresh, fried", 0.42),
+    ("refried beans", 1.06),
+    ("roast beef", 1.05),
+    ("smashed potatoes", 1.04),
+    ("spaghetti", 0.65),
+    ("spaghetti with chicken", 0.65),
+    ("spaghetti with sauce", 0.65),
+    ("squash, winter, spaghetti, cooked, boiled, drained, or baked, with salt", 0.65),
+    ("steamed carrots", 0.85),
+    ("steamed zucchini", 0.85),
+    ("tortilla chips", 0.85),
+    ("trail mix", 0.85),
+    ("white rice", 0.67),
+    ("whole plate", 0.85),
+])
+def test_density_lookup_acceptance(name, expected):
+    assert density_for(name) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("name,key", [
+    ("blueberries", "berries"),          # the end of a word is its head
+    ("catfish", "fish"),
+    ("refried pinto beans", "refried"),  # a preparation beats a commodity
+    ("potato soup", "soup"),             # the later word is the head
+    ("chocolate cake", "cake"),
+    ("potatoes, mashed", "mashed potato"),
+])
+def test_the_head_of_the_name_decides_the_density(name, key):
+    from app.services.ai.portion import DENSITY_G_ML
+    assert density_for(name) == pytest.approx(DENSITY_G_ML[key])
+
+
+@pytest.mark.parametrize("name", ["eggplant", "cheesecake sampler plate"])
+def test_a_modifier_inside_a_word_is_not_the_food(name):
+    """'egg' in 'eggplant' and 'cheese' in 'cheesecake' are modifiers."""
+    from app.services.ai.portion import DENSITY_G_ML
+    assert density_for(name) not in (DENSITY_G_ML["egg"], DENSITY_G_ML["cheese"])
+
+
+def test_the_comma_still_cuts_the_dish_for_everything_else():
+    """density_for no longer cuts at the comma; dish_head must still, because
+    shape classification and the rename guard read it and were not re-tested."""
+    from app.services.ai.portion import dish_head
+    assert dish_head("potato, french fries, from fresh, fried") == "potato"
+
+
+def test_the_calibration_foods_keep_their_fitted_densities():
+    """The two height constants are MEANS of grams / (area x density) over the
+    weighed footprints, at the densities these names resolve to. Move one of
+    those densities and the frozen height silently stops describing its own
+    evidence -- the trap that caught the mask cache and the shape factors.
+    Refit and change the density in the SAME commit, or neither."""
+    from app.services.ai import portion as P
+    for one_mass, height in ((True, P.CONNECTED_PILE_HEIGHT_MM),
+                             (False, P.SEPARATE_PIECES_HEIGHT_MM)):
+        implied = [grams / density_for(name) * 1000.0 / area
+                   for name, grams, area, o in WEIGHED_FOOTPRINTS if o == one_mass]
+        mean = sum(implied) / len(implied)
+        assert mean == pytest.approx(height, abs=0.05), (
+            f"{'pile' if one_mass else 'pieces'}: fitted {height} mm, the "
+            f"densities now imply {mean:.2f} mm")
+
+
 def test_structure_beats_the_models_shape_word():
     """The model picks from six words and none of them is 'open flatbread'.
 
@@ -2320,12 +2423,17 @@ def test_a_bowl_of_soup_is_not_a_bowl_of_dry_florets():
     """
     from app.services.ai import portion as P
 
-    assert P.density_for("broccoli cheese soup") < P.LIQUID_DENSITY_MIN, (
-        "the fixture no longer reproduces the bug it guards")
+    # The name no longer reproduces it: the lookup reads the head of the
+    # phrase now, and a broccoli cheese soup is soup. The clamp still guards a
+    # low density arriving any other way, so the florets' 0.35 is handed in
+    # directly -- the fixture must keep exercising the clamp, not the name.
+    assert P.density_for("broccoli cheese soup") == pytest.approx(P.DENSITY_G_ML["soup"])
+    assert 0.35 < P.LIQUID_DENSITY_MIN, "the fixture no longer reaches the clamp"
     hint = P.GeometryHint(plate_diameter_mm=114.0, plate_ellipse_area_ratio=0.16,
                           vessel="soup_bowl")
     got = P.estimate_grams(name="broccoli cheese soup", area_ratio=0.025,
-                           hint=hint, bbox={"x": 0.4, "y": 0.4, "w": 0.2, "h": 0.2})
+                           density=0.35, hint=hint,
+                           bbox={"x": 0.4, "y": 0.4, "w": 0.2, "h": 0.2})
     assert got.grams > 100, (
         f"{got.grams:.0f} g against 152 g weighed — an ingredient's density was "
         f"used for the dish")

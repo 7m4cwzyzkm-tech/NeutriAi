@@ -267,6 +267,17 @@ DENSITY_G_ML: dict[str, float] = {
     "mashed potato": 1.04, "mashed": 1.00,
     "hummus": 1.06, "puree": 1.05, "pureed": 1.05,
     "guacamole": 0.95, "gravy": 1.05, "risotto": 0.95,
+
+    # Added 12 Sep 2026 for the bench's own food names (docs/HANDOFF.md, "THE
+    # DENSITY LOOKUP"). Every one of these fell through to a group or the 0.85
+    # default before.
+    #
+    # Aliases: a name the table did not know, pointed at the row that already
+    # describes it. These change which key matches, not what any value means.
+    "spaghetti": 0.65,          # = pasta
+    "dinner roll": 0.28,        # = bread
+    "pot roast": 1.05,          # = beef
+    "posole": 1.02,             # = stew
     "default": 0.85,
 }
 
@@ -1323,36 +1334,124 @@ def density_for(
     "refried beans" therefore kept the legume group's 0.78 -- the density of
     whole beans sitting in broth -- rather than the 1.05 of a smooth paste.
 
-    The LONGEST matching key wins, not the first. Order-of-insertion matching
-    let a generic key silently shadow a specific one: "refried beans" matched
-    "beans" (0.72, whole beans in liquid) instead of "refried" (1.05, a paste),
-    and the estimate came out about 20% light on every meal containing them.
+    WHICH KEY MATCHES is decided in this order, and every rung is a bug this
+    lookup had. It used to be "longest substring wins", which was one rule
+    standing in for all five and got three of them wrong:
 
-    Longest-match also makes the table safe to extend -- adding a specific food
-    can no longer be defeated by where it happens to sit in the dict.
+      1. Whole words, head-final. A key matches a word or the END of one:
+         "berries" is the head of "blueberries" and "fish" of "catfish", but
+         "cheese" is only the modifier of "cheeseburger" -- which substring
+         matching sized at 1.05 g/ml, a cheese block, on the heaviest item in
+         the bench. A trailing s/es is allowed.
+      2. More words matched. "refried beans" beats "beans": a paste, not whole
+         beans in broth, and about 20% on every meal containing them.
+      3. A preparation beats a commodity. "refried pinto beans" is refried;
+         what a food weighs per millilitre is how it was made.
+      4. The later word. English compounds are head-final, so "cheese and
+         broccoli soup" is soup. Longest-wins chose broccoli, 0.35, because
+         "broccoli" has more letters than "soup". Length is not specificity.
+      5. Length, only as a final tie-break.
+
+    The comma does NOT cut the name here, although dish_head cuts at it for
+    its other callers. USDA names put the commodity first and the preparation
+    after the comma -- "potato, french fries, from fresh, fried" -- so cutting
+    there kept the potato (0.62) and discarded the fries (0.42). A multi-word
+    key may match across comma segments, because that is one food with its
+    words reordered: "potatoes, mashed" is mashed potato.
     """
     if explicit and 0.05 < explicit < 3.0:
         return explicit
-    def longest_match(text: str) -> float | None:
-        # The LONGEST matching key wins, not the first. Order-of-insertion
-        # matching let a generic key shadow a specific one.
-        best_key, best_val = "", None
-        for key, val in DENSITY_G_ML.items():
-            if key != "default" and key in text and len(key) > len(best_key):
-                best_key, best_val = key, val
-        return best_val
 
-    from_dish = longest_match(dish_head(name))
+    text = name.lower() if isinstance(name, str) else ""
+    from_dish = _density_match(_head(text, DENSITY_SEPARATORS))
     if from_dish is not None:
         return from_dish
     if group:
         return group_density(group)
     # No group reported: a match anywhere in the name still beats the global
     # default, even though it may be an ingredient rather than the dish.
-    from_anywhere = longest_match(name.lower() if isinstance(name, str) else "")
+    from_anywhere = _density_match(text)
     if from_anywhere is not None:
         return from_anywhere
     return DENSITY_G_ML["default"]
+
+
+# dish_head's separators without the comma. See density_for for why.
+DENSITY_SEPARATORS = tuple(s for s in DISH_SEPARATORS if s != ",")
+
+# Keys naming a PREPARATION, which decides density whatever food it names.
+DENSITY_PREPARATION_KEYS = frozenset({"refried", "mashed", "puree", "pureed"})
+
+_WORDS = re.compile(r"[a-z]+")
+
+
+def _head(text: str, separators: tuple[str, ...]) -> str:
+    cut = len(text)
+    for sep in separators:
+        i = text.find(sep)
+        if i != -1:
+            cut = min(cut, i)
+    return text[:cut].strip()
+
+
+def _word_matches(word: str, key_word: str, *, suffix_ok: bool) -> bool:
+    for form in (key_word, key_word + "s", key_word + "es"):
+        if word == form or (suffix_ok and word.endswith(form)):
+            return True
+    return False
+
+
+def _key_hit(key_words: list[str], segments: list[list[tuple[int, str]]]):
+    """(in order?, index of the last word matched), or None.
+
+    Only a key's FIRST word may match the end of a longer word: "smashed" is
+    mashed, but "potatoes" must be potato and nothing longer.
+    """
+    n = len(key_words)
+    last = None
+    for seg in segments:
+        for i in range(len(seg) - n + 1):
+            if all(_word_matches(seg[i + j][1], key_words[j], suffix_ok=j == 0)
+                   for j in range(n)):
+                last = max(last if last is not None else -1, seg[i + n - 1][0])
+    if last is not None:
+        return True, last
+    # Across comma segments: the same food with its words reordered.
+    if n > 1 and len(segments) > 1:
+        flat = [w for seg in segments for w in seg]
+        found = []
+        for j, kw in enumerate(key_words):
+            hits = [i for i, w in flat if _word_matches(w, kw, suffix_ok=j == 0)]
+            if not hits:
+                return None
+            found.append(max(hits))
+        return False, max(found)
+    return None
+
+
+def _density_match(text: str) -> float | None:
+    segments, n = [], 0
+    for part in text.split(","):
+        seg = []
+        for w in _WORDS.findall(part):
+            seg.append((n, w))
+            n += 1
+        segments.append(seg)
+
+    best_rank, best_val = None, None
+    for key, val in DENSITY_G_ML.items():
+        if key == "default":
+            continue
+        key_words = _WORDS.findall(key)
+        hit = _key_hit(key_words, segments) if key_words else None
+        if hit is None:
+            continue
+        in_order, position = hit
+        rank = (len(key_words), key in DENSITY_PREPARATION_KEYS, in_order,
+                position, len(key))
+        if best_rank is None or rank > best_rank:
+            best_rank, best_val = rank, val
+    return best_val
 
 
 def _visible_or_floor(value) -> float:
