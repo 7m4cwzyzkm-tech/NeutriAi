@@ -34,6 +34,7 @@ from .portion import (
     _key,
     dish_head,
     railed_area,
+    CONNECTED_PILE_HEIGHT_MM, SEPARATE_PIECES_HEIGHT_MM,
     GeometryHint, band_label, estimate_grams, food_group, group_density,
     implausible_energy, normalize_bbox, reconcile_multi_image,
 )
@@ -1059,14 +1060,35 @@ async def build_items(
         # it directly, with no replay and no reconstruction in between.
         # `piece_share` is logged raw as well as thresholded, because a value
         # sitting at 0.79 vs 0.81 is a different finding from one at 0.30.
+        # `applied` IS THE WHOLE POINT, AND THE FIRST VERSION OF THIS LINE
+        # LACKED IT AND MISLED ON THE FIRST PHOTOGRAPH IT SAW.
+        #
+        # `estimate_grams` reaches the topology branch only when the footprint
+        # SURVIVED -- `elif measured_used and largest_piece_share is not None`
+        # -- and a footprint far smaller than its own box is refused as a
+        # fragment before that. On photo 35 the burger's mask was refused at
+        # 6.7x under its box, so its share of 0.52 decided nothing; reported
+        # beside the fries' 0.85, which DID decide a height, the two looked
+        # like one finding and were not.
+        #
+        # `measured_area_used` is None exactly when the footprint was refused,
+        # so the estimate itself says which happened rather than this line
+        # guessing from inputs it cannot see the fate of.
+        applied = est.measured_area_used is not None and piece_share is not None
         log.info("portion_height_branch", item=len(items), food=name,
                  piece_share=(None if piece_share is None
                               else round(float(piece_share), 4)),
-                 one_mass=(None if not (area_is_absolute and piece_share is not None)
-                           else bool(float(piece_share) >= food_seg.ONE_PIECE_SHARE)),
+                 applied=bool(applied),
+                 one_mass=(bool(float(piece_share) >= food_seg.ONE_PIECE_SHARE)
+                           if applied else None),
+                 height_mm=((CONNECTED_PILE_HEIGHT_MM
+                             if float(piece_share) >= food_seg.ONE_PIECE_SHARE
+                             else SEPARATE_PIECES_HEIGHT_MM)
+                            if applied else None),
                  area_absolute=bool(area_is_absolute),
                  measured_area=(None if measured_area is None
                                 else round(float(measured_area), 5)),
+                 measured_used=est.measured_area_used,
                  grams=round(float(est.grams), 1))
         notes.extend(est.notes)
 

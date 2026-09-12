@@ -1,5 +1,26 @@
 # Where this was left, 11 Sep 2026
 
+> **SUPERSEDED WHERE IT DISAGREES WITH [HANDOFF.md](HANDOFF.md) (12 Sep 2026).**
+> Read that first; this remains the better map of WHY each decision was made.
+>
+> Known stale here, all re-measured on 12 Sep:
+>
+> - "test suite 801 passing" -- now 825, and the seven failures called
+>   environmental are gone locally.
+> - "last full bench 49.2% per item" -- the 12 Sep brief reports 48.2%, and
+>   photo 35 alone scores 77.1% per item (CI 54.5-99.7%).
+> - "86% of the model's geometry lands on a 0.05 grid" -- 100% of n=3 on
+>   photo 35.
+>
+> Confirmed and sharpened rather than superseded: "Heap vs layer ... FALSE of
+> fries (-76.8%)" under *Next, in order*. That is the same defect now recorded
+> as the topology inversion in HANDOFF.md -- and -76.8% is the
+> SEPARATE_PIECES branch, where the 12 Sep run put the same fries on the
+> CONNECTED_PILE branch at -56.9%. The classification moves between runs.
+>
+> The "device bridge strips CRs from dev.bat" claim is NOT in this file. It is
+> in HANDOFF.md's refuted list, item 3, already marked false.
+
 Read this first, then the code. Every decision below is in the source with its
 evidence; this is the map, not the argument.
 

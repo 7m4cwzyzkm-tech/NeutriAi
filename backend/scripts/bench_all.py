@@ -431,9 +431,25 @@ def preflight(cases, api: str, runs: int) -> list:
     # photo 35 was spent capturing no masks at all, discovered only when the
     # offline replay found an empty directory afterwards.
     #
-    # Printed, not enforced. Dumps are not always wanted, and a bench that
-    # refuses to run without them would be its own trap. Printed BEFORE the
-    # call count so it is on screen while there is still a decision to make.
+    # PRINTED, NOT ENFORCED, AND THAT IS THE CHOICE RATHER THAN THE DEFAULT.
+    #
+    # A gate here would burn runs of its own: someone wants a quick score at
+    # 1am, the bench refuses over a debugging aid they did not ask for, and the
+    # trap this check exists to remove has simply moved. The failure being
+    # guarded is not "dumps were off", it is "dumps were off AND nobody knew
+    # until the calls were spent" -- so the fix is knowing, not refusing.
+    #
+    # Nor is the answer to dump unconditionally in the API. `dev api` already
+    # sets the variable, so on a developer's machine it IS on by default and
+    # the question never arises; the run this check was written for came from a
+    # server started BEFORE that line existed, which is a one-time migration
+    # and not a recurring hole. Defaulting it on in the API itself would put a
+    # few hundred KB of binary masks on disk for every scan a real user makes,
+    # unbounded, off photographs of their food. Right in dev, wrong in prod,
+    # and the environment is what already distinguishes the two.
+    #
+    # Printed BEFORE the call count, so it is on screen while there is still a
+    # decision to make.
     #
     # `/healthz` sits at the origin rather than under the API prefix.
     origin = api.rstrip("/")

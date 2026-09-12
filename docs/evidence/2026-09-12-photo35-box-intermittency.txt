@@ -1,0 +1,288 @@
+Starting API on http://localhost:8000  (docs at /docs)
+INFO:     Will watch for changes in these directories: ['C:\\Users\\VetaM\\Downloads\\nutriai\\nutriai\\backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [5760] using WatchFiles
+INFO:     Started server process [18428]
+INFO:     Waiting for application startup.
+2026-09-12T08:52:09.143069Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+INFO:     127.0.0.1:61565 - "GET /v1/billing/plans HTTP/1.1" 200 OK
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/auth/v1/.well-known/jwks.json "HTTP/1.1 200 OK"
+2026-09-12T08:52:43.433355Z [info     ] jwks_fetched                   count=1 path=/v1/scans request_id=06abc4e5b6bd4b8e
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/entitlements?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/consume_ai_scan "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans "HTTP/2 201 Created"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.3ede0bdf-4265-4bd9-933d-7e97f2819604 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/nutrition_targets?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=effective_from.desc&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/daily_summaries?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/storage/v1/object/meal-photos/b5568163-36f1-46b7-9d35-4ec81e39b38c/bench-1789203157-35-slider-fries-plate.jpg "HTTP/2 200 OK"
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_aliases?select=described_as%2Cactual_name%2Csamples&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=500 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.grilled+cheeseburger&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.a13cf7a4-2860-474d-818c-26fd3635d213 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.fried+french+fries&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.2f8dd9be-8689-4b9c-9ce1-68baba67e012 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/portion_learning?select=shape%2Cfood_name%2Cheight_mm%2Csamples "HTTP/2 200 OK"
+HTTP Request: POST https://api.replicate.com/v1/predictions "HTTP/1.1 201 Created"
+HTTP Request: GET https://replicate.delivery/xezq/oREfrUGBjyW6FytaAcRg2MlUS1lp1nKfHqh59LtoiXQfnYZuA/mask_0.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/9Gex8FMdgYVXVaAelmkr6O4bLymWo83vYoGwQZWTgOzfnYZuA/mask_1.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/N35QhLv2EkauJ5hS5YpTqf0JORyIefYf5njdxhe2eGI0fJWmLA/mask_2.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/fJM2TxRLN0UySyDTzBSqpc8c5MV3uatKIyBbdNTf1wUfnYZuA/mask_3.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/Sp8P5LEG1Aa9GpoyzHmfAuyUKNKPKt4xQ5dUHDxPETefnYZuA/mask_4.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/7CsVDeevhAhyGkjcuIf1PpFxOpSricEXmvrd83VStLyfPxycB/mask_5.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/zFlrKyQvQH6PNRYMfD6C2yh6yAR8XGxSBiKkZIRZBYeAUsMXA/mask_6.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/k5PeFjw5Vxzqda6qHR3ZmHoEDJmgSK03eGeKLp9fqgbAQxycB/mask_7.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/zDhBhbTL7q4IAZ1V4GRWCrGtUotzC2izuyWJe9bAe0ZAUsMXA/mask_8.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/oEPFhpDKQRboIZQr9i5RwufeYhuDsEHTfLOH3eY2w6BBQxycB/mask_9.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/CLcfC3tpctW7RSRY6HrKcc8lRv71zujVqXvAEGTv24dAKWmLA/mask_10.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/0S9WF2ZDKJ6WB1xPggBfjHQNPR4JbJHEVfEPUkkkFH9AUsMXA/mask_11.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/7iTPnONyjqIrMJD2lGweuja5BG0NYK4ePTbBetv2HE5BoYZuA/mask_12.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/0dQBO4AfY514LqIBK9CFZy0LvgLEmes70W8iBo5sw1YAUsMXA/mask_13.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/nRmHZqOTtUIcEF7uxpa8zbss1NNgSSM7XB76ikKBTaMAFLzF/mask_14.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/St7VE9k8N7oCFxVXeCNnLHqh5dQE4VETXvQuKYH7HRGAKWmLA/mask_15.png "HTTP/1.1 200 OK"
+2026-09-12T08:53:26.789552Z [info     ] sam2_auto_masks                areas=[1701, 3933, 5435, 9126, 11964, 11980, 12906, 12958, 14501, 19825, 20530, 21936, 22678, 23120, 36174, 827881] digest=2bce2dc323bf found=16 path=/v1/scans request_id=06abc4e5b6bd4b8e
+2026-09-12T08:53:26.827987Z [info     ] plate_box_vs_circle            box_area=0.415 circle_area=0.5396 iou=0.752 path=/v1/scans request_id=06abc4e5b6bd4b8e source=circle
+2026-09-12T08:53:26.965734Z [info     ] plate_hint_bound               after=14 before=16 path=/v1/scans request_id=06abc4e5b6bd4b8e
+2026-09-12T08:53:26.988824Z [info     ] no_plate_for_box_rule          masks=14 path=/v1/scans request_id=06abc4e5b6bd4b8e
+2026-09-12T08:53:27.108203Z [info     ] sam2_box_union                 area=0.0135 box=(411, 470, 764, 940) box_frac=0.09 item=0 masks=3 path=/v1/scans request_id=06abc4e5b6bd4b8e swallowed_box=0
+2026-09-12T08:53:27.204711Z [info     ] sam2_box_union                 area=0.0561 box=(176, 784, 529, 1097) box_frac=0.0599 item=1 masks=7 path=/v1/scans request_id=06abc4e5b6bd4b8e swallowed_box=0
+2026-09-12T08:53:27.965789Z [info     ] temperature_unsupported        model=claude-sonnet-4-5 path=/v1/scans request_id=06abc4e5b6bd4b8e
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meal_items?columns=%22name%22%2C%22grams_high%22%2C%22sodium_mg%22%2C%22bbox%22%2C%22cuisine%22%2C%22grams%22%2C%22protein_g%22%2C%22depth_factor%22%2C%22confidence%22%2C%22estimation_method%22%2C%22sugar_g%22%2C%22fiber_g%22%2C%22fat_g%22%2C%22pixel_area_ratio%22%2C%22food_fact_id%22%2C%22meal_id%22%2C%22carbs_g%22%2C%22kcal%22%2C%22grams_low%22 "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals?select=id&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.3ede0bdf-4265-4bd9-933d-7e97f2819604 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/bump_streak "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notification_settings?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=goal%2Cdisplay_name%2Cdiet_mode&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/streaks?select=current_len&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&kind=eq.log&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages?select=body&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=created_at.desc&limit=25 "HTTP/2 200 OK"
+2026-09-12T08:53:37.004082Z [info     ] temperature_unsupported        model=claude-haiku-4-5 path=/v1/scans request_id=06abc4e5b6bd4b8e
+2026-09-12T08:53:37.005856Z [warning  ] slow_request                   ms=53834 path=/v1/scans
+INFO:     127.0.0.1:61570 - "POST /v1/scans HTTP/1.1" 201 Created
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notifications "HTTP/2 201 Created"
+WARNING:  WatchFiles detected changes in 'app\services\ai\segment_hosted.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T09:09:34.374166Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18428]
+WARNING:  WatchFiles detected changes in '.venv\Lib\probe\intruder.py', 'scripts\box_replay.py', 'tests\test_segment_hosted.py'. Reloading...
+ INFO:     Started server process [22904]
+INFO:     Waiting for application startup.
+2026-09-12T09:09:36.170012Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T09:09:36.280289Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22904]
+INFO:     Started server process [6852]
+INFO:     Waiting for application startup.
+2026-09-12T09:09:37.582371Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\services\ai\vision.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T09:14:36.673036Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6852]
+WARNING:  WatchFiles detected changes in '.venv\Lib\probe\intruder.py', 'app\services\ai\segment_hosted.py', 'tests\test_segment_hosted.py'. Reloading...
+ INFO:     Started server process [12844]
+INFO:     Waiting for application startup.
+2026-09-12T09:14:37.958988Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T09:14:38.063894Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12844]
+INFO:     Started server process [13544]
+INFO:     Waiting for application startup.
+2026-09-12T09:14:39.314071Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in '.venv\Lib\probe\intruder.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T09:47:02.601433Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [13544]
+INFO:     Started server process [20572]
+INFO:     Waiting for application startup.
+2026-09-12T09:47:04.115600Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+INFO:     127.0.0.1:57261 - "GET /v1/billing/plans HTTP/1.1" 200 OK
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/auth/v1/.well-known/jwks.json "HTTP/1.1 200 OK"
+2026-09-12T09:53:06.147926Z [info     ] jwks_fetched                   count=1 path=/v1/scans request_id=1a8bbe71990a4d6a
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/entitlements?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/consume_ai_scan "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans "HTTP/2 201 Created"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.0aee63a4-ae4d-4bd5-af9a-c8b21a711a28 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/nutrition_targets?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=effective_from.desc&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/daily_summaries?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/storage/v1/object/meal-photos/b5568163-36f1-46b7-9d35-4ec81e39b38c/bench-1789206779-35-slider-fries-plate.jpg "HTTP/2 200 OK"
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_aliases?select=described_as%2Cactual_name%2Csamples&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=500 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.grilled+cheeseburger&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.a13cf7a4-2860-474d-818c-26fd3635d213 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.fried+french+fries&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.2f8dd9be-8689-4b9c-9ce1-68baba67e012 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/portion_learning?select=shape%2Cfood_name%2Cheight_mm%2Csamples "HTTP/2 200 OK"
+HTTP Request: POST https://api.replicate.com/v1/predictions "HTTP/1.1 201 Created"
+HTTP Request: GET https://replicate.delivery/xezq/JKQj0cgEnU5YCphJtgiaj0LHKQzDI0q81YufhT4wSGVSmWmLA/mask_0.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/8UExZ8tVdXY3F97iSmBBospkSiILf23ZWXf4heKMWrtIZaZuA/mask_1.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/IFHCcdWDmP6VGJBYgYReaptCq6woO34jN4A0ebsAaspkMtMXA/mask_2.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/eJm4i1EiQfiwDEF8oOIiDedV27u7DYsS3PxDk7wl15OIZaZuA/mask_3.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/fooz6I2Ve7tC8UL3iXwqcf7McwUbt1l9T2flgmhew3Bnkpl5C/mask_4.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/WnzzAxpreCW6fU9EYEpMGGrc9mMiFsPb9edOEncfwzqTy0ycB/mask_5.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/KO5SqWMIm5YtOhu0PDbvQffpc6dnZslr83EWFdT9dsokMtMXA/mask_6.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/XUZhReZhWw1uZiWFCCWaleAUbJ7nEJUSYcxlifzsSNAJZaZuA/mask_7.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/sv4eALx1Ni2jTKqGPp3zsrflA9eO7QSA31SgfBku8snRy0ycB/mask_8.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/eYxNcs3HKZ2pSibolilcrNF4CLkFpbAJlGityhGjS87SmWmLA/mask_9.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/IDK3HrqfV30bHqzFel86qs2xXAeXIUCWHMtpsSZ7CMjLZaZuA/mask_10.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/Tzo1gezqXnxrOKQeNCbsIzc17nC1wCpfDJIf7eoEAcKtkpl5C/mask_11.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/SysjTNswtULSN5tAQhbldGCeuW0kVdCIhhcrVUGNJ3lSmWmLA/mask_12.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/dznhxc1wbaqACNh4vxTqmE2IipZBslepZafzHfFbDPLLZaZuA/mask_13.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/z5FIXfpqMoxLFyfQlicLNiEwZsSCBfoENGZp1fCbXNEVy0ycB/mask_14.png "HTTP/1.1 200 OK"
+HTTP Request: GET https://replicate.delivery/xezq/a2q0kJx5cKqXPZvOR7xzkVip6HXJmYVwHsIlS2ovzASJTLzF/mask_15.png "HTTP/1.1 200 OK"
+2026-09-12T09:53:47.150320Z [info     ] sam2_auto_masks                areas=[1701, 3933, 5435, 9126, 11964, 11980, 12906, 12958, 14501, 19825, 20530, 21936, 22678, 23120, 36174, 827881] digest=2bce2dc323bf found=16 path=/v1/scans request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:47.191377Z [info     ] plate_box_vs_circle            box_area=0.362 circle_area=0.5396 iou=0.661 path=/v1/scans request_id=1a8bbe71990a4d6a source=circle
+2026-09-12T09:53:47.344120Z [info     ] plate_hint_bound               after=14 before=16 path=/v1/scans request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:47.370080Z [info     ] no_plate_for_box_rule          masks=14 path=/v1/scans request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:47.496520Z [info     ] sam2_box_union                 area=0.0135 box=(411, 392, 764, 862) box_frac=0.09 item=0 masks=3 path=/v1/scans request_id=1a8bbe71990a4d6a swallowed_box=0
+2026-09-12T09:53:47.593543Z [info     ] sam2_box_union                 area=0.0436 box=(235, 784, 588, 1097) box_frac=0.0599 item=1 masks=6 path=/v1/scans request_id=1a8bbe71990a4d6a swallowed_box=0
+2026-09-12T09:53:47.628309Z [info     ] portion_height_branch          area_absolute=True food='grilled cheeseburger' grams=285.3 item=0 measured_area=0.0135 one_mass=False path=/v1/scans piece_share=0.5185 request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:47.629111Z [info     ] portion_height_branch          area_absolute=True food='fried french fries' grams=28.0 item=1 measured_area=0.04358 one_mass=True path=/v1/scans piece_share=0.8509 request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:48.489988Z [info     ] temperature_unsupported        model=claude-sonnet-4-5 path=/v1/scans request_id=1a8bbe71990a4d6a
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meal_items?columns=%22kcal%22%2C%22food_fact_id%22%2C%22protein_g%22%2C%22bbox%22%2C%22pixel_area_ratio%22%2C%22confidence%22%2C%22estimation_method%22%2C%22carbs_g%22%2C%22grams_low%22%2C%22fiber_g%22%2C%22cuisine%22%2C%22sodium_mg%22%2C%22depth_factor%22%2C%22name%22%2C%22grams_high%22%2C%22meal_id%22%2C%22fat_g%22%2C%22grams%22%2C%22sugar_g%22 "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals?select=id&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.0aee63a4-ae4d-4bd5-af9a-c8b21a711a28 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/bump_streak "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notification_settings?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=goal%2Cdisplay_name%2Cdiet_mode&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/streaks?select=current_len&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&kind=eq.log&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages?select=body&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=created_at.desc&limit=25 "HTTP/2 200 OK"
+2026-09-12T09:53:58.532561Z [info     ] temperature_unsupported        model=claude-haiku-4-5 path=/v1/scans request_id=1a8bbe71990a4d6a
+2026-09-12T09:53:58.536293Z [warning  ] slow_request                   ms=52723 path=/v1/scans
+INFO:     127.0.0.1:57266 - "POST /v1/scans HTTP/1.1" 201 Created
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notifications "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/entitlements?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/consume_ai_scan "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans "HTTP/2 201 Created"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.8200ed2b-c237-4861-8c39-cbdf918f93e1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/nutrition_targets?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=effective_from.desc&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/daily_summaries?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/storage/v1/object/meal-photos/b5568163-36f1-46b7-9d35-4ec81e39b38c/bench-1789206838-35-slider-fries-plate.jpg "HTTP/2 200 OK"
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_aliases?select=described_as%2Cactual_name%2Csamples&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=500 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.grilled+cheeseburger&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.a13cf7a4-2860-474d-818c-26fd3635d213 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.fried+french+fries&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.2f8dd9be-8689-4b9c-9ce1-68baba67e012 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/portion_learning?select=shape%2Cfood_name%2Cheight_mm%2Csamples "HTTP/2 200 OK"
+2026-09-12T09:54:11.784206Z [info     ] plate_box_vs_circle            box_area=0.362 circle_area=0.5396 iou=0.661 path=/v1/scans request_id=041771ed5ef9466e source=circle
+2026-09-12T09:54:11.929752Z [info     ] plate_hint_bound               after=14 before=16 path=/v1/scans request_id=041771ed5ef9466e
+2026-09-12T09:54:11.952963Z [info     ] no_plate_for_box_rule          masks=14 path=/v1/scans request_id=041771ed5ef9466e
+2026-09-12T09:54:12.076966Z [info     ] sam2_box_union                 area=0.0135 box=(411, 392, 764, 862) box_frac=0.09 item=0 masks=3 path=/v1/scans request_id=041771ed5ef9466e swallowed_box=0
+2026-09-12T09:54:12.178796Z [info     ] sam2_box_union                 area=0.0436 box=(235, 784, 588, 1097) box_frac=0.0599 item=1 masks=6 path=/v1/scans request_id=041771ed5ef9466e swallowed_box=0
+2026-09-12T09:54:12.212695Z [info     ] portion_height_branch          area_absolute=True food='grilled cheeseburger' grams=285.3 item=0 measured_area=0.0135 one_mass=False path=/v1/scans piece_share=0.5185 request_id=041771ed5ef9466e
+2026-09-12T09:54:12.213469Z [info     ] portion_height_branch          area_absolute=True food='fried french fries' grams=26.9 item=1 measured_area=0.04358 one_mass=True path=/v1/scans piece_share=0.8509 request_id=041771ed5ef9466e
+2026-09-12T09:54:12.215332Z [info     ] temperature_unsupported        model=claude-sonnet-4-5 path=/v1/scans request_id=041771ed5ef9466e
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meal_items?columns=%22kcal%22%2C%22food_fact_id%22%2C%22protein_g%22%2C%22bbox%22%2C%22pixel_area_ratio%22%2C%22confidence%22%2C%22estimation_method%22%2C%22carbs_g%22%2C%22grams_low%22%2C%22fiber_g%22%2C%22cuisine%22%2C%22sodium_mg%22%2C%22depth_factor%22%2C%22name%22%2C%22grams_high%22%2C%22meal_id%22%2C%22fat_g%22%2C%22grams%22%2C%22sugar_g%22 "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals?select=id&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.8200ed2b-c237-4861-8c39-cbdf918f93e1 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/bump_streak "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notification_settings?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=goal%2Cdisplay_name%2Cdiet_mode&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/streaks?select=current_len&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&kind=eq.log&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages?select=body&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=created_at.desc&limit=25 "HTTP/2 200 OK"
+2026-09-12T09:54:20.541007Z [info     ] temperature_unsupported        model=claude-haiku-4-5 path=/v1/scans request_id=041771ed5ef9466e
+2026-09-12T09:54:20.544815Z [warning  ] slow_request                   ms=16466 path=/v1/scans
+INFO:     127.0.0.1:57294 - "POST /v1/scans HTTP/1.1" 201 Created
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notifications "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/entitlements?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/consume_ai_scan "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans "HTTP/2 201 Created"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.590cc8e0-f901-46c0-83ef-ca74965ea208 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=%2A&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/nutrition_targets?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=effective_from.desc&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/daily_summaries?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/storage/v1/object/meal-photos/b5568163-36f1-46b7-9d35-4ec81e39b38c/bench-1789206860-35-slider-fries-plate.jpg "HTTP/2 200 OK"
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_aliases?select=described_as%2Cactual_name%2Csamples&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=500 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.grilled+cheeseburger&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.a13cf7a4-2860-474d-818c-26fd3635d213 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?select=%2A&canonical_key=eq.fried+french+fries&limit=1 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_facts?id=eq.2f8dd9be-8689-4b9c-9ce1-68baba67e012 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/portion_learning?select=shape%2Cfood_name%2Cheight_mm%2Csamples "HTTP/2 200 OK"
+2026-09-12T09:54:34.582294Z [info     ] plate_box_vs_circle            box_area=0.362 circle_area=0.5396 iou=0.661 path=/v1/scans request_id=818efb8f33d745d7 source=circle
+2026-09-12T09:54:34.723135Z [info     ] plate_hint_bound               after=14 before=16 path=/v1/scans request_id=818efb8f33d745d7
+2026-09-12T09:54:34.746540Z [info     ] no_plate_for_box_rule          masks=14 path=/v1/scans request_id=818efb8f33d745d7
+2026-09-12T09:54:34.865531Z [info     ] sam2_box_union                 area=0.0135 box=(411, 392, 764, 862) box_frac=0.09 item=0 masks=3 path=/v1/scans request_id=818efb8f33d745d7 swallowed_box=0
+2026-09-12T09:54:34.962629Z [info     ] sam2_box_union                 area=0.0436 box=(235, 784, 588, 1097) box_frac=0.0599 item=1 masks=6 path=/v1/scans request_id=818efb8f33d745d7 swallowed_box=0
+2026-09-12T09:54:34.996692Z [info     ] portion_height_branch          area_absolute=True food='grilled cheeseburger' grams=285.3 item=0 measured_area=0.0135 one_mass=False path=/v1/scans piece_share=0.5185 request_id=818efb8f33d745d7
+2026-09-12T09:54:34.997393Z [info     ] portion_height_branch          area_absolute=True food='fried french fries' grams=28.0 item=1 measured_area=0.04358 one_mass=True path=/v1/scans piece_share=0.8509 request_id=818efb8f33d745d7
+2026-09-12T09:54:34.999624Z [info     ] temperature_unsupported        model=claude-sonnet-4-5 path=/v1/scans request_id=818efb8f33d745d7
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meal_items?columns=%22kcal%22%2C%22food_fact_id%22%2C%22protein_g%22%2C%22bbox%22%2C%22pixel_area_ratio%22%2C%22confidence%22%2C%22estimation_method%22%2C%22carbs_g%22%2C%22grams_low%22%2C%22fiber_g%22%2C%22cuisine%22%2C%22sodium_mg%22%2C%22depth_factor%22%2C%22name%22%2C%22grams_high%22%2C%22meal_id%22%2C%22fat_g%22%2C%22grams%22%2C%22sugar_g%22 "HTTP/2 201 Created"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/meals?select=id&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&day=eq.2026-09-12 "HTTP/2 200 OK"
+HTTP Request: PATCH https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/food_scans?id=eq.590cc8e0-f901-46c0-83ef-ca74965ea208 "HTTP/2 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/rpc/bump_streak "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notification_settings?select=%2A&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/profiles?select=goal%2Cdisplay_name%2Cdiet_mode&id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/streaks?select=current_len&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&kind=eq.log&limit=1 "HTTP/2 200 OK"
+HTTP Request: GET https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages?select=body&user_id=eq.b5568163-36f1-46b7-9d35-4ec81e39b38c&order=created_at.desc&limit=25 "HTTP/2 200 OK"
+2026-09-12T09:54:45.121173Z [info     ] temperature_unsupported        model=claude-haiku-4-5 path=/v1/scans request_id=818efb8f33d745d7
+2026-09-12T09:54:45.123277Z [warning  ] slow_request                   ms=18791 path=/v1/scans
+INFO:     127.0.0.1:55910 - "POST /v1/scans HTTP/1.1" 201 Created
+HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/ai_usage "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/motivation_messages "HTTP/2 201 Created"
+HTTP Request: POST https://kwuvgvuyfcadzfwhyptu.supabase.co/rest/v1/notifications "HTTP/2 201 Created"
+WARNING:  WatchFiles detected changes in 'app\main.py'. Reloading...
+ INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T10:02:03.090819Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [20572]
+WARNING:  WatchFiles detected changes in '.venv\Lib\probe\intruder.py', 'scripts\bench_all.py', 'app\main.py', 'tests\test_wiring.py'. Reloading...
+ INFO:     Started server process [10956]
+INFO:     Waiting for application startup.
+2026-09-12T10:02:04.869042Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-09-12T10:02:04.970470Z [info     ] neutriai_stopping             
+INFO:     Application shutdown complete.
+INFO:     Finished server process [10956]
+INFO:     Started server process [22800]
+INFO:     Waiting for application startup.
+2026-09-12T10:02:06.218127Z [info     ] neutriai_starting              env=local prefix=/v1
+INFO:     Application startup complete.
