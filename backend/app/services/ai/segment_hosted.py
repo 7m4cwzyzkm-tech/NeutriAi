@@ -268,6 +268,146 @@ def plate_is_plausible(mask: np.ndarray) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
+# the masks production actually used
+# ---------------------------------------------------------------------------
+
+# WHY THIS EXISTS, AND WHY IT IS NOT HOUSEKEEPING.
+#
+# For a week the offline replays reasoned about production's unions from masks
+# that `mask_stability` had REGENERATED: it encoded the local JPEG and called
+# the model itself. Same photograph, same model, same count -- and not the same
+# masks. Production uploads to storage, fetches back, decodes and re-encodes
+# through the scan path, so the BYTES differ, and SAM2 is deterministic only for
+# identical bytes. That is exactly what the probe measured: IoU 1.0000 across
+# repeat calls on identical bytes, which says nothing at all about a different
+# encoding of the same picture.
+#
+# The contradiction that exposed it: replaying production's OWN logged box over
+# the cached 16 masks took 6 where production took 7. `_union_in_box` decides
+# each mask on its own -- no mask's verdict depends on any other -- so a
+# superset can never yield fewer takes than a subset. The sets were therefore
+# different, and every number measured on the cache was measuring the cache.
+#
+# The lesson is structural and outlives this bug: DO NOT RECONSTRUCT WHAT THE
+# PIPELINE CAN EMIT. A regenerated input is a hypothesis about production; an
+# emitted one is production. Everything below exists so that an offline replay
+# is exact by construction rather than by argument.
+#
+# Off unless NUTRIAI_MASK_DUMP names a directory, read at call time so a run can
+# turn it on without a restart and a test can monkeypatch it. It never raises
+# into the scan path: a debugging aid that can cost a user their scan is worse
+# than no debugging aid.
+
+MASK_DUMP_ENV = "NUTRIAI_MASK_DUMP"
+
+
+def _plain(box):
+    """A box as JSON can hold it, whatever numeric types it arrived carrying.
+
+    Not paranoia: a numpy scalar in a box or a point raises inside json.dumps,
+    the dump's own except clause swallows it, and the result is a scan that
+    silently was not captured -- the exact failure this file exists to end,
+    reintroduced by the safety net meant to protect it.
+    """
+    if not isinstance(box, dict):
+        return None
+    try:
+        return {k: float(box[k]) for k in ("x", "y", "w", "h")}
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def dump_masks(image: bytes, shape: tuple[int, int], raw: list, pool: list,
+               boxes, points, plate_hint=None) -> str | None:
+    """Write this photograph's mask pool where a replay can read it exactly.
+
+    `raw` is everything the model returned; `pool` is what survived the plate
+    and frame-share exclusions and is the list `_union_in_box` iterates. Both
+    are kept because a replay of the SELECTION needs `pool` and a replay of the
+    EXCLUSIONS needs `raw`, and re-deriving either from the other offline is the
+    same mistake this file was written to stop.
+
+    Named by the digest of the bytes SENT TO THE MODEL -- the same key the memo
+    uses and the same one `sam2_auto_masks` logs -- so a dump and a log line can
+    be tied together without trusting a filename or a timestamp.
+
+    Returns the path written, or None when dumping is off or failed.
+    """
+    import os
+
+    dest = (os.environ.get(MASK_DUMP_ENV) or "").strip()
+    if not dest:
+        return None
+    try:
+        from pathlib import Path
+
+        digest = hashlib.sha256(image).hexdigest()
+        out = Path(dest)
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f"masks-{digest[:16]}.npz"
+        H, W = shape
+        # packbits keeps a 1024x1024 bool from costing a megabyte each; the
+        # shape travels alongside so unpacking cannot guess it wrong.
+        def pack(ms):
+            if not ms:
+                return np.zeros((0, 0), dtype=np.uint8)
+            return np.stack([np.packbits(m.astype(bool).ravel()) for m in ms])
+
+        np.savez_compressed(
+            path,
+            raw=pack(raw), pool=pack(pool),
+            raw_n=np.array(len(raw)), pool_n=np.array(len(pool)),
+            shape=np.array([H, W]),
+            digest=np.array(digest),
+            boxes=np.array(json.dumps([_plain(b) for b in (boxes or [])])),
+            points=np.array(json.dumps([[float(v) for v in p]
+                                        for p in (points or [])])),
+            plate_hint=(np.packbits(plate_hint.astype(bool).ravel())
+                        if plate_hint is not None
+                        else np.zeros(0, dtype=np.uint8)),
+            has_plate_hint=np.array(bool(plate_hint is not None)),
+        )
+        log.info("mask_dump_written", path=str(path), raw=len(raw),
+                 pool=len(pool), digest=digest[:12])
+        return str(path)
+    except Exception as exc:  # pragma: no cover - a dump must never cost a scan
+        log.warning("mask_dump_failed", error=str(exc)[:200])
+        return None
+
+
+def load_mask_dump(path):
+    """The other half of `dump_masks`, so replays share one format.
+
+    Returns a dict with `raw` and `pool` as lists of bool arrays, plus the
+    shape, digest, boxes, points and plate hint as they were at the moment the
+    pipeline chose. Kept HERE rather than in a script so that a change to the
+    dump cannot silently leave a reader behind.
+    """
+    with np.load(path, allow_pickle=False) as z:
+        H, W = (int(z["shape"][0]), int(z["shape"][1]))
+
+        def unpack(key, n):
+            arr = z[key]
+            if not n:
+                return []
+            return [np.unpackbits(arr[i])[:H * W].astype(bool).reshape(H, W)
+                    for i in range(n)]
+
+        hint = None
+        if bool(z["has_plate_hint"]):
+            hint = np.unpackbits(z["plate_hint"])[:H * W].astype(bool).reshape(H, W)
+        return {
+            "shape": (H, W),
+            "digest": str(z["digest"]),
+            "raw": unpack("raw", int(z["raw_n"])),
+            "pool": unpack("pool", int(z["pool_n"])),
+            "boxes": json.loads(str(z["boxes"])),
+            "points": json.loads(str(z["points"])),
+            "plate_hint": hint,
+        }
+
+
+# ---------------------------------------------------------------------------
 # the provider
 # ---------------------------------------------------------------------------
 
@@ -434,6 +574,28 @@ class HostedSegmenter:
         Memoised because `segment` and `plate_outline` are separate entry
         points asking about the SAME photograph. Without this the plate outline
         doubles the bill for an answer already sitting in memory.
+
+        THE BENCH'S `--runs N` DEPENDS ON THIS CACHE, AND NOTHING ELSE SAYS SO.
+
+        The key is sha256 of the encoded image and `_SEGMENTER` is a process
+        singleton, so N runs of one photograph share ONE segmenter call: runs
+        two and three get the identical list object back. `--runs 3` therefore
+        measures the VISION model's variance and not the segmenter's, and every
+        spread the bench reports excludes the segmenter by construction.
+
+        That is useful -- it isolates one variable cleanly, and it is why the
+        3.8x footprint swing on photo 35 could be attributed to the model's box
+        rather than to SAM2. It is also a FLOOR rather than a total: in
+        production every scan is a fresh photograph with a fresh digest, so the
+        segmenter runs cold every time and contributes whatever variance it
+        has, which no bench run to date could have detected.
+
+        `log.info("sam2_auto_masks", ...)` below fires only on a MISS, so the
+        count of that line in a run's log is the count of real segmenter calls.
+
+        Change the lifetime or the key here and you silently change what the
+        bench measures. If this ever becomes per-request, the published spreads
+        stop being comparable with anything measured before it.
         """
         digest = hashlib.sha256(image).hexdigest()
         if self._auto_memo and self._auto_memo[0] == digest:
@@ -456,7 +618,20 @@ class HostedSegmenter:
                 masks.append(m)
         masks.sort(key=lambda m: int(m.sum()))
         self._auto_memo = (digest, masks)
-        log.info("sam2_auto_masks", found=len(masks))
+        # AREAS, NOT JUST A COUNT. A count match is not an identity match.
+        #
+        # `mask_stability` caches masks by encoding the local file; production
+        # uploads to storage, fetches back, decodes and re-encodes through the
+        # scan path. Same picture, different bytes -- and SAM2 is deterministic
+        # only for identical bytes, which is what that probe measured. The two
+        # sets matched at 16 and were NOT the same 16: replaying production's
+        # own logged box over the cached masks takes 6 where production took 7,
+        # which is impossible under a per-mask rule from a superset, so the
+        # masks must differ. Sorted areas make that visible in one line instead
+        # of by deduction.
+        log.info("sam2_auto_masks", found=len(masks),
+                 areas=[int(m.sum()) for m in masks],
+                 digest=digest[:12])
         return masks
 
     def _individual(self, payload):
@@ -566,6 +741,7 @@ class HostedSegmenter:
                 return out
             H, W = rgb.shape[:2]
             masks = self._auto_masks(image, (H, W))
+            raw_masks = masks
             # THE PLATE, BY NAME, ONCE PER PHOTOGRAPH.
             #
             # Found by its hole signature rather than by its size against the
@@ -648,11 +824,18 @@ class HostedSegmenter:
             # below -- box rule and fallback alike -- inherits it.
             masks = [m for m in masks
                      if float(m.mean()) <= self.MAX_MASK_FRAME_SHARE]
+            # EVERYTHING A REPLAY NEEDS, CAPTURED WHERE THE CHOOSING HAPPENS.
+            #
+            # Before the `not masks` return, because an empty pool is a result
+            # and not a reason to write nothing: "production had nothing to
+            # choose from" and "the dump is off" must not look alike offline.
+            dump_masks(image, (H, W), raw_masks, masks, boxes, points,
+                       plate_hint=plate_hint)
             if not masks:
                 return out
             for i, point in enumerate(points):
                 box = (boxes or [None] * len(points))[i] if boxes else None
-                chosen = self._union_in_box(masks, box, (H, W))
+                chosen = self._union_in_box(masks, box, (H, W), item=i)
                 if chosen is None:
                     # THE FALLBACK OBEYS THE SAME EXCLUSIONS.
                     #
@@ -743,7 +926,8 @@ class HostedSegmenter:
             keep.append(m)
         return keep
 
-    def _union_in_box(self, masks: list, box, shape) -> "np.ndarray | None":
+    def _union_in_box(self, masks: list, box, shape,
+                      item: int | None = None) -> "np.ndarray | None":
         """Union of the masks that live inside this box. None if there are none."""
         if not box:
             return None
@@ -799,8 +983,32 @@ class HostedSegmenter:
             taken += 1
         if not taken or not union.any():
             return None
-        log.info("sam2_box_union", masks=taken, swallowed_box=dropped,
-                 area=round(float(union.mean()), 4))
+        # THE BOX IS LOGGED BECAUSE IT IS THE LAST UNMEASURED INPUT.
+        #
+        # Every other term in this union is now known deterministic: the mask
+        # set (measured -- three cold SAM2 calls, 29 masks, IoU 1.0000), the
+        # plate circle (identical across three scans of photo 35), the fence.
+        # The box is the only thing left that can move, and we have never seen
+        # it move: the bench prints `box 6.0%` for the printed run only, so
+        # there is one sample of the quantity the whole diagnosis rests on.
+        #
+        # The offline replay perturbed it by one and two grid steps because
+        # that is what quantisation alone would do, and got 1-6% drift against
+        # the 3.8x observed. Either the box moves far more than that -- boxing
+        # a whole pile on one call and half of it on the next -- or something
+        # inside this rule is at fault. Three unions and three boxes side by
+        # side answers it directly instead of by hypothesis.
+        # `item` IS WHAT MAKES THREE RUNS READABLE.
+        #
+        # This fires once per item per scan. Photo 35 has two -- a burger and
+        # fries -- so three runs produce six of these lines, and without an
+        # index there is no way to say which box belongs to which food. Order
+        # cannot be relied on to supply it: the detection order is one of the
+        # things that may be varying between runs, which is the question.
+        log.info("sam2_box_union", item=item, masks=taken, swallowed_box=dropped,
+                 area=round(float(union.mean()), 4),
+                 box=(x0, y0, x1, y1),
+                 box_frac=round(box_px / float(H * W), 4))
         return union
 
     @staticmethod

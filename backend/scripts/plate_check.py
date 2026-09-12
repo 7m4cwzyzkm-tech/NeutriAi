@@ -14,7 +14,17 @@ what comes back. The table says which source won; the pictures say whether it
 was right. Only the pictures can: two footprints once agreed to 97% and were
 both the credit card.
 
-FREE unless --sam2 is passed. The Hough pass touches no network at all.
+FREE unless --sam2 is passed -- and "free" had to be MADE true rather than
+claimed. The first version of this file said "Hough only, free" in its header
+and then called `plate_surface` with a plate box, which asks SAM2 for the plate
+outline before anything else. It was billing a segmenter call per photograph
+and reporting `plate_outline_failed ... read operation timed out` while the
+header said no network. A tool that misreports its own cost is worse than no
+tool: it is the paid guess this project keeps making, wearing a free label.
+
+So the default now swaps in NullSegmenter for the duration. The plate box is
+still passed -- that is the whole point, it is the door production uses -- but
+nothing can reach the network through it.
 """
 from __future__ import annotations
 
@@ -66,6 +76,12 @@ def _load(path: pathlib.Path):
 def main() -> int:
     args = sys.argv[1:]
     want_sam2 = "--sam2" in args
+    if not want_sam2:
+        # Enforced, not promised. `plate_surface` consults the segmenter
+        # whenever a plate box is passed, and a plate box is exactly what this
+        # tool exists to pass.
+        from app.services.ai.segmenter import NullSegmenter
+        food_seg._SEGMENTER = NullSegmenter()
     photos = sorted(p for p in PHOTOS.glob("*.jpg"))
     if not photos:
         print(f"  {RED}no photographs in {PHOTOS}{OFF}")
@@ -74,8 +90,8 @@ def main() -> int:
 
     print(f"\n{HDR}The plate a scan gets{OFF}")
     if not want_sam2:
-        print(f"{DIM}  Hough only, free. --sam2 also asks the segmenter "
-              f"and costs about 2c per photograph.{OFF}")
+        print(f"{DIM}  NullSegmenter swapped in: no network, nothing billed. "
+              f"--sam2 asks the real one, about 2c per photograph.{OFF}")
     print(f"\n  {'photo':34s} {'source':8s} {'circle':>8s} {'IoU':>6s}  overlay")
 
     agreements: list[float] = []

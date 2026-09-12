@@ -65,6 +65,8 @@ if "%~1"=="apispec"   goto :apispec
 if "%~1"=="scaleaudit" goto :scaleaudit
 if "%~1"=="segcheck"   goto :segcheck
 if "%~1"=="platecheck" goto :platecheck
+if "%~1"=="maskstability" goto :maskstability
+if "%~1"=="boxreplay" goto :boxreplay
 if "%~1"=="dead"       goto :dead
 if "%~1"=="replay"     goto :replay
 if "%~1"=="heights"    goto :heights
@@ -73,6 +75,30 @@ goto :usage
 
 :api
 echo Starting API on http://localhost:8000  (docs at /docs)
+REM  THE SCAN'S OWN LOGS COME OUT HERE, NOT OUT OF THE BENCH.
+REM
+REM  `dev benchall` talks to this process over HTTP, so everything the scan
+REM  path logs -- plate_box_vs_circle, plate_hint_bound, no_plate_for_box_rule
+REM  -- is written to THIS window and never reaches the bench's own output.
+REM  One run's box-versus-circle evidence survived only because this window
+REM  happened to still be open when it was wanted. To keep it instead:
+REM
+REM      dev api > survey-api-log.txt 2>&1
+REM
+REM  AND THE MASKS, WHICH ARE NOT RECOVERABLE AFTERWARDS.
+REM
+REM  For a week the offline replays used masks REGENERATED from the local
+REM  JPEG. Production encodes different bytes -- upload, fetch, decode,
+REM  re-encode -- and the sets proved different: production's own logged box
+REM  takes 7 masks on the real set and 6 on the regenerated one, which a
+REM  per-mask rule makes impossible unless the masks differ. Every number
+REM  measured on the cache was measuring the cache.
+REM
+REM  So the pipeline emits its own. This is set HERE rather than left to be
+REM  remembered, because a scan that is not captured cannot be captured
+REM  later -- the photograph is gone and a fresh call is a different set.
+REM  A few hundred KB per scan, into a directory git ignores.
+set NUTRIAI_MASK_DUMP=%~dp0mask_dumps
 python -m uvicorn app.main:app --reload --port 8000
 goto :eof
 
@@ -144,6 +170,47 @@ REM  and stayed. It prints names and deletes nothing, because whether a
 REM  thing should go is a judgement. A test enforces that the list is empty.
 shift
 python -m scripts.dead_code %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto :eof
+
+:boxreplay
+REM  IS THE FOOTPRINT'S INSTABILITY THE MODEL'S BOX? Offline, zero model calls.
+REM
+REM  segment_hosted.py:775 includes a mask iff its CENTROID lands in the model's
+REM  box -- a binary test on a box quantised to a 0.05 grid. This replays that
+REM  rule against the cached masks in mask_overlays/masks-*.npz, perturbing the
+REM  box by +/-1 grid step (the result) and +/-2 (a labelled stress case), and
+REM  compares it with an overlap-fraction rule swept from 0.2 to 0.8.
+REM
+REM  Reports DRIFT -- |area_k - area_0| / area_0, which reads straight through
+REM  to grams -- and EMPTIES, counted as a first-class outcome: a perturbation
+REM  that empties an item's footprint sends its weight to zero or to a prior,
+REM  which is the failure being hunted.
+REM
+REM  Boxes are derived from each item's own mask extent and NOT enlarged. One
+REM  grid step is 5% of frame and small foods cover about 5% of frame, so a box
+REM  leaving its food is the finding, not a bad seed.
+shift
+python -m scripts.box_replay %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto :eof
+
+:maskstability
+REM  IS SAM2 THE SAME TWICE? Three calls, one answer.
+REM
+REM  Every spread this bench has reported excludes the segmenter by accident:
+REM  _auto_masks memoises on the digest of the image it re-encodes and the
+REM  segmenter is a process singleton, so `--runs 3` makes ONE segmenter call.
+REM  The published spreads are a FLOOR, not a total.
+REM
+REM  Three separate segmenter instances, identical bytes, no production change
+REM  and no bench-only code path. Compares the MASK SET -- count, sorted areas,
+REM  pair IoU -- never the union, which depends on the model's box.
+REM
+REM  Run this BEFORE any box-perturbation replay: the replay holds the mask set
+REM  fixed, and if SAM2 varies that assumption is false.
+REM
+REM  Three model calls. Both mask sets are saved, so later comparisons are free.
+shift
+python -m scripts.mask_stability %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
 :platecheck
@@ -354,6 +421,9 @@ echo     dev mask       what the food mask caught     (dev mask --overlay)
 echo     dev footprint  what a measured footprint is worth (no API key needed)
 echo     dev apispec    export openapi.json + API.md to send someone
 echo     dev scaleaudit does every bench photo agree with its own card?
+echo     dev maskstability  is SAM2 the same twice? (3 calls)
+echo     dev boxreplay      does the box move the footprint? (free)
+echo                        --dump DIR replays real scans from mask_dumps\
 echo     dev platecheck which plate a scan gets, drawn over the photo
 echo     dev segcheck   is SAM2 configured, and does it answer?
 echo                    --candidates   which models take point coordinates

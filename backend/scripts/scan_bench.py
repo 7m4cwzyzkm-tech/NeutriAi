@@ -94,8 +94,12 @@ def call(url, *, method="GET", body=None, headers=None, timeout=120, raw=None):
         return 0, {"error": str(e)[:250]}
 
 
-def token_for_bench() -> tuple[str, str]:
-    """Sign in to the bench account, creating it once if needed."""
+def _sign_in() -> tuple[str, str]:
+    """Sign in to the bench account, creating it once if needed. Nothing else.
+
+    Factored out so a MID-RUN refresh cannot accidentally do the rest of what
+    `token_for_bench` does -- see `refresh_bench_token` for why that matters.
+    """
     sb = settings.supabase_url.rstrip("/")
     anon = settings.supabase_anon_key
     creds = {"email": BENCH_EMAIL, "password": BENCH_PASSWORD}
@@ -110,11 +114,35 @@ def token_for_bench() -> tuple[str, str]:
         print(f"{RED}Could not sign in to the bench account.{OFF}")
         print(f"  {tok}")
         sys.exit(1)
+    return tok["access_token"], tok["user"]["id"]
 
-    uid = tok["user"]["id"]
+
+def token_for_bench() -> tuple[str, str]:
+    """A token, and the account prepared for measuring. START OF RUN ONLY."""
+    token, uid = _sign_in()
     _unmeter(uid)
     _clear_today(uid)
-    return tok["access_token"], uid
+    return token, uid
+
+
+def refresh_bench_token() -> str:
+    """A fresh token, mid-run, WITHOUT touching the account's state.
+
+    WHY THIS IS NOT `token_for_bench`.
+
+    That function also calls `_clear_today`, which wipes the bench account's
+    meals for the day. Calling it mid-run would delete the photographs already
+    scored -- and worse, silently change the conditions the remaining ones are
+    measured under, because the reasoning stage is told what the account has
+    eaten today and reasons about portions with it. A measuring instrument must
+    not carry state between measurements; it must not reset it halfway either.
+
+    The token lives an hour. A 27-photo run at three runs each takes about
+    seventy minutes, so the run is structurally guaranteed to outlive its own
+    credential -- it lost photographs 24 to 27 to exactly this.
+    """
+    token, _uid = _sign_in()
+    return token
 
 
 def _clear_today(uid: str) -> None:

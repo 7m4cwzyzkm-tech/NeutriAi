@@ -27,3 +27,10 @@ survey*.txt
 # File deliveries from a Claude session land here. One conversation's
 # attachments, not part of the build, and `dev dead` scans source trees.
 Claude outputs/
+.venv/
+mask_overlays/
+
+# What the pipeline chose from, written by `segment_hosted.dump_masks` when
+# NUTRIAI_MASK_DUMP is set (`dev api` sets it). One scan's binary masks -- an
+# input to a replay, not part of the build, and it grows with every scan.
+mask_dumps/

@@ -1041,6 +1041,33 @@ async def build_items(
             # own the topology says nothing about scale.
             largest_piece_share=(piece_share if area_is_absolute else None),
         )
+        # THE HEIGHT BRANCH, EMITTED RATHER THAN RECONSTRUCTED.
+        #
+        # `portion.py` picks between CONNECTED_PILE_HEIGHT_MM (21.0) and
+        # SEPARATE_PIECES_HEIGHT_MM (9.2) on whether this share reaches
+        # ONE_PIECE_SHARE. That is a 2.28x step in the height that multiplies
+        # straight into grams, and until now NOTHING recorded which side of it
+        # a scan landed on -- not the bench, not the API log, not the response.
+        #
+        # So the standing account of photo 35 -- union area moved 1.29x while
+        # grams moved 2.5x, and (1.29 x 2.28)^0.9 = 2.63x lands on the observed
+        # value where area alone gives 1.26x -- rests on a branch nobody has
+        # ever seen taken. It was once reported not to flip; that report came
+        # from a replay over the wrong mask set and was withdrawn with it.
+        #
+        # One line per item per scan makes three runs of one photograph answer
+        # it directly, with no replay and no reconstruction in between.
+        # `piece_share` is logged raw as well as thresholded, because a value
+        # sitting at 0.79 vs 0.81 is a different finding from one at 0.30.
+        log.info("portion_height_branch", item=len(items), food=name,
+                 piece_share=(None if piece_share is None
+                              else round(float(piece_share), 4)),
+                 one_mass=(None if not (area_is_absolute and piece_share is not None)
+                           else bool(float(piece_share) >= food_seg.ONE_PIECE_SHARE)),
+                 area_absolute=bool(area_is_absolute),
+                 measured_area=(None if measured_area is None
+                                else round(float(measured_area), 5)),
+                 grams=round(float(est.grams), 1))
         notes.extend(est.notes)
 
         # The model's own observation about this item -- 'dressing visible',

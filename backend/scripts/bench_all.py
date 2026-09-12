@@ -25,9 +25,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+# LINE BUFFERING, BEFORE ANYTHING PRINTS.
+#
+# Python block-buffers stdout when it is not a console, so `dev benchall > file`
+# left the file at 0 bytes for the whole run. A healthy seventy-minute run and a
+# hang look identical from the outside, and that cost two aborted runs and about
+# an hour of an operator's evening. Set here rather than left to the caller to
+# remember PYTHONUNBUFFERED, because the caller did not.
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except (AttributeError, ValueError):  # not a real stream (piped into a test)
+    pass
+
 from scripts.scan_bench import (  # noqa: E402
     CYN, DIM, GRN, HDR, OFF, RED, YEL, UploadFailed, call, match, parse_actuals,
-    token_for_bench, upload,
+    refresh_bench_token, token_for_bench, upload,
 )
 
 PHOTOS = Path(__file__).resolve().parents[2] / "photos"
@@ -653,6 +665,18 @@ def ident_flag(it: dict) -> str:
     return ""
 
 
+# WHAT AN EXPIRED CREDENTIAL LOOKS LIKE COMING BACK FROM SUPABASE.
+#
+# Matched on the message rather than the status, because the status is a 400
+# wrapping a 403: the storage API reports `HTTP 400: {'statusCode': '403',
+# 'error': 'Unauthorized', 'message': '"exp" claim timestamp check failed'}`.
+# Keyed on the claim name, which is the part that says EXPIRED rather than
+# merely unauthorised -- a genuinely bad credential must still fail loudly
+# instead of being retried forever.
+def _token_expired(message: str) -> bool:
+    return '"exp" claim' in str(message)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default="http://localhost:8000/v1")
@@ -750,6 +774,14 @@ def main() -> int:
         attempts, errs = [], []
         for _ in range(max(1, args.runs)):
             r, e = run_one(args.api, token, uid, filename, plate, actual_str, distance)
+            if e and _token_expired(e):
+                # ONE REFRESH, THEN ONE RETRY. The token outlives neither the
+                # run nor its own hour, and losing the tail of a paid bench to
+                # a credential is the most expensive failure this harness has.
+                print(f"  {YEL}bench token expired -- signing in again{OFF}")
+                token = refresh_bench_token()
+                r, e = run_one(args.api, token, uid, filename, plate,
+                               actual_str, distance)
             (errs if e else attempts).append(e or r)
         if attempts:
             res, err = _median_run(attempts), None
