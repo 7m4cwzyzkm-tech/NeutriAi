@@ -853,6 +853,60 @@ def test_a_real_coordinate_input_is_recognised_whatever_it_is_called():
     assert _point_inputs(mixed) == ["point_coords"]
 
 
+def test_the_automatic_generators_crop_knobs_are_not_point_prompts():
+    """The same trap, one variant out, and it got through on 12 Sep.
+
+    `dev segcheck --candidates` reported lucataco/segment-anything-2,
+    yyjim/segment-anything-everything and pablodawson/segment-anything-automatic
+    as PROMPTED -- takes point coordinates -- on the strength of
+    `crop_n_points_downscale_factor` alone. All three are the automatic mask
+    generator. That field and `crop_n_layers` are how it tiles the image before
+    sampling its grid; neither carries a coordinate, and a survey that lists
+    them as prompts sends the next reader to integrate a model that cannot be
+    prompted at all.
+    """
+    from scripts.seg_check import _point_inputs
+
+    lucataco = {"image": {}, "points_per_side": {}, "points_per_batch": {},
+                "crop_n_layers": {}, "crop_n_points_downscale_factor": {},
+                "box_nms_thresh": {}, "min_mask_region_area": {}}
+    assert _point_inputs(lucataco) == [], (
+        "an automatic generator read as prompted -- "
+        f"{_point_inputs(lucataco)} got through")
+
+    # And a real coordinate input alongside them is still found.
+    assert _point_inputs(dict(lucataco, input_points={})) == ["input_points"]
+
+
+def test_nms_and_postprocessing_knobs_are_not_box_prompts():
+    """A box prompt carries COORDINATES. These carry thresholds.
+
+    `box_nms_thresh` is the IoU cutoff non-maximal suppression uses to drop
+    duplicate masks and `min_mask_region_area` is a post-processing floor --
+    both knobs on the automatic generator's OUTPUT. A naive "does it mention a
+    box" test reads them as a prompt, which is how the first box survey
+    reported lucataco/segment-anything-2 as box-promptable when its only
+    inputs are the grid and its post-processing.
+
+    The real ones, for contrast: sam3's `positive_boxes` (four floats per box,
+    normalised) and fastsam's `box_prompt`, documented "[x,y,w,h]".
+    """
+    from scripts.seg_check import _box_inputs
+
+    auto = {"image": {}, "box_nms_thresh": {}, "min_mask_region_area": {},
+            "crop_n_layers": {}, "points_per_side": {}}
+    assert _box_inputs(auto) == [], (
+        f"post-processing knobs read as a box prompt: {_box_inputs(auto)}")
+
+    for field in ("box_prompt", "input_box", "positive_boxes", "bbox"):
+        assert _box_inputs({"image": {}, field: {}}) == [field], (
+            f"{field} was not read as a box prompt")
+
+    # Both at once: a real box prompt beside the generator's knobs is still a
+    # box prompt.
+    assert _box_inputs(dict(auto, box_prompt={})) == ["box_prompt"]
+
+
 def test_reading_a_candidates_schema_cannot_spend_money():
     """--schema-only exists because interrogating a model we are CONSIDERING
     and paying the one we have configured are different acts, and segcheck ran

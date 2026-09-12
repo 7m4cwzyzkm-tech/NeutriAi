@@ -34,3 +34,9 @@ mask_overlays/
 # NUTRIAI_MASK_DUMP is set (`dev api` sets it). One scan's binary masks -- an
 # input to a replay, not part of the build, and it grows with every scan.
 mask_dumps/
+
+# `dev api` tees into here, one file per server start, so evidence capture is
+# never something anyone has to remember. Untracked by default -- a server that
+# runs all day would otherwise dirty the tree on every restart. When a run
+# matters, commit a copy under its own name (see the photo-35 files here).
+docs/evidence/api-*.txt

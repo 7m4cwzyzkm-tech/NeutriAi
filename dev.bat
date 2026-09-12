@@ -66,6 +66,7 @@ if "%~1"=="scaleaudit" goto :scaleaudit
 if "%~1"=="segcheck"   goto :segcheck
 if "%~1"=="platecheck" goto :platecheck
 if "%~1"=="dumpmask"  goto :dumpmask
+if "%~1"=="sam3probe" goto :sam3probe
 if "%~1"=="maskstability" goto :maskstability
 if "%~1"=="boxreplay" goto :boxreplay
 if "%~1"=="dead"       goto :dead
@@ -99,8 +100,25 @@ REM  So the pipeline emits its own. This is set HERE rather than left to be
 REM  remembered, because a scan that is not captured cannot be captured
 REM  later -- the photograph is gone and a fresh call is a different set.
 REM  A few hundred KB per scan, into a directory git ignores.
+REM  AND THE LOG IS NO LONGER OPTIONAL.
+REM
+REM  Three times in one day a number that decided something existed only in a
+REM  terminal window and could not be read back: the sam2_box_union boxes,
+REM  plate_area_ratio_measured model=0.45, and the piece_share=0.7052 that
+REM  confirmed the height flip. Each time the remedy was "redirect it next
+REM  time", and each time that depended on remembering.
+REM
+REM  So it tees, every run, into its own timestamped file. `>` would clobber
+REM  the previous run and on Windows holds the handle EXCLUSIVELY -- which is
+REM  how one server start failed with "Device or resource busy" instead of a
+REM  port error. PowerShell's `>` writes UTF-16. Tee-Object is PowerShell only
+REM  and this runs under cmd.
+REM
+REM  -u matters: through a PIPE python buffers, and a log that sits at zero
+REM  bytes for the whole run is the exact bug that made a healthy run and a
+REM  hang look identical.
 set NUTRIAI_MASK_DUMP=%~dp0mask_dumps
-python -m uvicorn app.main:app --reload --port 8000
+python -u -m uvicorn app.main:app --reload --port 8000 2>&1 | python -m scripts.tee "%~dp0docs\evidence" api
 goto :eof
 
 :seg
@@ -192,6 +210,24 @@ REM  grid step is 5% of frame and small foods cover about 5% of frame, so a box
 REM  leaving its food is the finding, not a bad seed.
 shift
 python -m scripts.box_replay %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto :eof
+
+:sam3probe
+REM  CAN A BOX-PROMPTED MODEL SEE A WHOLE BURGER? One number decides it.
+REM
+REM  dev dumpmask showed no mask in production's pool is burger-sized: the box
+REM  is 9.00% of frame, the largest mask anywhere 1.96%, the three taken 1.35%.
+REM  meta/sam-2 publishes no prompt field at all, so it cannot be asked for the
+REM  burger -- composite foods are unmeasurable by the configured path.
+REM
+REM  vufinder/sam3 takes normalised positive_boxes, text and negative_boxes.
+REM  This hands it photo 35 and the model's own burger box, outside the
+REM  pipeline, and reports the returned mask as a fraction of frame.
+REM
+REM  DRY BY DEFAULT: prints the payload and the prediction count, spends
+REM  nothing. Add --go to spend it.
+shift
+python -m scripts.sam3_probe %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
 :dumpmask
@@ -446,6 +482,7 @@ echo     dev apispec    export openapi.json + API.md to send someone
 echo     dev scaleaudit does every bench photo agree with its own card?
 echo     dev maskstability  is SAM2 the same twice? (3 calls)
 echo     dev dumpmask       draw production's own masks (free)
+echo     dev sam3probe      can a box prompt see a whole burger? (dry by default)
 echo     dev boxreplay      does the box move the footprint? (free)
 echo                        --dump DIR replays real scans from mask_dumps\
 echo     dev platecheck which plate a scan gets, drawn over the photo

@@ -82,6 +82,8 @@ except (AttributeError, ValueError):
 import cv2                                                       # noqa: E402
 import numpy as np                                               # noqa: E402
 
+from scripts import _mask_cache                                  # noqa: E402
+
 from app.services.ai import segment_hosted                       # noqa: E402
 from app.services.ai.segment_hosted import encode_image          # noqa: E402
 
@@ -97,6 +99,11 @@ OUT = ROOT / "mask_overlays"
 # across-weeks comparison below. 42-chips-spread is the backup.
 DEFAULT_PHOTO = "44-grapes-spread.jpg"
 DRAWS = 3
+
+# The SCAN PATH's decode size, which is why this script's masks are the
+# comparable ones. `height_fit` uses 1280; both used to write the same
+# filename. Recorded in the name and in the file now.
+LONG_EDGE = 1568
 
 # Two masks are "the same mask" above this. Well clear of anything a genuinely
 # different segmentation would produce, and not a tuned number -- the answer this
@@ -220,9 +227,9 @@ def main() -> int:
         draws.append(masks)
 
     for n, masks in enumerate(draws, 1):
-        dest = OUT / f"stability-{photo.stem}-draw{n}.npz"
-        np.savez_compressed(dest, seed=np.array(shape),
-                            **{f"m{i}": m for i, m in enumerate(masks)})
+        dest = OUT / f"stability-{photo.stem}-draw{n}-le{LONG_EDGE}.npz"
+        _mask_cache.save(dest, masks, writer=_mask_cache.STABILITY,
+                         long_edge=LONG_EDGE, shape=shape)
         print(f"  saved {dest.name}")
 
     agreed = True
@@ -232,10 +239,11 @@ def main() -> int:
 
     # THE FREE ONE. Archived masks from the height work, weeks old and from a
     # different code version.
-    archived = OUT / f"masks-{photo.stem}.npz"
+    archived = _mask_cache.path_for(OUT, _mask_cache.HEIGHT_FIT, photo.stem,
+                                    1280)
     if archived.exists():
-        z = np.load(archived)
-        old = [z[k] for k in z.files if k.startswith("m")]
+        old, _meta = _mask_cache.load(archived)
+        old = old or []
         here = draws[0][0].shape if (draws and draws[0]) else None
         if old and here is not None and old[0].shape == here:
             _compare(f"draw 1 vs archived {archived.name}", draws[0], old)
@@ -247,18 +255,22 @@ def main() -> int:
               f"  weeks and code versions. A mismatch is NOT conclusive, because\n"
               f"  points_per_side or the plate-hint path may have changed since.{OFF}")
 
-    # AND UNDER THE NAME THE REPLAY READS.
+    # AND UNDER THE NAME THE REPLAY READS -- NAMESPACED, BECAUSE IT USED TO
+    # CLOBBER height_fit's CACHE.
     #
-    # `box_replay` loads mask_overlays/masks-<stem>.npz -- the cache's own
-    # naming, from the height work. Without this the draws are saved and the
-    # replay still cannot see them, which is a second manual step for no
-    # reason. Written from draw 1 when the draws disagree, and said out loud:
-    # that case makes the replay moot anyway, because the replay's premise is
-    # a fixed mask set.
-    cache = OUT / f"masks-{photo.stem}.npz"
+    # This wrote `masks-<stem>.npz` at 1568. `height_fit` READS
+    # `masks-<stem>.npz` at 1280. Same name, different segmentation, last
+    # writer wins, no error anywhere -- and `masks-35-slider-fries-plate.npz`
+    # on disk today is this script's 1568 write sitting where height_fit
+    # expects 1280. The height constants were fitted from that cache.
+    #
+    # Now each writer has its own namespace and the resolution is in the name
+    # AND inside the file. See scripts/_mask_cache.py.
+    cache = _mask_cache.path_for(OUT, _mask_cache.STABILITY, photo.stem,
+                                 LONG_EDGE)
     existed = cache.exists()
-    np.savez_compressed(cache, seed=np.array(shape),
-                        **{f"m{i}": m for i, m in enumerate(draws[0])})
+    _mask_cache.save(cache, draws[0], writer=_mask_cache.STABILITY,
+                     long_edge=LONG_EDGE, shape=shape)
     print(f"  {'overwrote' if existed else 'created'} {cache.name}"
           f"  {DIM}(the name `dev boxreplay` reads){OFF}")
 

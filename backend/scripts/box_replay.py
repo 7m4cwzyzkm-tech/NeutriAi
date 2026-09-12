@@ -102,7 +102,9 @@ try:
 except (AttributeError, ValueError):
     pass
 
-import numpy as np                                               # noqa: E402
+import numpy as np
+
+from scripts import _mask_cache                                               # noqa: E402
 
 HDR, GRN, RED, YEL, DIM, OFF = ("\033[1m", "\033[32m", "\033[31m",
                                 "\033[33m", "\033[2m", "\033[0m")
@@ -136,12 +138,28 @@ CONTROLS = ["24-macaroni-salad-plate", "34-pizza-slice-plate"]
 
 
 def load(stem: str):
-    p = CACHE / f"masks-{stem}.npz"
-    if not p.exists():
-        return None
-    z = np.load(p)
-    masks = [z[k] for k in z.files if k.startswith("m")]
-    return [m.astype(bool) for m in masks] or None
+    """Whichever namespaced cache exists for this photo, with its resolution.
+
+    REFUSES un-namespaced `masks-<stem>.npz`. Those were written by two
+    scripts at two resolutions under one name -- height_fit at 1280,
+    mask_stability at 1568 -- so which segmentation a given file holds is
+    unknowable, and reading it silently would measure something nobody can
+    name. `--dump` reads production's own masks instead.
+    """
+    for writer, le in ((_mask_cache.STABILITY, 1568),
+                       (_mask_cache.HEIGHT_FIT, 1280)):
+        cand = _mask_cache.path_for(CACHE, writer, stem, le)
+        if cand.exists():
+            masks, meta = _mask_cache.load(cand, expect_long_edge=le)
+            if masks:
+                return [m.astype(bool) for m in masks] or None
+            print(f"  {YEL}{meta}{OFF}")
+    legacy = [f for f in _mask_cache.legacy_files(CACHE) if stem in f.name]
+    if legacy:
+        print(f"  {YEL}{', '.join(f.name for f in legacy)} skipped{OFF} "
+              f"{DIM}-- no recorded resolution; two writers shared that name "
+              f"at 1280 and 1568. Use --dump.{OFF}")
+    return None
 
 
 def quantise(v: float) -> float:

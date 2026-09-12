@@ -184,7 +184,47 @@ everything downstream behaves once mm-per-pixel is real.
 
 ---
 
-## The one live hypothesis, and it is untested rather than refuted
+10. **"The plate ratio itself is moving run to run, and that is part of the
+    gram swing."** Refuted for the pair compared: `box_area` was 0.362 in both
+    invocations, so it cannot explain a difference between them.
+
+    Two refinements, so this is not over-read. Across the FIVE requests in
+    `evidence/2026-09-12-photo35-box-intermittency.txt` `box_area` takes two
+    values, 0.415 once and 0.362 three times -- a 14.6% swing. So the
+    box-derived plate ellipse is not stable in general; it simply did not move
+    between the two runs in question. And `box_area` is a DIAGNOSTIC, not an
+    input: the scale consumes `plate_area_ratio`. What is genuinely stable is
+    the measurement -- `circle_area` is 0.5396 in all five, and the local
+    decode's own Hough circle matches production's plate hint at IoU 1.000.
+    That stability is the argument for ranked work #1, and it is a stronger
+    one than the magnitude was.
+
+## CONFIRMED 12 Sep 2026 -- the height flip is the amplifier
+
+Both arms are now in the log, same photograph, same food:
+
+    piece_share 0.8509  ->  one_mass True   ->  21.0 mm  ->  28.0 g
+    piece_share 0.7052  ->  one_mass False  ->   9.2 mm  ->  11.8 g
+
+The chain is complete and every link measured: box translates on the 0.05 grid
+-> a different subset of one fixed mask set unions -> `piece_share` moves ->
+it crosses `ONE_PIECE_SHARE` -> the height steps 2.28x -> grams move about
+2.4x. Area alone gives 1.26x and never accounted for it.
+
+**IT WAS REPORTED DEAD, AND THE REPORT WAS A SAMPLING ERROR. THE THIRD OF
+THESE.** The three runs sampled all sat at 0.8509 and never crossed, so
+"the branch does not flip" was a statement about three draws from one box
+position, not about the branch. Same shape as `box_replay` measuring the cache
+and calling it production, and same shape as the count-match that admitted
+photo 35 to `UNSTABLE`. The pattern: A FIXED SAMPLE OBSERVED THREE TIMES IS
+NOT A DISTRIBUTION, and with the memo warm `--runs N` holds the mask set fixed
+BY CONSTRUCTION.
+
+(Recorded as read from the API log by Gil; the 0.7052 line is not in any
+artifact committed here, because that run's output was not redirected. The
+0.8509 arm is in `evidence/2026-09-12-photo35-box-intermittency.txt`.)
+
+## The hypothesis as it was written, before it was confirmed
 
 **A binary height switch, flipped by the union's connected-component topology.**
 
@@ -388,16 +428,31 @@ does not capture.
 
 ### And the scale fix does not rescue this item
 
-Worth knowing before ranked work #1 is read as a cure. First-order, both items
-scale by the same 1.49x:
+**THE 1.49x FACTOR WAS WRONG AND THE 51.6% PROJECTION IS WITHDRAWN.** 1.49
+compared the circle to `box_area` -- the box-derived ellipse `plate_box_vs_circle`
+logs for diagnosis -- and NOT to `detection["plate_area_ratio"]`, which is the
+quantity the scale actually consumes and which the fix replaces. They are
+different numbers about the same plate and only one of them is an input.
 
-    now          burger +96.8%   fries -56.9%   meal +49.2%   per-item 76.8%
-    scale fixed  burger +32.0%   fries -71.1%   meal  +0.1%   per-item 51.6%
+`plate_area_ratio_measured` reports model=0.45 against measured=0.5396, so the
+real factor is **1.199x** (read from the log by Gil; not in a committed
+artifact here).
 
-The meal total is transformed and the per-item average improves 25 points --
-but the FRIES GET WORSE, -56.9% to -71.1%. The two items are wrong in opposite
-directions and a scale correction moves both the same way. Do the scale fix; do
-not expect it to touch the fries bucket.
+    f      source of f                 burger    fries     meal   per-item
+    1.000  unchanged (today)           +96.8%   -56.9%   +49.2%     76.8%
+    1.199  0.5396 / 0.45   the INPUT   +64.1%   -64.1%   +24.4%     64.1%
+    1.491  0.5396 / 0.362  box_area    +32.0%   -71.1%    +0.1%     51.5%  <- WRONG
+
+So the honest projection is **per-item 76.8% -> 64.1%, a 12.7-point
+improvement**, and the meal lands at +24.4% rather than the +0.1% that made it
+look like a cure. First-order: this ignores the blend against priors and the
+band clamps.
+
+The direction of the earlier finding survives. The fries still get WORSE,
+-56.9% to -64.1%, because the two items are wrong in opposite directions and a
+scale correction moves both the same way. Do the fix; it is worth 12.7 points
+and it replaces a number the model guesses with one the rim measures. Do not
+quote 25 points, and do not expect it to touch the fries bucket.
 
 **Only the fries' inversion reaches the grams, and the brief's first telling of
 this was wrong on that point.** `estimate_grams` reaches the topology branch
@@ -472,3 +527,114 @@ So a real fix has to be one of two things:
    on a topology nobody vouched for. A fragmented mask's connectivity is not
    evidence about the food, and the area guard already knows it is fragmented.
 
+
+---
+
+## THE HEIGHT CONSTANTS ARE FROZEN — and why, 12 Sep 2026
+
+`CONNECTED_PILE_HEIGHT_MM = 21.0` and `SEPARATE_PIECES_HEIGHT_MM = 9.2` are not
+to be re-fitted, and not to be replaced by a ramp, until the segmenter is
+settled. Three reasons, in increasing order of force.
+
+### 1. They were fitted on the mask cache
+
+`height_fit.masks_for` reads `mask_overlays/masks-<stem>.npz` when it exists,
+and `portion.py`'s own provenance note says these heights were "solved against
+measured areas". Those areas came from that cache -- and the cache is provably
+not production's mask set: different digest, 15 of 16 masks agreeing only to
+within 0.7%, and one mask swapped outright (22,678 px against 146,388 px).
+
+### 2. AND AT THE WRONG RESOLUTION, WHICH IS THE STRONGER FINDING
+
+`height_fit` decodes at longest edge **1280**. The scan path decodes at
+**1568**, in all three places it decodes. So even `height_fit`'s FRESH masks --
+the ones it pays for when the cache misses -- were never production's, at a
+size production never uses.
+
+SAM2's automatic generator samples a `points_per_side` grid OVER THE IMAGE, so
+resolution changes the mask set directly. Re-encoding at the same size already
+swaps one mask of sixteen; 1280 against 1568 is a far larger perturbation.
+
+The cache on disk carries FOUR resolutions under one naming scheme:
+
+    17-34  the photographs the constants were fitted on   1280x960 / 960x1280
+    41-45  the weighed spread/heaped pairs                  640x480 / 480x640
+    35     slider-fries                                    1568x1176
+
+### 3. A LIVE BUG: TWO WRITERS, ONE FILENAME
+
+`height_fit` writes and reads `masks-<stem>.npz` at 1280. `mask_stability`
+wrote `masks-<stem>.npz` at 1568 -- deliberately, commented "AND UNDER THE NAME
+THE REPLAY READS". `box_replay` read whichever was there. Same name, different
+segmentation, last writer wins, no error anywhere. That is why photo 35's entry
+is the only 1568 file in the set: `mask_stability` overwrote it today, under the
+name `height_fit` reads at 1280.
+
+**Fixed 12 Sep.** `scripts/_mask_cache.py` gives each writer a namespace,
+`<writer>-<stem>-le<long_edge>.npz`, and records `writer`, `long_edge` and
+`shape` INSIDE each file. `load` refuses a file whose recorded long edge is not
+the one asked for. Un-namespaced `masks-*.npz` files are no longer read at all:
+they carry no writer and no resolution, so what they hold is unknowable, and
+they are reported by name with `--dump` offered instead.
+
+### What this means for the numbers
+
+The heights were solved to make `measured_area x height ~ weighed grams`, so
+**they absorb whatever bias the cache's areas carried**. The pair was
+internally consistent for the cache and is being applied to production areas.
+That is a live candidate for why photo 35's fries need 43.5 mm: if production's
+footprints are systematically smaller than the 1280 footprints the heights were
+fitted against, the fitted heights are short by the same factor.
+
+### Why not re-fit now, even though dumps make it possible
+
+The heights are a function of the SEGMENTER'S OUTPUT. If the segmenter changes
+-- and the burger finding below says it should -- every footprint changes and
+the re-fit is discarded. Settle the segmenter first, then re-fit once, from
+pipeline-emitted dumps at production resolution.
+
+---
+
+## THE BINDING PROBLEM: composite foods are unmeasurable by this path
+
+`dev dumpmask` on production's own dump for photo 35:
+
+    the model's burger box          9.00% of frame
+    largest mask anywhere in pool   36,174 px = 1.96% of frame
+    the three masks taken            1.35% of frame after overlap
+
+SAM2's automatic generator never produced a whole-burger mask. The shrink guard
+refusing that footprint is catching a REAL SEGMENTATION FAILURE, not misfiring,
+and this explains "9 live, 12 shadow" better than any tuning hypothesis.
+
+`meta/sam-2`'s published inputs, read from the schema on 12 Sep:
+
+    image, points_per_side, pred_iou_thresh, stability_score_thresh, use_m2m
+
+**No prompt field of any kind.** It cannot be asked for the burger. A promptable
+model has never been chosen; it has been an open item since the first brief.
+
+### Candidates that take a BOX, from schema interrogation (free, no predictions)
+
+    vufinder/sam3            prompts: array of per-concept JSON with text,
+                             positive_boxes, negative_boxes, positive_points,
+                             negative_points. All normalised [0,1]. Boxes are
+                             center_x, center_y, width, height. 35,574 runs.
+    casia-iva-lab/fastsam    box_prompt "[x,y,w,h]", also text_prompt and
+                             point_prompt "[[x1,y1],[x2,y2]]"
+    datong-new/sam-point     input_box (string, no published description),
+                             input_points. 153,945 runs.
+
+Text-only, no box: `schananas/grounded_sam` (`mask_prompt`,
+`negative_mask_prompt`), `tmappdev/lang-segment-anything` (`text_prompt`).
+
+**Two detector traps, both now tested against.** `crop_n_points_downscale_factor`
+and `crop_n_layers` are the automatic generator's tiling parameters, and the
+first survey reported three models as PROMPTED on that field alone.
+`box_nms_thresh` and `min_mask_region_area` are NMS and post-processing, not box
+prompts. A real prompt carries COORDINATES.
+
+`dev sam3probe` hands sam3 photo 35 and the model's own burger box, outside the
+pipeline. Dry by default. The test is one number: a mask near 9% of frame makes
+composite foods measurable; 1-2% means the ceiling is real and the design has to
+work around composites rather than through them.

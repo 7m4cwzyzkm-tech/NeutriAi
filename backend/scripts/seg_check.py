@@ -101,7 +101,37 @@ def _settings_report() -> bool:
 # is not. The call went out, was billed, and came back without the mask that was
 # asked for. Any candidate whose only point-ish input is one of these is the
 # automatic mask generator wearing a promising name.
-AUTO_ONLY_INPUTS = {"points_per_side", "points_per_batch", "points_per_crop"}
+AUTO_ONLY_INPUTS = {"points_per_side", "points_per_batch", "points_per_crop",
+                    # THE SAME TRAP, ONE VARIANT FURTHER OUT. Found 12 Sep:
+                    # this survey reported lucataco/segment-anything-2,
+                    # yyjim/segment-anything-everything and
+                    # pablodawson/segment-anything-automatic as PROMPTED, on
+                    # nothing but `crop_n_points_downscale_factor`. All three
+                    # are the automatic generator; that field and
+                    # `crop_n_layers` are how it tiles the image before
+                    # sampling its grid, and neither carries a coordinate.
+                    "crop_n_points_downscale_factor", "crop_n_layers"}
+
+# Inputs that contain "box" and are NOT a box prompt.
+#
+# The box-shaped version of the same mistake. `box_nms_thresh` is the IoU
+# cutoff non-maximal suppression uses to drop duplicate masks, and
+# `min_mask_region_area` is a post-processing floor -- both are knobs on the
+# AUTOMATIC generator's output, and a naive "does it mention a box" test reads
+# them as a prompt. A real box prompt carries COORDINATES: sam3's
+# `positive_boxes` is a list of four floats per box, fastsam's `box_prompt`
+# documents itself as "[x,y,w,h]".
+AUTO_ONLY_BOX_INPUTS = {"box_nms_thresh", "min_mask_region_area",
+                        "box_threshold", "crop_overlap_ratio"}
+
+BOX_WORDS = ("box", "bbox", "rect", "region", "roi")
+
+
+def _box_inputs(props: dict) -> list[str]:
+    """The inputs that could carry box COORDINATES. Empty means no box prompt."""
+    return sorted(n for n in props
+                  if n.lower() not in AUTO_ONLY_BOX_INPUTS
+                  and any(w in n.lower() for w in BOX_WORDS))
 
 # What a real point prompt is called, by publisher. The names vary; the shape
 # does not -- a list of coordinates, usually with a parallel list of labels.

@@ -52,6 +52,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 import numpy as np
 
+from scripts import _mask_cache
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PHOTOS = ROOT / "photos"
 CACHE = ROOT / "mask_overlays"
@@ -263,6 +265,12 @@ CROP = False
 CROP_MARGIN = 0.04
 CROP_LONG_EDGE = 1280
 
+# THIS SCRIPT'S OWN DECODE SIZE, and it is NOT the scan path's 1568.
+# Recorded in every cache file it writes so the difference can never
+# again be invisible. The height constants were fitted on masks at
+# this size against footprints production produces at 1568.
+LONG_EDGE = 1280
+
 
 def _plate_crop(rgb):
     """(y0, y1, x0, x1) around the plate, or None if there is no plate."""
@@ -302,12 +310,23 @@ def masks_for(name, fresh):
     # WRITING over it would destroy the before-numbers this experiment exists
     # to be compared against. Both were in the first version of this.
     stem = name.rsplit('.', 1)[0] + ("-crop" if CROP else "")
-    path = CACHE / f"masks-{stem}.npz"
+    # NAMESPACED, AND THE RESOLUTION IS PART OF THE NAME.
+    #
+    # This script decodes at 1280 and `mask_stability` decodes at 1568, the
+    # scan path's size, and both used to write `masks-<stem>.npz`. Last writer
+    # won, silently, and the cache on disk still shows four resolutions under
+    # one naming scheme. See scripts/_mask_cache.py.
+    path = _mask_cache.path_for(CACHE, _mask_cache.HEIGHT_FIT, stem, LONG_EDGE)
     if path.exists() and not fresh:
-        d = np.load(path)
-        ks = sorted((k for k in d.keys() if k.startswith("m")),
-                    key=lambda s: int(s[1:]))
-        return [d[k] for k in ks], "cached"
+        got, meta = _mask_cache.load(path, expect_long_edge=LONG_EDGE)
+        if got is None:
+            print(f"    {meta}")
+        else:
+            return got, "cached"
+    stale = [f.name for f in _mask_cache.legacy_files(CACHE) if stem in f.name]
+    if stale and not fresh:
+        print(f"    ignoring un-namespaced {', '.join(stale)} -- no recorded "
+              f"resolution, so it cannot be told from mask_stability's 1568")
 
     from PIL import Image, ImageOps
     from app.services.ai import food_seg, segment_hosted
@@ -370,9 +389,8 @@ def masks_for(name, fresh):
     if crop is not None:
         masks = _masks_back(masks, crop, full_shape)
     time.sleep(PACE_S)                                # stay under the limit
-    CACHE.mkdir(exist_ok=True)
-    np.savez_compressed(path, seed=np.asarray(seed),
-                        **{f"m{i}": m for i, m in enumerate(masks)})
+    _mask_cache.save(path, masks, writer=_mask_cache.HEIGHT_FIT,
+                     long_edge=LONG_EDGE, shape=full_shape, seed=seed)
     return masks, "paid"
 
 
