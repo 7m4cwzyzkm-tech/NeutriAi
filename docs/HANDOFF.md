@@ -706,19 +706,18 @@ NOT noise:
 
     footprint 13.09% of a 763.3 cm2 frame            = 99.9 cm2
     65 g at density 0.60, no shape factor            = 10.8 mm
-    65 g at the pipeline's composite 0.85 x loose 0.50 = 15.3 mm
+    65 g at the pipeline's REAL 0.62 x ~0.65 shape    = 16.1 mm
     65 g at the potato row 0.59, no shape factor     = 11.0 mm
 
 The 10.8 and the 16.0 quoted earlier differ by exactly the SHAPE FACTOR
 (0.60 / 0.406 = 1.48 = 16.0 / 10.8), not by the density.
 
-**Which density the fries actually used:** not the potato row. `potato 0.59`
-never matches, because lookup is by exact key and the food is named "potato,
-french fries, from fresh, fried". That name resolves to food group
-**`composite`, density 0.85** — a mixed-dish figure applied to a single food.
-Backing the effective multiplier out of the geometry gives **0.406**, and
-`composite 0.85 x loose 0.50 = 0.425`, 5% apart. So the fries were sized at
-about 0.85 g/ml with a 0.50 shape factor.
+**Which density the fries actually used:** CORRECTED BELOW — see "THE DENSITY
+LOOKUP". The claim first written here, `composite 0.85 x loose 0.50 = 0.425`,
+is WRONG in both components. The real path is `dish_head` truncating at the
+comma to `'potato'`, giving **0.62**, with a shape factor of about **0.65**.
+The product was coincidentally close to the 0.406 backed out of the geometry,
+which is why the wrong mechanism survived a commit.
 
 **Bulk or material:** BULK. `potato 0.59` is FAO's "potato english boiled",
 and solid potato flesh is about 1.05-1.10 g/cm3 — potatoes sink in water. A
@@ -739,3 +738,191 @@ Three terms fitted to compose against a loose blob, applied to a tight mask.
 the same trap as the height constants and the mask cache, now for the third
 time in one day. The pattern: every constant in this pipeline was fitted
 against a particular upstream, and none of them records which.
+
+---
+
+## THE DENSITY LOOKUP — audited 12 Sep 2026, three live bugs, zero calls
+
+### First, a correction to this file
+
+An earlier entry here said the fries were sized at `composite 0.85 x loose 0.50
+= 0.425`. **That is wrong in both components.** The real path is
+`dish_head` -> `'potato'` -> **0.62**, with a shape factor of about **0.65**.
+The product was coincidentally close to the 0.406 backed out of the geometry,
+which is exactly why the wrong claim survived a commit. A product matching is
+not a mechanism matching.
+
+### Bug 1 — `dish_head` truncates at the comma. Systematic.
+
+`,` is in `DISH_SEPARATORS`, so:
+
+    dish_head("potato, french fries, from fresh, fried")  ->  "potato"
+
+`'fries'` never reaches the comparison at all. This is not the
+"longest-key-wins" hazard that was first blamed — that rule never got a chance
+to fire, because the candidate text had already been cut down to the commodity.
+
+**USDA-style names put the COMMODITY FIRST and the PREPARATION AFTER THE
+COMMA**, so every USDA-style label is truncated to its raw ingredient. The
+commodity is precisely the wrong half: what a food weighs per millilitre is a
+property of how it was prepared, not of what it was before. French fries get
+potato's 0.62 instead of fries' 0.42, 1.48x too dense, on every scan.
+
+The separator list is right about ` with `, ` in `, ` on ` — those cut off
+sauces and fillings, and the docstring records a weighed meal where that fix
+was worth most of a 2x error. The comma is the odd one out and should not be
+in that list.
+
+### Bug 2 — substring matching with no word boundary
+
+    grilled cheeseburger  ->  'cheese'  ->  1.05
+
+`'cheese'` matches inside `'cheeseBURGER'`. A cheeseburger is not cheese, and
+the physical model below independently needs **0.52** for that burger — so this
+is a 2x error, on the single heaviest item in the bench.
+
+Same class, benign only by luck: `'smashed potatoes'` contains
+`'s-MASHED POTATO-es'`, so it resolves to `mashed potato` 1.04 and happens to
+be right.
+
+### Bug 3 — longest key wins, so an ingredient beats the dish
+
+    cheese and broccoli soup  ->  'broccoli'(8) beats 'soup'(4)  ->  0.35
+
+A cheese and broccoli soup at 0.35 g/ml is about 3x too light. This IS the
+longest-wins hazard, firing where there is no comma to truncate first. Length
+is not specificity.
+
+### The corrected coverage count
+
+Counted by WHICH KEY MATCHED, not by value — several table entries equal the
+0.85 default, which made the first count unreliable:
+
+    matched on dish_head      20 / 33
+    matched only on the full name   3 / 33
+    NO key at all            10 / 33   -> group density, composite 0.85
+
+The ten with nothing: brussels sprouts, dinner roll, grapes, pot roast,
+spaghetti, steamed carrots, steamed zucchini, tortilla chips, trail mix, whole
+plate. Note `macaroni salad` IS already a key at 0.85 — it appeared to be
+missing only because its value equals the default. And `whole plate` is a bench
+artifact, not a food; it should expect the default rather than a row.
+
+Separately: `USE_SOURCED_DENSITIES = False`, so the 32-row FAO `densities.csv`
+is loaded and discarded. The live table is a 63-row hardcoded dict. Leaving
+that switch alone is deliberate — turning it on moves seven bench foods at once
+and would make this change unattributable.
+
+### THE PROPOSED RULE, to implement against the table below
+
+1. **Word-boundary matching.** A key matches only on whole words. Kills
+   `cheese`/`cheeseburger` and `mashed potato`/`smashed potatoes`.
+2. **Drop `,` from `DISH_SEPARATORS`**; keep ` with `, ` in `, ` on ` and the
+   rest, which correctly cut off sauces. Search each comma segment instead.
+3. **Score by words matched, then by later segment.** English compounds are
+   head-final, so `french fries` beats `potato` and `soup` beats `broccoli`.
+4. **Length only as a final tie-break.**
+
+SCOPE DISCIPLINE: this changes WHICH KEY MATCHES, not what the values mean. The
+table's values are BULK figures meant to pair with blob areas and a shape
+factor. Re-basing them to material densities is the separate change the
+physical model implies, and bundling the two would make neither attributable.
+
+### ACCEPTANCE — the 33 harvested names, as a test table
+
+The new rule must get all 33; the current rule fails at least on fries,
+cheeseburger and the soup. Ten keys need adding, in the table's existing BULK
+semantics, not material ones.
+
+    food                                   expect  via
+    bbq chicken thigh                        1.05  chicken
+    beef posole                              1.02  stew          ADD 'posole'
+    brussels sprouts                         0.58  ADD
+    caesar salad                             0.22  salad
+    cheese and broccoli soup                 1.00  soup          (bug 3)
+    cheeseburger slider                      0.55  ADD 'cheeseburger' (bug 2)
+    chicken drumstick with mole sauce        1.05  chicken
+    chicken drumstick, grilled with sauce    1.05  chicken
+    chicken drumstick, rotisserie            1.05  chicken
+    chicken noodle soup                      1.00  soup
+    dinner roll                              0.28  ADD (bread-like)
+    egg, whole, cooked, scrambled            1.03  egg
+    fried french fries                       0.42  fries
+    grapes                                   0.62  ADD (berries-like)
+    grilled cheeseburger                     0.55  ADD 'cheeseburger' (bug 2)
+    grilled chicken drumstick                1.05  chicken
+    macaroni salad                           0.85  macaroni salad (already present)
+    mexican rice                             0.67  rice
+    pizza slice                              0.55  pizza
+    pot roast                                1.05  ADD
+    potato, french fries, from fresh, fried  0.42  fries         (bug 1)
+    refried beans                            1.06  refried beans
+    roast beef                               1.05  beef
+    smashed potatoes                         1.04  mashed potato
+    spaghetti                                0.65  ADD (pasta-like)
+    spaghetti with chicken                   0.65  ADD
+    spaghetti with sauce                     0.65  ADD
+    squash, winter, spaghetti, ... with salt 0.65  ADD  -- NOTE: this is squash,
+                                                   NOT pasta. A word-boundary
+                                                   rule on comma segments will
+                                                   match 'spaghetti' here and be
+                                                   WRONG. Decide deliberately.
+    steamed carrots                          0.60  ADD 'carrots'
+    steamed zucchini                         0.60  ADD 'zucchini'
+    tortilla chips                           0.18  ADD (very airy)
+    trail mix                                0.50  ADD
+    white rice                               0.67  rice
+    whole plate                              0.85  default (not a food)
+
+The `squash, winter, spaghetti` row is the trap in this table and is left in on
+purpose: it is the case where the proposed rule's own logic produces a wrong
+answer, and a rule chosen without it would look better than it is.
+
+---
+
+## THE PHYSICAL MODEL — consistent, NOT yet tested
+
+Each photo's frame measured from its OWN plate rather than assumed shared —
+photo 23's plate is 24% of its frame, so brussels is 33.5 cm2, not the 15.2 a
+shared-frame assumption gives.
+
+    food      area cm2   h mm  solidity  -> density   plausible?
+    fries         99.9   10.0   0.90        0.72      fried potato, porous
+    sprouts       33.5   33.0   0.67        0.88      a brassica that sinks
+    burger        76.9   45.0   0.80        0.52      bun dominates the volume
+
+One coherent set reproduces all three weighed values with physically sensible
+densities. Against the live table: fries 0.62, sprouts 0.85 (no key), burger
+1.05 — the burger is 2x out, in the direction bug 2 predicts.
+
+**SOLIDITY IS NOT ~1.0.** A sphere is 2/3 of its bounding prism however tight
+the mask is. That is the OBJECT'S OWN geometry, not box fill, so the third term
+does not disappear when masks get tight — it changes meaning: prism ~0.9,
+sphere 0.67, dome ~0.8. Forcing 1.0 on the sprouts gives 0.59, too light for a
+vegetable that sinks.
+
+**THIS IS NOT YET A TEST.** With n=3 and two chosen inputs per food it is
+consistent, not falsifiable. The published-input version is **BLOCKED**: it
+needs MATERIAL densities, and the repo's FAO file is BULK — `potato 0.59`
+against solid potato's ~1.05-1.10, which sinks in water. Substituting
+remembered numbers would manufacture a result, so the next session should
+source material densities first and only then run the test.
+
+---
+
+## NOT DONE, AND WHY
+
+- **The published-input physical test** — blocked on material densities, above.
+- **The provenance test** — DESIGNED, NOT BUILT. Each constant table declares
+  the world it was derived under (`segmenter`, `long_edge`, `mask_semantics`,
+  `area_source`) and a test compares that to the live configuration and goes
+  **RED, not warning**. It would fire today if the pipeline were pointed at
+  sam3, and again the moment tight masks reach the grams. Build it BEFORE the
+  segmenter swap, not after.
+- **Integration** — held. The design shape, recorded and unbuilt: try sam3,
+  fall back to today's path on an EMPTY result. sam3's emptiness is a reliable
+  signal, so nothing has to classify foods as discrete or continuous in
+  advance; caesar then scores what it scores today and every discrete food gets
+  a real footprint.
+- **The density lookup fix itself** — proposed and specified above, not
+  written.
