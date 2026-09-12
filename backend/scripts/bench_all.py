@@ -1115,8 +1115,20 @@ def main() -> int:
                    YEL + "too close to call on this sample -- neither, yet" + OFF)
         print(f"  {split_verdict}")
         print(f"  {DIM}This split did not contribute to anything above. The mask")
-        print(f"  is a colour rule, and it fails visibly rather than quietly --")
-        print(f"  run  dev mask --overlay  and look at the ones that scored badly.{OFF}")
+        print(f"  is a colour rule, and it fails visibly rather than quietly.{OFF}")
+        # IT USED TO SAY `dev mask --overlay` HERE, AND THAT COULD NOT WORK.
+        #
+        # `mask_lab` ignores a filename -- it reads only the string
+        # "--overlay" from argv -- and walks a hardcoded table of three
+        # retired photographs, 07, 13 and 14. No photograph this bench scores
+        # is in it, so the advice sent every reader to an overlay of something
+        # else. Worse, it renders the COLOUR rule, while the footprints that
+        # reach the grams come from SAM2.
+        print(f"  {DIM}To look at the masks that DID set the grams, scan with")
+        print(f"  NUTRIAI_MASK_DUMP armed (`dev api` sets it) and then")
+        print(f"  run  dev dumpmask  -- it renders production's own box and")
+        print(f"  union, each mask labelled with the reason it was taken or")
+        print(f"  dropped.{OFF}")
     # Did the segmenter actually reach the grams on this run? The single line
     # that answers "is it wired up, or is it configured and being ignored" --
     # which look identical from the outside and have looked identical here for

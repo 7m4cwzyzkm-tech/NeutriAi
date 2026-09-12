@@ -65,6 +65,7 @@ if "%~1"=="apispec"   goto :apispec
 if "%~1"=="scaleaudit" goto :scaleaudit
 if "%~1"=="segcheck"   goto :segcheck
 if "%~1"=="platecheck" goto :platecheck
+if "%~1"=="dumpmask"  goto :dumpmask
 if "%~1"=="maskstability" goto :maskstability
 if "%~1"=="boxreplay" goto :boxreplay
 if "%~1"=="dead"       goto :dead
@@ -191,6 +192,28 @@ REM  grid step is 5% of frame and small foods cover about 5% of frame, so a box
 REM  leaving its food is the finding, not a bad seed.
 shift
 python -m scripts.box_replay %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto :eof
+
+:dumpmask
+REM  PRODUCTION'S OWN MASKS, DRAWN ON THE PHOTOGRAPH. Offline, zero model calls.
+REM
+REM  Reads mask_dumps/ -- written by the pipeline at the moment it chose, keyed
+REM  by the digest of the bytes sent to the model -- and paints the union that
+REM  set the grams solid, every refused mask outlined with the reason it was
+REM  refused, the model's own box, and the plate fence the pool was bounded to.
+REM  The verdicts come from HostedSegmenter._mask_verdict, the same method
+REM  _union_in_box calls, so the picture cannot disagree with production.
+REM
+REM  This replaces `dev mask --overlay` for any question about the footprints
+REM  that reach the weight. `dev mask` renders the COLOUR rule over three
+REM  retired photographs from hand-typed box centres and ignores a filename --
+REM  no photograph the bench scores is in its table.
+REM
+REM  Needs a dump. `dev api` sets NUTRIAI_MASK_DUMP, but a RELOADING server
+REM  does NOT pick it up: reload re-reads code, not the environment. Stop it
+REM  and start it again, then scan.
+shift
+python -m scripts.dump_overlay %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
 :maskstability
@@ -422,6 +445,7 @@ echo     dev footprint  what a measured footprint is worth (no API key needed)
 echo     dev apispec    export openapi.json + API.md to send someone
 echo     dev scaleaudit does every bench photo agree with its own card?
 echo     dev maskstability  is SAM2 the same twice? (3 calls)
+echo     dev dumpmask       draw production's own masks (free)
 echo     dev boxreplay      does the box move the footprint? (free)
 echo                        --dump DIR replays real scans from mask_dumps\
 echo     dev platecheck which plate a scan gets, drawn over the photo

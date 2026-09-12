@@ -17,7 +17,7 @@ import base64
 import math
 import io
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 
 import structlog
@@ -765,6 +765,49 @@ def scale_summary(items) -> tuple[str | None, bool]:
     return source, source in MEASURED_SCALES
 
 
+def _measured_plate_area_ratio(raw: bytes | None) -> float | None:
+    """The share of the frame the plate actually covers, MEASURED.
+
+    The model is asked this as `plate_area_ratio` and is bad at it. On photo 35
+    it says 0.362 where the rim traces 0.5396 -- 1.49x too small, every run,
+    while the Hough circle returned 0.5396 on all four scans in
+    docs/evidence/. The consumer divides a disc area by this to recover
+    mm-per-pixel, so a ratio 1.49x small makes every mm-per-pixel too large and
+    every gram derived from it too heavy.
+
+    AREA ONLY, AND THAT IS NOT A LIMITATION TO BE LIFTED LATER. A Hough circle
+    has axis ratio 1.0 by construction, so it cannot report foreshortening and
+    must never reach `plate_ellipse_wh` or anything reading the plate's SHAPE.
+    That is also why `CIRCLE_PLATE_SOURCE` stays out of
+    `food_seg.MEASURED_PLATE_SOURCES`: this function is a second, narrower door
+    for the one quantity a circle can honestly supply.
+
+    Never raises, and returns None rather than a guess. A measurement that
+    fails leaves the model's own answer in place, which is exactly today's
+    behaviour.
+    """
+    if not raw:
+        return None
+    try:
+        import io
+
+        import numpy as np
+        from PIL import Image, ImageOps
+
+        # The SAME decode as `_measured_areas`. A different resolution would
+        # measure a different plate, and the ratio is scale-free only if the
+        # frame it is a ratio OF is the same one.
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
+        img.thumbnail((1568, 1568), Image.LANCZOS)
+        circle = food_seg._plate_by_hough(np.array(img))   # noqa: SLF001
+        if circle is None or not circle.any():
+            return None
+        got = float(circle.mean())
+        return got if 0.0 < got < 1.0 else None
+    except Exception:                                      # noqa: BLE001
+        return None
+
+
 def _measured_areas(
     detections: list[dict], raw: bytes | None, plate_bbox: dict | None
 ) -> tuple[list[float | None], list[float | None], str]:
@@ -933,6 +976,34 @@ async def build_items(
 
     names = [_lookup_name(d) for d in detections]
     facts = await resolver.resolve_many(names)
+
+    # THE PLATE'S SHARE OF THE FRAME, MEASURED RATHER THAN ASKED FOR.
+    #
+    # Ranked work #1. Everything below that divides by this was dividing by a
+    # number the model guesses on a 0.05 grid and gets wrong by 1.49x on the
+    # one photograph where both are known. The rim is free to find.
+    #
+    # Replaced HERE rather than where the hint is built, because the hint is
+    # constructed in `_run_scan` before any pixel has been looked at and is
+    # passed in already finished. The alternative was to thread a measurement
+    # back into its constructor, which means measuring the plate before
+    # detection has said whether there IS one.
+    #
+    # In a thread: this decodes a full-size JPEG and runs OpenCV, and called
+    # bare from an async function it stalls every other request on the process.
+    # The same reason the footprint and the depth map below are wrapped.
+    measured_plate = await asyncio.to_thread(_measured_plate_area_ratio, raw)
+    if measured_plate:
+        log.info("plate_area_ratio_measured",
+                 model=(round(float(hint.plate_ellipse_area_ratio), 4)
+                        if hint.plate_ellipse_area_ratio else None),
+                 measured=round(measured_plate, 4),
+                 ratio=(round(measured_plate / float(hint.plate_ellipse_area_ratio), 3)
+                        if hint.plate_ellipse_area_ratio else None))
+        # `replace` and not mutation: GeometryHint is slots=True and frozen in
+        # spirit -- it is read in a dozen places below and a hint that changed
+        # under half of them would be worse than either value used throughout.
+        hint = replace(hint, plate_ellipse_area_ratio=measured_plate)
 
     # How much of the plate ALL of this food covers, measured the same way the
     # estimator measures each item -- after the bounding-box rail, because the

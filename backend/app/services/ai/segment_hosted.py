@@ -943,6 +943,85 @@ class HostedSegmenter:
             keep.append(m)
         return keep
 
+    # The verdicts `_mask_verdict` can return. Only TAKEN joins the union;
+    # SWALLOWS_BOX, OVER_BOX and RING are the ones `swallowed_box` counts.
+    TAKEN, EMPTY, SWALLOWS_BOX, OVER_BOX, OFF_CENTRE, RING = (
+        "taken", "empty", "swallows_box", "over_box", "off_centre", "ring")
+    _COUNTED_AS_DROPPED = (SWALLOWS_BOX, OVER_BOX, RING)
+
+    def box_pixels(self, box, shape):
+        """The box in pixels, or None if it is unusable. Shared with replays."""
+        if not box:
+            return None
+        H, W = shape
+        try:
+            x = float(box.get("x", 0.0)); y = float(box.get("y", 0.0))
+            w = float(box.get("w", 0.0)); h = float(box.get("h", 0.0))
+        except (AttributeError, TypeError, ValueError):
+            return None
+        if not (w > 0 and h > 0):
+            return None
+        x0, x1 = int(max(0, x * W)), int(min(W, (x + w) * W))
+        y0, y1 = int(max(0, y * H)), int(min(H, (y + h) * H))
+        if x1 <= x0 or y1 <= y0:
+            return None
+        return x0, y0, x1, y1
+
+    def _mask_verdict(self, m, geom) -> tuple[str, dict]:
+        """Why this ONE mask is in this item's footprint, or is not.
+
+        EXTRACTED SO THAT NOTHING HAS TO GUESS IT. An overlay that labels each
+        mask taken or dropped needs the reason per mask, and `_union_in_box`
+        returns only the union -- so the reason was going to be reimplemented
+        in a script, which is the mistake this whole file was rewritten to
+        stop. One implementation, two callers, no drift.
+
+        Pure and per-mask: nothing here depends on any other mask, which is
+        also the property that proved production's mask set differs from the
+        cache (a superset cannot yield fewer takes).
+        """
+        x0, y0, x1, y1 = geom
+        box_px = float((x1 - x0) * (y1 - y0)) or 1.0
+        area = int(m.sum())
+        if not area:
+            return self.EMPTY, {"area": 0}
+        inside = int(m[y0:y1, x0:x1].sum())
+        facts = {"area": area, "inside": inside,
+                 "inside_frac": round(inside / box_px, 4),
+                 "over_box": round(area / box_px, 3)}
+        # Split in two where the original had one `or`, for the REASON only --
+        # both were and remain dropped, and both still count toward
+        # `swallowed_box`. The plate, or the table under it.
+        if inside / box_px >= self.CONTAINS_BOX_LIMIT:
+            return self.SWALLOWS_BOX, facts
+        if area > box_px * self.MAX_MASK_OVER_BOX:
+            return self.OVER_BOX, facts
+        ys, xs = np.nonzero(m)
+        cx, cy = float(xs.mean()), float(ys.mean())
+        facts["centroid"] = (round(cx, 1), round(cy, 1))
+        if not (x0 <= cx < x1 and y0 <= cy < y1):
+            return self.OFF_CENTRE, facts
+        # AND THE CENTRE HAS TO BE ON THE MASK.
+        #
+        # A table is a RING around the plate. Its centroid sits in the middle
+        # of that ring -- on the plate, inside the item's box -- and if the box
+        # is large enough the ring also slips under the size ceiling. Both
+        # tests pass and the table joins the food. Found by fuzzing 400 random
+        # layouts before this shipped: it leaked in 37 of them, roughly one in
+        # eleven.
+        #
+        # A piece of food is a blob and its centre is on it. A ring's centre is
+        # in the hole. One lookup separates them.
+        #
+        # Applied only to masks at least as big as the box. A small mask is a
+        # piece of food, and food is not always convex -- a pizza slice read as
+        # a crescent had its own centroid fall just off itself, was dropped,
+        # left the union empty, and sent the whole thing down the fallback path
+        # onto the plate. Rings that matter are big ones.
+        if area >= box_px and not m[int(round(cy)), int(round(cx))]:
+            return self.RING, facts
+        return self.TAKEN, facts
+
     def _union_in_box(self, masks: list, box, shape,
                       item: int | None = None) -> "np.ndarray | None":
         """Union of the masks that live inside this box. None if there are none."""
@@ -964,37 +1043,11 @@ class HostedSegmenter:
         union = np.zeros((H, W), bool)
         taken = dropped = 0
         for m in masks:
-            area = int(m.sum())
-            if not area:
-                continue
-            inside = int(m[y0:y1, x0:x1].sum())
-            if (inside / box_px >= self.CONTAINS_BOX_LIMIT
-                    or area > box_px * self.MAX_MASK_OVER_BOX):
-                dropped += 1          # the plate, or the table under it
-                continue
-            ys, xs = np.nonzero(m)
-            cx, cy = float(xs.mean()), float(ys.mean())
-            if not (x0 <= cx < x1 and y0 <= cy < y1):
-                continue
-            # AND THE CENTRE HAS TO BE ON THE MASK.
-            #
-            # A table is a RING around the plate. Its centroid sits in the
-            # middle of that ring -- on the plate, inside the item's box -- and
-            # if the box is large enough the ring also slips under the size
-            # ceiling. Both tests pass and the table joins the food. Found by
-            # fuzzing 400 random layouts before this shipped: it leaked in 37
-            # of them, roughly one in eleven.
-            #
-            # A piece of food is a blob and its centre is on it. A ring's
-            # centre is in the hole. One lookup separates them.
-            #
-            # Applied only to masks at least as big as the box. A small mask is
-            # a piece of food, and food is not always convex -- a pizza slice
-            # read as a crescent had its own centroid fall just off itself, was
-            # dropped, left the union empty, and sent the whole thing down the
-            # fallback path onto the plate. Rings that matter are big ones.
-            if area >= box_px and not m[int(round(cy)), int(round(cx))]:
+            verdict, _facts = self._mask_verdict(m, (x0, y0, x1, y1))
+            if verdict in self._COUNTED_AS_DROPPED:
                 dropped += 1
+                continue
+            if verdict != self.TAKEN:
                 continue
             union |= m
             taken += 1
