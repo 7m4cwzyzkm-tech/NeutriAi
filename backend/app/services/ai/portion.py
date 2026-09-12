@@ -278,6 +278,23 @@ DENSITY_G_ML: dict[str, float] = {
     "dinner roll": 0.28,        # = bread
     "pot roast": 1.05,          # = beef
     "posole": 1.02,             # = stew
+    # [src] USDA FoodData Central cup weights, through the formula above.
+    "brussels sprouts": 0.659,  # FDC 169971, boiled drained, 78 g per 1/2 cup
+    "grapes": 0.638,            # FDC 174683, raw, 151 g/cup
+    "trail mix": 0.634,         # FDC 167561, regular, 150 g/cup
+    # A squash, not pasta. USDA writes it "squash, winter, spaghetti, ...", and
+    # a rule that lets a later word win reads that as spaghetti. Two matched
+    # words outrank one, so this key names the real food.
+    "spaghetti squash": 0.655,  # FDC 170539, cooked, 155 g/cup
+    # [est] USDA publishes no cup weight for either. These are the values the
+    # acceptance table specified; replace them with weighed ones.
+    "cheeseburger": 0.55,
+    "tortilla chips": 0.18,
+    # DELIBERATELY ABSENT: carrots and zucchini. USDA gives 0.659 and 0.761,
+    # but they are the only two foods SEPARATE_PIECES_HEIGHT_MM was solved
+    # against, at the 0.85 default they resolve to today (implied 10.66 and
+    # 7.78 mm, mean 9.2). The heights are frozen, and a density moved under a
+    # fitted height is the pair trap. Add them in the same change that refits.
     "default": 0.85,
 }
 

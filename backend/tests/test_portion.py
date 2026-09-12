@@ -1536,26 +1536,22 @@ def test_with_no_group_a_name_match_still_beats_the_default():
 # Every food name the bench and the weighed-plate fits use. Checked with no
 # group, which is how the heights were fitted. The old rule failed 18 of these.
 #
-# This commit changes WHICH KEY MATCHES and adds only aliases to existing
-# rows. Six names that need a NEW VALUE -- brussels sprouts, grapes, trail
-# mix, spaghetti squash, cheeseburger, tortilla chips -- resolve through the
-# fallback here and get their values in the next commit, which is data.
-#
-#   * the squash row resolves to pasta's 0.65 here. That is the trap: a
-#     later-word rule reads "squash, winter, spaghetti" as spaghetti, and
-#     only a spaghetti squash key can put it right.
-#   * steamed carrots and steamed zucchini stay at the 0.85 default in both
-#     commits: they are the two foods SEPARATE_PIECES_HEIGHT_MM was solved
-#     against, and it is frozen. See
-#     test_the_calibration_foods_keep_their_fitted_densities.
+# Where this departs from the brief's table, it is on purpose:
+#   * brussels sprouts, grapes, trail mix, spaghetti squash take USDA cup
+#     weights (the table's own rule) rather than the brief's reasoned values
+#   * steamed carrots and steamed zucchini stay at the 0.85 default: they are
+#     the two foods SEPARATE_PIECES_HEIGHT_MM was solved against, and it is
+#     frozen. See test_the_calibration_foods_keep_their_fitted_densities.
+#   * the squash row expects 0.655, not pasta's 0.65, so it can only pass
+#     through the squash key. It is the case a later-word rule gets wrong.
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("name,expected", [
     ("bbq chicken thigh", 1.05),
     ("beef posole", 1.02),
-    ("brussels sprouts", 0.85),
+    ("brussels sprouts", 0.659),
     ("caesar salad", 0.22),
     ("cheese and broccoli soup", 1.00),
-    ("cheeseburger slider", 0.85),
+    ("cheeseburger slider", 0.55),
     ("chicken drumstick with mole sauce", 1.05),
     ("chicken drumstick, grilled with sauce", 1.05),
     ("chicken drumstick, rotisserie", 1.05),
@@ -1563,8 +1559,8 @@ def test_with_no_group_a_name_match_still_beats_the_default():
     ("dinner roll", 0.28),
     ("egg, whole, cooked, scrambled", 1.03),
     ("fried french fries", 0.42),
-    ("grapes", 0.85),
-    ("grilled cheeseburger", 0.85),
+    ("grapes", 0.638),
+    ("grilled cheeseburger", 0.55),
     ("grilled chicken drumstick", 1.05),
     ("macaroni salad", 0.85),
     ("mexican rice", 0.67),
@@ -1577,11 +1573,11 @@ def test_with_no_group_a_name_match_still_beats_the_default():
     ("spaghetti", 0.65),
     ("spaghetti with chicken", 0.65),
     ("spaghetti with sauce", 0.65),
-    ("squash, winter, spaghetti, cooked, boiled, drained, or baked, with salt", 0.65),
+    ("squash, winter, spaghetti, cooked, boiled, drained, or baked, with salt", 0.655),
     ("steamed carrots", 0.85),
     ("steamed zucchini", 0.85),
-    ("tortilla chips", 0.85),
-    ("trail mix", 0.85),
+    ("tortilla chips", 0.18),
+    ("trail mix", 0.634),
     ("white rice", 0.67),
     ("whole plate", 0.85),
 ])
