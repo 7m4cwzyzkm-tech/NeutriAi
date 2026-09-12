@@ -1150,3 +1150,88 @@ top-down. Its purpose is this audit and this question, not the density.
 **The volume model is paused until reference_cv is settled.** Three
 consecutive runs ended "not a test"; the instrument changes next, not the
 mask.
+
+---
+
+## reference_cv RECALL — 5 of 28 (18%), and where the 23 misses die. 12 Sep 2026
+
+Replayed the detector's own loop (same constants, same order) on the exact
+frames production analysed. The card in each miss was boxed by colour (Lab a*)
+and checked on a contact sheet; photo 15's box is the detector's own passing
+quad. Each photo is attributed to the FURTHEST gate any card-overlapping
+contour reached. Nothing was changed.
+
+    furthest gate reached         IoU>=0.3   IoU>=0.5
+    not 4 corners (approxPolyDP)     13         10
+    no card-sized contour             5          9
+    consensus (<2 of 6 settings)      4          4
+    size (open chain, area ~0)        1          0
+    aspect ratio                      0          0
+
+**Not one gate: two populations.**
+- **Wood table, 18 photos (17-36).** Card-vs-surround grey contrast 1.6-16.6
+  levels. Every one dies at the EDGE stage -- the outline never closes into a
+  clean quad (7-13 corners when it closes at all). Near-isoluminance.
+- **High contrast, 5 photos (15, 40, 41, 42, 45).** Contrast 67-97. Four pass
+  EVERY geometric gate but in only ONE of six edge settings, and
+  `MIN_SETTING_CONSENSUS = 2` refuses them. 45 dies on corners.
+
+The aspect gate killed nothing. Any threshold change has to say which
+population it is for.
+
+## THE CALIBRATED/UNCALIBRATED RUN — three premises corrected before spending
+
+1. **`food_scans.raw_vision` is empty on every bench scan (0 of 72).** No
+   offline replay from stored detections exists; the request's
+   `plate_diameter_mm` is not stored either.
+2. **"Uncalibrated" on the bench account is NOT the subscriber path.** The
+   account holds one `scan_calibrations` row: "my dinner plate", 254 mm,
+   `vessel=dinner_plate`, not default. With no diameter sent, vision.py:1677
+   looks up a calibration by the detected vessel, and `_calibration_fits`
+   accepts an exact name match. Photo 29 was named `dinner_plate` in all 6
+   saved scans, and all 30 of its items were saved `plate_reference` -- so the
+   bench's one "uncalibrated" row has most likely been scoring a 254 mm
+   calibration, not the 270 mm prior its comment describes. Also:
+   `scale_learning.refresh` WRITES learned calibrations when a card is found,
+   so a run can create calibrations mid-run and contaminate later photos.
+3. **Subscribers do not fall uniformly to rung 4 at 270 mm.** A named vessel
+   reaches rung 3b `vessel_reference` first, and the model's name is roulette:
+       side_plate   -> 200 mm   area -24% on a 229 plate   (~half the plate scans)
+       dinner_plate -> 270 mm   area +39%
+       paper        -> ai_prior, no geometry              (17, 26, 27 every scan)
+       cup          -> 80 mm    area -51% on a 114 crock  (31, 32, 33 every scan)
+   Photo 18 was called side_plate 4 times and dinner_plate twice. Rows with a
+   camera distance (40-45) reach rung 2 depth first; 43/44 reach rung 2a card.
+
+## PRE-REGISTRATION — recorded before any run, 12 Sep 2026
+
+Baseline: the calibrated errors of each photo's last saved bench day, BEFORE
+today's density-lookup commits (so absolute numbers are stale; the paired ratio
+is not, since both arms share the density). Each photo's uncalibrated grams =
+calibrated x (subscriber-path frame area / calibrated)^0.9, over that photo's
+historical vessel-name mix. 0.9 is this file's stated grams-vs-geometry
+elasticity and is the main modelling assumption: a lower confidence ceiling on
+rungs 3b/4 shifts the blend toward the model's prior, which this ignores.
+Photo 45 takes the depth rung, its area factor 1.15 borrowed from photo 44's
+geometry (rim frame 353 mm vs depth 378 mm).
+
+    calibrated baseline     43.6% per item   CI 31.6-55.6   (59 items, 16 photos)
+    PREDICTED uncalibrated  64.7% per item   CI 47.1-82.4
+    PREDICTED paired gap    +20.0 points     CI +3.1 to +36.8   (photos as units)
+    geometric-mean grams ratio uncal/cal  0.91 -- the SIGN varies by photo, 0.53 to 1.35
+
+Not predictable, excluded: 17, 26, 27 (every scan named `paper`, so
+`ai_prior`), 28 (no matched item), 40-44 (no saved scans).
+
+**The prediction is that the gap is real but NOT uniform:** dinner-plate photos
+get heavier, side-plate and crock photos lighter, and the aggregate moves about
+20 points -- right at the readability line if the two arms are separate model
+calls.
+
+**Pairing, stated.** Two API calls per photo put the model's run-to-run spread
+(9.3 points per photo on average, 37.3 worst) into the difference, so the
+20-point rule applies. Paired at the DETECTION -- one vision response per
+photo, the scale step run twice -- removes model and mask variance from the
+difference entirely, and the per-photo ratio becomes deterministic. That needs
+the run to force no calibration and block learned-calibration writes, on this
+account or a fresh one. NOT RUN; the design decision is Gil's.
