@@ -6,8 +6,14 @@
 >
 > **Checked against the repo on 12 Sep. Corrections, in the brief's own spirit:**
 >
-> - "Test suite green: 817 passed, 0 failed" -- it was NOT green. `test_wiring`
->   failed on a dead `STEPS` constant in `scripts/box_replay.py`. Now 825/0.
+> - "Test suite green: 817 passed, 0 failed" -- TRUE WHEN WRITTEN, and stale by
+>   one change rather than wrong. The suite was red on arrival (`test_wiring`,
+>   on a dead `STEPS` constant in `scripts/box_replay.py`), but 817 + the 6
+>   dump tests added afterwards = 823, exactly what was collected. The mask-dump
+>   work landed between the brief and the next session: it added those 6 tests
+>   and refactored the perturbation loop onto its `reach` parameter, orphaning
+>   `STEPS` and tripping the dead-constant check. Nothing regressed in the work
+>   the brief describes. Now 825/0.
 > - "Then the structural fix -- have the pipeline emit its own masks" -- already
 >   built when this session opened: `dump_masks` / `load_mask_dump`,
 >   `dev boxreplay --dump`, and `dev api` setting NUTRIAI_MASK_DUMP.
@@ -341,13 +347,37 @@ the SEPARATE_PIECES branch -- the same food on the OTHER branch in an earlier
 bench. So the classification does move between runs, from an independent
 source, and this is not one photograph's accident.
 
-NOT VERIFIED: the claim that photo 36 classifies the same fries the other way.
-The 12 Sep log holds four request ids and all four are photo 35. Re-running 36
-with `portion_height_branch` live settles it and costs one call.
+VERIFIED, and free -- it is in the BENCH'S PRINTED OUTPUT, not in the API log,
+which is why it could not be found there (all four request ids in that log are
+photo 35). From one `--only 35 36` invocation:
+
+    photo 36   note: "fried french fries: measured as separate pieces rather
+                      than one mass, so it is a single layer -- pieces on a
+                      plate cannot stack"
+    photo 35   no such note; piece_share 0.8509 -> one_mass TRUE
+
+Same fries, same meal, opposite classification, both in one run's output. The
+note is emitted only on the `not one_mass` branch, so its presence and absence
+are the classification. No model call needed to see this.
 
 ### Do not fix by moving ONE_PIECE_SHARE
 
 0.5185 and 0.8509 sit either side of 0.80, so no threshold separates these two
 cases -- they are inverted, not merely misplaced. Moving it trades one wrong
-answer for the other. The measurement has to change, not its cut point.
+answer for the other, and that closes off the entire class of fix anyone would
+reach for first. `largest_piece_share` is a FAITHFUL measure of what it
+measures; photo 35 breaks its correspondence to the food in both directions at
+once, and no constant can straddle that.
+
+So a real fix has to be one of two things:
+
+1. **The measure describes the wrong object.** It answers "did the segmenter
+   return one blob or several", and the question asked of it is "is this food
+   one mass or separate pieces". Those need not agree, and on this photograph
+   neither of them does.
+2. **The two gates stop being independent.** `MEASURED_UNDER_BOX_LIMIT` guards
+   the AREA and the topology branch guards the HEIGHT, separately -- so a mask
+   good enough to pass neither, one, or both can still reach a height decision
+   on a topology nobody vouched for. A fragmented mask's connectivity is not
+   evidence about the food, and the area guard already knows it is fragmented.
 
