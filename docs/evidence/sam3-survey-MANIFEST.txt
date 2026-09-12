@@ -1,0 +1,7 @@
+vufinder/sam3 text-only survey, 12 Sep 2026
+version 1bf97763d5dfd3a1584adca913a8ef4b43c684fca97e04e39e4c50a3a5e09650
+output shape: {backbone_outputs, results: [url,...]}
+
+sam3-35-fries-text-0.json  <-  https://replicate.delivery/xezq/Vx3keN0fmSgrrkyVdZqQfA0HqKpclz52NtcieeekP0SmhINzF/prompt_0001.json
+sam3-23-brussels-text-0.json  <-  https://replicate.delivery/xezq/5MHUcHffaDmFgkQKqawlaNlQRjV55EHSyRfgACHIafANISzcB/prompt_0001.json
+sam3-30-caesar-text-0.json  <-  https://replicate.delivery/xezq/ZaWLLb8YbEZILtPvHmXBmE3IAtqQeKm7avFArtzZPPuARamLA/prompt_0001.json
