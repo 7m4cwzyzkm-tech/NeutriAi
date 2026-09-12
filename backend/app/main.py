@@ -168,7 +168,23 @@ for r in ALL_ROUTERS:
 
 @app.get("/healthz", tags=["ops"])
 async def healthz():
-    return {"ok": True, "service": "neutriai-api", "version": app.version, "env": settings.env}
+    # WHETHER THE MASK DUMP IS ARMED, ASKED FROM OUTSIDE THE PROCESS.
+    #
+    # `--reload` reloads CODE, not the ENVIRONMENT. A dev server started
+    # before NUTRIAI_MASK_DUMP existed hot-loads the dumping code and then
+    # writes nothing, with no error anywhere -- which is how a paid bench run
+    # of photo 35 was spent capturing nothing at all. Nothing in the process
+    # could have reported it, because the bench runs in a different one.
+    #
+    # Read here rather than cached at import, for the same reason `dump_masks`
+    # reads it at call time: the answer must describe THIS request.
+    import os
+
+    from .services.ai.segment_hosted import MASK_DUMP_ENV
+
+    return {"ok": True, "service": "neutriai-api", "version": app.version,
+            "env": settings.env,
+            "mask_dump": (os.environ.get(MASK_DUMP_ENV) or "").strip() or None}
 
 
 @app.get("/readyz", tags=["ops"])

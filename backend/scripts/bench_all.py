@@ -37,6 +37,8 @@ try:
 except (AttributeError, ValueError):  # not a real stream (piped into a test)
     pass
 
+from app.config import settings  # noqa: E402
+from app.services.ai.segment_hosted import MASK_DUMP_ENV  # noqa: E402
 from scripts.scan_bench import (  # noqa: E402
     CYN, DIM, GRN, HDR, OFF, RED, YEL, UploadFailed, call, match, parse_actuals,
     refresh_bench_token, token_for_bench, upload,
@@ -418,6 +420,38 @@ def preflight(cases, api: str, runs: int) -> list:
         detail = res.get("error") if isinstance(res, dict) else res
         raise BenchNotReady(f"the API at {api} is not answering ({detail}).\n"
                             f"  Start it in another window with  dev api")
+
+    # AND IS THE PIPELINE RECORDING WHAT IT CHOSE FROM?
+    #
+    # The API answers this, because only the API knows: it runs in a different
+    # process from this script, so this script's own environment says nothing
+    # about it. `--reload` reloads code and NOT the environment, so a dev
+    # server started before NUTRIAI_MASK_DUMP existed hot-loads the dumping
+    # code and silently writes nothing -- which is exactly how a paid run of
+    # photo 35 was spent capturing no masks at all, discovered only when the
+    # offline replay found an empty directory afterwards.
+    #
+    # Printed, not enforced. Dumps are not always wanted, and a bench that
+    # refuses to run without them would be its own trap. Printed BEFORE the
+    # call count so it is on screen while there is still a decision to make.
+    #
+    # `/healthz` sits at the origin rather than under the API prefix.
+    origin = api.rstrip("/")
+    prefix = (settings.api_prefix or "").rstrip("/")
+    if prefix and origin.endswith(prefix):
+        origin = origin[: -len(prefix)]
+    hstatus, hres = call(f"{origin.rstrip('/')}/healthz", timeout=10)
+    if hstatus == 200 and isinstance(hres, dict):
+        where = hres.get("mask_dump")
+        if where:
+            print(f"  {DIM}mask dump ON -> {where}{OFF}")
+        else:
+            print(f"  {YEL}mask dump OFF{OFF} {DIM}-- the API has no "
+                  f"{MASK_DUMP_ENV} in its environment, so this run records no "
+                  f"masks and `dev boxreplay --dump` will find nothing.{OFF}")
+            print(f"  {DIM}A reloading server does NOT pick this up: reload "
+                  f"re-reads code, not the environment. Stop it and start it "
+                  f"again.{OFF}")
 
     calls = len(present) * max(1, runs)
     print(f"  {DIM}{len(present)} photo(s) x {max(1, runs)} run(s) = {calls} model "

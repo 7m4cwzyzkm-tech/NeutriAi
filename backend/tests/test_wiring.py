@@ -1514,3 +1514,31 @@ def test_the_segmenter_is_never_called_from_the_event_loop():
         "blocking work called straight from an async function: "
         + "; ".join(offenders)
         + " -- wrap it in asyncio.to_thread")
+
+
+def test_healthz_reports_whether_the_mask_dump_is_armed(monkeypatch):
+    """The only way a bench in another process can know, and it was needed.
+
+    `--reload` reloads CODE, not the ENVIRONMENT. A dev server started before
+    NUTRIAI_MASK_DUMP existed hot-loaded the dumping code and then wrote
+    nothing, with no error in any log, and a paid run of photo 35 was spent
+    capturing no masks at all -- found only when the offline replay opened an
+    empty directory afterwards.
+
+    Read at REQUEST time, not cached at import, or the answer describes the
+    process's startup rather than this request. Cut that and this fails.
+    """
+    import asyncio
+
+    from app.main import healthz
+    from app.services.ai.segment_hosted import MASK_DUMP_ENV
+
+    monkeypatch.delenv(MASK_DUMP_ENV, raising=False)
+    assert asyncio.run(healthz())["mask_dump"] is None
+
+    monkeypatch.setenv(MASK_DUMP_ENV, "  ")
+    assert asyncio.run(healthz())["mask_dump"] is None, (
+        "whitespace is not a directory")
+
+    monkeypatch.setenv(MASK_DUMP_ENV, r"C:\dumps")
+    assert asyncio.run(healthz())["mask_dump"] == r"C:\dumps"
