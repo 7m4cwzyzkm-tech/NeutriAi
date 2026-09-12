@@ -154,6 +154,33 @@ everything downstream behaves once mm-per-pixel is real.
    on photo 35 — refused identically three times.
 8. **"The Hough circle is oversized and needs a shrink guard."** Refuted by the overlay:
    the circle is correct and the model's ratio is wrong.
+9. **"Use the UNION'S MASK COUNT for the height branch -- multi-mask means
+   separate pieces, single-mask means one mass."** Refuted offline on 12 Sep,
+   zero model calls, three independent ways.
+
+   *Mechanically, and this alone is decisive:* on photo 35 the burger unions
+   **3** masks and the fries **6**. Both are multi-mask, so the predictor does
+   not separate them at all. The burger is one mass whose SAM2 mask arrived in
+   three fragments -- which is the same fragmentation that makes its
+   `piece_share` 0.52. Mask count inherits the identical defect and adds
+   nothing; it is a coarser reading of the same broken correspondence.
+
+   *Quantitatively:* it routes the fries from the branch scoring -56.9% to the
+   one scoring -79.5% (-77.7% to -81.1% across prior-pull exponents 0.8-1.0).
+   Per-item mean absolute error on photo 35 goes 76.8% -> 88.1%, +11.3 points.
+   The burger is unaffected -- its footprint is refused, so no height branch
+   runs for it whatever the predictor says.
+
+   *Independently:* that predicted -79.5% lands within 3 points of the -76.8%
+   `NEXT-SESSION.md` already records for fries on the separate-pieces branch,
+   which both validates the arithmetic and IS the refutation.
+
+   NOT TESTED, because the mechanical argument makes it unnecessary: chips,
+   trail mix, grapes, pot roast and chicken have no production mask counts
+   anywhere in the repo. `docs/evidence/` holds photo 35 only -- four request
+   ids, two items. Getting the rest is a full bench run with
+   `portion_height_branch` live, 27 calls, and it would be buying data to
+   settle a question the burger already settles for nothing.
 
 ---
 
@@ -307,6 +334,70 @@ not need two runs to see. It is wrong the same way every time.
 Both foods are classified as their opposite, on the same photograph, in all
 three runs of 12 Sep. `portion_height_branch` in
 `evidence/2026-09-12-photo35-box-intermittency.txt` has the raw lines.
+
+**BUT THE INVERSION IS NOT COSTING GRAMS ON THIS PHOTOGRAPH -- IT IS PAYING
+THEM.** The fries score -56.9% on the connected-pile branch they were wrongly
+given, and -79.5% on the separate-pieces branch their geometry says they
+deserve. Their label is geometrically wrong and physically RIGHT, by accident:
+fries ARE separate pieces and they DO heap, and `SEPARATE_PIECES_HEIGHT_MM`
+asserts that pieces cannot stack. `NEXT-SESSION.md` says so outright -- "true
+of carrot coins, FALSE of fries (-76.8%) and lettuce (+198%)".
+
+So there are two defects here and they must not be conflated:
+
+- **the measure** -- union connectivity is not food topology (below). A latent
+  hazard: it decides nothing on the burger because the area guard refused that
+  footprint first, and it happens to decide the fries the lucky way.
+- **the mapping** -- two heights cannot describe food that is separate AND
+  heaps. A real modelling error, and no improvement to the measure touches it.
+
+  **This was written as "where the fries bucket actually lives". That is WRONG,
+  refuted by the implied-height table below on the same day.** No height in the
+  table reaches the fries, so the mapping is not their lever either. Photos
+  40-45 (three weighed spread/heaped pairs) remain worth measuring for the
+  heap-vs-layer question in its own right, but not as the fries' fix.
+
+### Backing out the height the weighed grams require
+
+Free, zero calls. `implied h = h_used x (weighed / geometry_grams)` -- exact,
+because geometry grams are linear in height, so density and shape cancel.
+Photo 35 fries: footprint 4.36% of frame, its own box 5.99%, mask filling 73%
+of that box, 21.0 mm used, geometry 34 g, weighed 65 g.
+
+    scenario                                    geom_g   h for 65 g
+    as it ran (estimator scale, mask as is)       34.0      40.1 mm
+    estimator scale, mask fills its whole box     46.7      29.2 mm
+    MEASURED scale (circle), mask as is           22.8      59.8 mm
+    MEASURED scale, mask fills its whole box      31.4      43.5 mm
+
+    the table:  SEPARATE_PIECES 9.2   SOUP_DEPTH 15.0   CONNECTED_PILE 21.0
+    tallest entry anywhere: "wrapped" 42.0, for burritos, not loose food
+
+**Every scenario needs more than 21.0 mm -- the tallest loose-food height there
+is.** The best case available, a correct scale and a perfect mask filling the
+model's entire bounding box, still needs 43.5 mm (31.6 mm by an independent
+bulk-density route at 0.45 g/cm3; both well over the ceiling). So the height
+branch is not the fries' problem and cannot be made into their solution.
+
+The deficit is in the FOOTPRINT or the SCALE. What is established: the mask
+fills 73% of its box, and closing even that gap entirely is not enough. What is
+NOT established, and should not be guessed at from one weighed item: whether
+the model's box for the fries is itself undersized, whether the bulk density
+for loose fries is wrong, or whether the plate scale is off in a way the circle
+does not capture.
+
+### And the scale fix does not rescue this item
+
+Worth knowing before ranked work #1 is read as a cure. First-order, both items
+scale by the same 1.49x:
+
+    now          burger +96.8%   fries -56.9%   meal +49.2%   per-item 76.8%
+    scale fixed  burger +32.0%   fries -71.1%   meal  +0.1%   per-item 51.6%
+
+The meal total is transformed and the per-item average improves 25 points --
+but the FRIES GET WORSE, -56.9% to -71.1%. The two items are wrong in opposite
+directions and a scale correction moves both the same way. Do the scale fix; do
+not expect it to touch the fries bucket.
 
 **Only the fries' inversion reaches the grams, and the brief's first telling of
 this was wrong on that point.** `estimate_grams` reaches the topology branch
