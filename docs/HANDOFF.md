@@ -1052,25 +1052,101 @@ the storage bucket (1037 objects, fully paged):
    six edge settings. `MIN_SETTING_CONSENSUS = 2` refuses it. The other five
    lock onto the signature panel inside the card (aspect 5.0-5.8).
 
-### Whether it has ever been used
+### Whether it has ever been used -- CORRECTED by the audit below
 
-- **Saved logs: never.** `scan_results.csv` and the survey files record 39
-  `plate_reference` and 7 `pixel_area`, zero `reference_object`.
-- **Production: yes, once.** 12 of 521 `meal_items` rows are
-  `reference_object` -- ONE meal, `11-kebab-paper-card` (skewer, cherry
-  tomatoes, potatoes), scanned four times on 7-8 Sep. Food on paper, no plate.
-  So the rung is CONNECTED; it is not the built-and-never-wired defect.
-- **The bench cannot exercise it at all.** Every `CASES` row passes a plate
-  diameter, and `mm2_per_frame` puts rung 1b `plate_reference` above rung 2a
-  `reference_object`. Photo 36 would score `plate_reference` even with the
-  card found; 43 and 44 DO find it and still score `plate_reference`. The
-  bench's own comment on 36 says the decision between the two "has never been
-  measured" -- and as built, it cannot be.
+The first version of this section said the bench "cannot exercise" rung 2a,
+that 43 and 44 "score plate_reference", and that the card/rim gap matched the
+parallax debt. All three were wrong or unsupported; the audit replaces them.
 
-### Where both exist, they disagree
+---
 
-On 43 and 44 the card's mm/px is **1.117x and 1.154x** the Hough rim's (222 mm
-plate). The sign matches the parallax debt `mm2_per_frame` documents -- card
-on the table, rim nearer the lens -- but at the 280 mm camera distance `CASES`
-records for those rows it would need a rim 29-37 mm above the table, and that
-plate's rim height is not recorded. Unresolved; not assumed either way.
+## THE reference_cv AUDIT — every bench photo containing a card, 12 Sep 2026
+
+Zero model calls. Every distinct bench photo in the storage bucket (43, from
+1037 objects), run through `find_reference` on the bytes production fetched,
+decoded exactly as `vision.downscale_jpeg` does (EXIF, RGB, thumbnail 1280).
+Card presence judged on a contact sheet. The method column is what the
+pipeline SELECTED, from `meal_items.estimation_method` joined to
+`meals.photo_path` (250 bench meals, 521 items).
+
+    photo                     analysed  card?  detected  long x short px  aspect  mm/px   frame mm  tilt  cons  method selected (items)
+    10-tacos-paper-card       960x1280  yes    YES       326.6 x 212.7    1.535   0.2621  251.6     14.5  6     no saved scan
+    11-kebab-paper-card       960x1280  yes    YES       257.7 x 166.6    1.547   0.3322  318.9     12.8  6     reference_object (12, 4 scans)
+    14-plate-mole-chicken-card 960x1280 yes    YES       259.5 x 174.6    1.486   0.3298  316.7     20.4  2     plate_reference (12)
+    15-rajas-rice-card        960x1280  yes    no        --                                                   plate_reference (12)
+    17-32, 34, 36             960x1280  yes    no        --                                                   plate_reference (all)
+    40, 41, 42, 45            480x640   yes    no        --                                                   45: plate_reference (3); 40-42 no saved scan
+    43-chips-heaped           1280x960  yes    YES       257.1 x 157.3    1.634   0.3329  426.1     14.0  4     no saved scan
+    44-grapes-spread          1280x960  yes    YES       271.6 x 163.8    1.658   0.3152  403.4     16.9  6     no saved scan
+    no card: 01-09, 12, 13, 16, 33, 35, IMG_3938      no false positives
+
+**Has method == "reference_object" ever been the selected rung on a bench
+photo? Yes, on exactly one: 11-kebab-paper-card, all 12 items across its 4
+scans, 7-8 Sep -- food on paper, no plate.** Detected on 5 of 28 card
+photographs. Where the card was detected AND a plate was present (14), rung 1b
+won, as `mm2_per_frame` orders it. Every current `CASES` row (17 onward)
+passes a plate diameter, so the current bench cannot select rung 2a.
+
+Why detection fails is recorded above: greyscale near-isoluminance on wood
+(17-36), the consensus gate on 15. The 480x640 uploads (40-42, 45) were never
+diagnosed.
+
+---
+
+## MATERIAL DENSITIES — measured 12 Sep 2026, with provenance
+
+Method: fill-to-brim cup, V = F - (T - B), two runs on different fills. Run 2
+read 1.19 / 1.22 raw; both foods reconcile at ONE baseline 7 ml above its
+measured fill. That +7 ml was fitted to reconcile run 2, so only the second
+food is an independent check (it passed, to 2%). Brim-fill repeatability is
+~2% of cup volume; the uncertainties below follow from that, not from the
+run-to-run agreement.
+
+    carrots  1.04 g/ml +/- 0.07   63 g, coins cut from one ~4.5 in carrot, as eaten (Gil); variety not recorded
+    grapes   1.11 g/ml +/- 0.06   90 g, 12 seedless grapes, mixed green and red (50% green by measured hue)
+
+**Neither sample is the sample in any bench photo.** Carrots: 63 g of coins,
+not photo 17's 58 g of whole glazed baby carrots. Grapes: photo 44 is 11
+red/purple grapes (89% red, 2% green by measured hue; 45 has no green grape)
+-- the cup grapes are not those, despite the same 90 g. Applying either
+density to a bench photo is a stated varietal / preparation assumption.
+
+## BULK vs MATERIAL — the durable finding, portion.py:282-288
+
+The `[src]` rows added from USDA cup weights are BULK densities: a cup holds
+pieces AND the air between them. Against measured material density:
+
+    grapes   USDA 0.638 (FDC 174683)   material 1.11   ratio 0.575
+    carrots  USDA 0.659 (FDC 170394, sliced; NOT a table row)  material 1.04  ratio 0.634
+
+Ratios of 0.58-0.63 are what randomly packed rounded pieces fill. So those rows
+carry ~40% void, and they pair ONLY with an envelope volume (footprint x pile
+height x profile) -- which is what the table is fitted against. Paired with a
+tight per-piece volume they under-read by ~1/0.6. The samples differ from
+USDA's, so the ratio is a property of the FORM, not a precise constant.
+
+## THE CARD / RIM GAP — AN OPEN INSTRUMENT QUESTION, NOT A FINDING
+
+On the taped 260 mm plate (IMG_4190/4194/4197) the card's mm/px is 1.10x the
+Hough rim's; on photo 44 (declared 222 mm) 1.09-1.15x.
+
+What has been ruled out: Hough overshoot on the taped plate. Measured against
+a ray-traced rim ellipse, verified on the overlay: -0.1%, -0.4%, +1.3%
+(4197). On photo 44 that ray method stopped at the foam rim's inner ridge, so
+it produced no valid overshoot number there; by eye the Hough circle sits on
+the outer edge.
+
+What has NOT been tested: card on the table vs rim plane; card position in a
+tilted frame (tilt 11-17 deg); the detector's long side (quad and a colour
+rectangle differ ~5% on 44). Note portion.py:1666-1678 already assigns a
+table-card parallax of ~10% in AREA to rung 2a, not rung 1b, and :1925-1932
+shows tilt cancelling for rung 1b's area. Neither cancellation carries to a
+model that reads heights off pixels, which goes as scale^3 -- so this gap
+limits the test rig, not production.
+
+Pending: a photo of the same grapes with the card lying ON THE PLATE FLOOR,
+top-down. Its purpose is this audit and this question, not the density.
+
+**The volume model is paused until reference_cv is settled.** Three
+consecutive runs ended "not a test"; the instrument changes next, not the
+mask.
