@@ -1,0 +1,9 @@
+vufinder/sam3 on 35-slider-fries-plate.jpg, 12 Sep 2026
+burger box (352,392,705,862) px at 1176x1568 -> centre form
+[0.44940, 0.39987, 0.30017, 0.29974]
+version 1bf97763d5dfd3a1584adca913a8ef4b43c684fca97e04e39e4c50a3a5e09650
+variant order as listed matches scripts/sam3_probe.build_variants
+
+sam3-35-box.json  <-  https://replicate.delivery/xezq/pypj8JUSDDreTa8ef7yKAHnU8hZHIGqezRtXTcUC9IIVZRzcB/prompt_0001.json
+sam3-35-box-text.json  <-  https://replicate.delivery/xezq/xfFBOrAKJekO5U2mLWEIhc8A8D2cV6SwNxtLsKhoNUWWW0MXA/prompt_0001.json
+sam3-35-box-text-negplate.json  <-  https://replicate.delivery/xezq/SXorjzF9GxpKLlyqfUlB3XmP5CUeu6wDPBZmM6RTdXjYW0MXA/prompt_0001.json
