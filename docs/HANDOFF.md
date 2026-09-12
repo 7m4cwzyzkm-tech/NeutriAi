@@ -924,5 +924,153 @@ source material densities first and only then run the test.
   signal, so nothing has to classify foods as discrete or continuous in
   advance; caesar then scores what it scores today and every discrete food gets
   a real footprint.
-- **The density lookup fix itself** — proposed and specified above, not
-  written.
+- ~~**The density lookup fix itself**~~ — WRITTEN 12 Sep, see below.
+
+---
+
+## THE DENSITY LOOKUP FIX — landed 12 Sep 2026, and what checking the spec found
+
+Suite 827 -> **871 passed, 0 failed** (44 new). Zero model calls. Committed
+12 Sep in two parts, green at each: `dc6e63c` changes WHICH KEY MATCHES and
+adds only aliases to existing rows; `2c6cd9c` adds the six valued keys (four
+USDA cup weights, two [est]) as new data.
+
+### The rule as built (`portion.density_for`)
+
+Whole words, where the END of a word counts (`blueberries` -> berries,
+`catfish` -> fish, but not `cheese`burger or `egg`plant); then more words
+matched; then a preparation key (`refried`, `mashed`, `puree`) over a
+commodity; then the later word; length last. The comma no longer cuts the name
+FOR DENSITY, and a multi-word key may match across comma segments.
+`dish_head` is UNCHANGED — `_classify_shape` and vision.py's rename guard read
+it, and dropping the comma there would move heights, which this change must not.
+
+### Corrections to the spec above, each checked
+
+- **The table has 34 rows, not 33.** The old rule failed 18.
+- **Bug 1 is NOT live on photo 35.** The API log shows the fries looked up as
+  `fried french fries`, which already hit `fries` 0.42. `potato, french fries,
+  from fresh, fried` is USDA's DISPLAY name in `food_facts`; `estimate_grams`
+  receives the lookup name. The bug is real code, latent on this evidence.
+- **Bug 2 IS live.** `grilled cheeseburger` -> 1.05, and `food_facts` carries
+  `density_g_ml = None` for it, so nothing overrides the table. Now 0.55.
+- **Bug 3 is mostly absorbed on the soups.** All three crock soups classify
+  `liquid`, and the clamp lifts 0.35 to 0.90. Live cost ~10%, not 3x.
+- **The spec contradicted itself on `smashed potatoes`.** Rule 1 kills
+  `mashed potato` in it; the table expects 1.04 via that key. The word-end rule
+  keeps 1.04 without a new key.
+- **The ADD values were reasoned, against the table's own header rule** (g/cup
+  / 236.588). USDA FDC cup weights replace them where published: brussels 0.659
+  (169971), grapes 0.638 (174683), trail mix 0.634 (167561), spaghetti squash
+  0.655 (170539). `cheeseburger` 0.55 and `tortilla chips` 0.18 have no USDA
+  cup weight and stay, marked [est].
+- **Carrots and zucchini were NOT added.** They are the only two foods
+  `SEPARATE_PIECES_HEIGHT_MM` was solved on: 10.66 and 7.78 mm at 0.85, mean
+  9.2. At the spec's 0.60, carrots go -14% -> -39% under the frozen height.
+  `test_the_calibration_foods_keep_their_fitted_densities` now fails if any of
+  the seven weighed foods' densities move without a refit.
+- **The squash trap resolved by a key, not a rule.** `spaghetti squash` (two
+  words) outranks `spaghetti` (one). The old code sized it at 0.92 — `oil`
+  matching inside `b-OIL-ed`. `ice_cream` was also unreachable from "ice cream".
+
+### What this does and does not tell you about grams
+
+The before/after diff (`density_for` with NO group) moved 23 bench names. That
+is not the production delta: vision.py passes `food_group`, so any name whose
+head had no key before was on the GROUP density live, not 0.85. The group the
+model reports per food is not in any committed artifact. Exact live moves are
+known only where the head matched before: burger x0.52, chicken noodle x0.95,
+posole x0.97, cheese-and-broccoli x1.11 after the clamp.
+
+Also still open: `dish_head`'s comma is the same bug on the SHAPE path, and the
+height fit used group=None while production passes a group — a pair mismatch of
+its own.
+
+---
+
+## THE PHYSICAL-MODEL DENSITY TEST — verdict recorded 12 Sep 2026. STOPPED HERE.
+
+Gil is measuring MATERIAL densities by water displacement: brussels sprouts,
+carrot, cooked beef, potato. They are NOT to be patched into `DENSITY_G_ML`,
+whose values are BULK and were fitted as a set with `SHAPE_FACTORS` and the
+heights. They test the physical model only.
+
+Pre-registered before any measurement arrived, and accepted:
+
+- **Sprouts are a real test, and a loose one.** Photo 23 holds FOUR whole
+  sprouts in one layer (sam3's fifth mask is a fragment of one). Plate
+  measured by Hough at 25.0% of frame, not the "24%" above, which had no
+  source: 0.4571 mm/px. Volume from each sprout's own mask: 64.9 cm3
+  (spheroid) to 71.2 (sphere). 65 g falls out at 0.91-1.00 g/ml. A ±20%
+  budget accepts 0.73-1.20, so only a gross failure can be caught.
+- **Carrot is a test only with a MEASURED coin thickness.** Implied
+  t = 58 g / (rho x 64.02 cm2), 9.1 mm at 1.00.
+- **Beef and potato are FITS.** No published or visible height exists for
+  folded roast beef or smashed potatoes; fries heap, and fried potato is not
+  the material a boiled potato's density describes.
+
+**Was the table a source of error? Not answerable, at any sample size, from
+production residuals.** Footprint error of 3x to 7.5x on photo 35 dwarfs any
+density difference. Separately, the items that CAN be tested never used a
+table row: brussels had no key and carrots take the default.
+
+**The re-derivation (density, height, solidity together) is NOT designed, by
+decision.** Do not start it.
+
+---
+
+## THE CARD RUNG — `reference_cv`, audited 12 Sep 2026. REPORTED, NOT FIXED.
+
+A credit card is ISO/IEC 7810 ID-1, 85.60 x 53.98 mm: the only object in these
+photographs whose size is known rather than declared, estimated or quantised.
+It is in 25 of the 27 photographs on disk. Zero model calls below.
+
+### Where it is found
+
+`find_reference` at 1280 (`MAX_IMAGE_EDGE`, what production passes) and at
+full resolution, on every photograph on disk and every "card" photograph in
+the storage bucket (1037 objects, fully paged):
+
+    local 17-46, card visible in 25     found: 43, 44 only            2 / 25
+    storage 10, 11, 14 (paper/cloth)    found: 252, 319, 317 mm       3 / 3
+    storage 15-rajas-rice-card          not found
+    36-slider-fries-CARD                not found
+    no-card controls 09, 12, 16, 17-46  no false positives
+
+### Two failure mechanisms, both measured
+
+1. **The wood table is invisible in greyscale.** The detector runs Canny on
+   grey only. Card against the wood beside it: grey 63 vs 73 on photo 23,
+   100 vs 102 on 36 -- while the colour difference is large (Lab dE 28 and
+   36). The edge maps show the outline in fragments (23) or fused into the
+   wood grain and the card's printed ring (36). No setting closes it, and a
+   broken edge chain has ~zero contour area, so it is dropped at the AREA gate
+   before any geometric test runs. That is why it leaves no trace in any
+   rejection count, and why 17-36 fail silently.
+2. **Photo 15 is refused by consensus.** Red card on pale cloth: the card's
+   outline IS found as a passing quad (aspect 1.691, 250 px) -- by ONE of the
+   six edge settings. `MIN_SETTING_CONSENSUS = 2` refuses it. The other five
+   lock onto the signature panel inside the card (aspect 5.0-5.8).
+
+### Whether it has ever been used
+
+- **Saved logs: never.** `scan_results.csv` and the survey files record 39
+  `plate_reference` and 7 `pixel_area`, zero `reference_object`.
+- **Production: yes, once.** 12 of 521 `meal_items` rows are
+  `reference_object` -- ONE meal, `11-kebab-paper-card` (skewer, cherry
+  tomatoes, potatoes), scanned four times on 7-8 Sep. Food on paper, no plate.
+  So the rung is CONNECTED; it is not the built-and-never-wired defect.
+- **The bench cannot exercise it at all.** Every `CASES` row passes a plate
+  diameter, and `mm2_per_frame` puts rung 1b `plate_reference` above rung 2a
+  `reference_object`. Photo 36 would score `plate_reference` even with the
+  card found; 43 and 44 DO find it and still score `plate_reference`. The
+  bench's own comment on 36 says the decision between the two "has never been
+  measured" -- and as built, it cannot be.
+
+### Where both exist, they disagree
+
+On 43 and 44 the card's mm/px is **1.117x and 1.154x** the Hough rim's (222 mm
+plate). The sign matches the parallax debt `mm2_per_frame` documents -- card
+on the table, rim nearer the lens -- but at the 280 mm camera distance `CASES`
+records for those rows it would need a rim 29-37 mm above the table, and that
+plate's rim height is not recorded. Unresolved; not assumed either way.
