@@ -162,21 +162,69 @@ def _report_plan(variants, box, neg, rgb):
           f" of frame")
     print(f"    union it took       {SAM2_UNION_FRAC:.2%} of frame")
     print(f"    best single mask    {SAM2_BEST_MASK_FRAC:.2%} of frame{OFF}")
-    print(f"\n  {YEL}Add --go to spend it.{OFF}\n")
+    print(f"\n{HDR}  THE TRANSPORT, since the first attempt used the wrong one{OFF}")
+    print(f"    POST  {DIM}https://api.replicate.com/v1/predictions{OFF}")
+    print(f"    {DIM}headers  Authorization: Bearer <key>,  Prefer: wait{OFF}")
+    print(f'    {DIM}body     {{"version": "<hash>", "input": '
+          f'{{"image": "data:image/jpeg;base64,...", '
+          f'"prompts": ["<json>"]}}}}{OFF}')
+    print(f"    {DIM}sent by HostedSegmenter._predict -- production's own call "
+          f"path, not a second one{OFF}")
+    print(f"\n    {DIM}The first attempt posted to "
+          f"/v1/models/{MODEL}/predictions, the OFFICIAL-models")
+    print(f"    endpoint, which 404s for a community model. Three 404s, no "
+          f"prediction")
+    print(f"    object created, nothing billed -- confirmed: "
+          f"GET /v1/predictions holds")
+    print(f"    no sam3 prediction at all.{OFF}")
+    print(f"\n  {YEL}Add --go to spend it.{OFF}")
 
 
-def _predict(blob, spec, key):
+def resolve_version(key) -> tuple[str | None, str]:
+    """The version hash a community model's prediction must name.
+
+    `POST /v1/models/{owner}/{name}/predictions` is the OFFICIAL-models
+    endpoint and 404s for a community model however correct the slug is. That
+    is exactly what the first three attempts hit: three 404s, no prediction
+    object created, nothing billed -- confirmed against GET /v1/predictions,
+    which holds no sam3 prediction at all.
+    """
     import httpx
 
+    r = httpx.get(f"https://api.replicate.com/v1/models/{MODEL}",
+                  headers={"Authorization": f"Bearer {key}"}, timeout=30)
+    if r.status_code != 200:
+        return None, f"GET /v1/models/{MODEL} -> HTTP {r.status_code}"
+    body = r.json()
+    vid = ((body.get("latest_version") or {}).get("id") or "")
+    if not vid:
+        return None, f"{MODEL} publishes no latest_version.id"
+    return vid, (f"{MODEL} is {body.get('visibility')}, "
+                 f"{body.get('run_count')} runs")
+
+
+def _predict(blob, spec, key, version, timeout_s=300.0):
+    """Production's own transport. NOT a second implementation of it.
+
+    `HostedSegmenter._predict` posts to /v1/predictions with
+    {"version": ..., "input": ...}, sends `Prefer: wait`, polls `urls.get`
+    until the status is terminal, and separates a transport failure from a
+    model failure in `last_error`. It makes these calls every day in
+    production.
+
+    The first version of this probe rolled its own POST and 404'd -- the same
+    mistake as a renderer reimplementing the selection rule, which is why
+    `_mask_verdict` was extracted rather than copied.
+    """
+    from app.services.ai.segment_hosted import HostedSegmenter
+
+    seg = HostedSegmenter(dialect="replicate", api_key=key, version=version,
+                          timeout_s=timeout_s)
     uri = "data:image/jpeg;base64," + base64.b64encode(blob).decode()
-    r = httpx.post(
-        f"https://api.replicate.com/v1/models/{MODEL}/predictions",
-        timeout=300,
-        headers={"Authorization": f"Bearer {key}",
-                 "Prefer": "wait"},
-        json={"input": {"image": uri, "prompts": [json.dumps(spec)]}},
-    )
-    return r.status_code, (r.json() if r.content else {})
+    body = {"version": version,
+            "input": {"image": uri, "prompts": [json.dumps(spec)]}}
+    payload = seg._predict(body)          # noqa: SLF001  (a lab probe)
+    return payload, seg.last_error
 
 
 def main() -> int:
@@ -184,27 +232,47 @@ def main() -> int:
     rgb, blob = _load_production_bytes()
     variants, box, neg = build_variants(rgb)
 
-    if "--go" not in argv:
-        _report_plan(variants, box, neg, rgb)
-        return 0
-
     key = settings.segmenter_api_key
     if not key:
         print(f"\n  {RED}no SEGMENTER_API_KEY{OFF}\n")
         return 1
+
+    # Resolved in the DRY form too. The version hash is the thing the first
+    # attempt was missing, so it is the thing the dry run has to show before
+    # anyone spends on it.
+    version, note = resolve_version(key)
+
+    if "--go" not in argv:
+        _report_plan(variants, box, neg, rgb)
+        print(f"\n  {DIM}{note}{OFF}")
+        if version:
+            print(f"  resolved version id  {GRN}{version}{OFF}\n")
+            return 0
+        print(f"  {RED}could not resolve a version id -- do not run --go{OFF}\n")
+        return 1
+
+    if not version:
+        print(f"\n  {RED}{note}{OFF}\n")
+        return 1
     print(f"\n{HDR}sam3 probe{OFF}  {DIM}key {len(key)} chars, prefix "
           f"{key[:4]!r}   {len(variants)} prediction(s){OFF}")
+    print(f"  {DIM}version {version}{OFF}")
 
     H, W = rgb.shape[:2]
     frame = float(H * W)
     worst = 0
     for name, spec in variants:
-        status, body = _predict(blob, spec, key)
-        if status not in (200, 201):
-            print(f"  {RED}{name}: HTTP {status}{OFF} "
-                  f"{DIM}{str(body)[:200]}{OFF}")
-            worst = 1
-            continue
+        body, err = _predict(blob, spec, key, version)
+        if not body:
+            # RAW, AND THEN STOP. An identical failure across prompts is a
+            # transport or access question, and trying further variants would
+            # spend money answering it.
+            print(f"\n  {RED}{name}: no prediction{OFF}")
+            print(f"    {DIM}{err}{OFF}")
+            print(f"\n  {YEL}Stopping rather than trying the remaining "
+                  f"variants.{OFF} {DIM}The same failure on every prompt is "
+                  f"not a prompt problem.{OFF}\n")
+            return 1
         print(f"\n  {CYN}{name}{OFF}  {DIM}status "
               f"{body.get('status')}{OFF}")
         out = body.get("output")
