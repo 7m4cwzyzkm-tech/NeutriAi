@@ -42,6 +42,26 @@ GRN, RED, YEL, DIM, HDR, CYN, OFF = (
 )
 
 RESULTS = Path(__file__).resolve().parents[1] / "scan_results.csv"
+PHOTOS = Path(__file__).resolve().parents[2] / "photos"
+
+
+def resolve_photo(name: str) -> Path:
+    """Find a photo whether you typed a full path or just its name.
+
+    `dev` runs everything from the backend folder, so a relative path typed at
+    the repo root -- which is where you are standing, and where the photos
+    folder actually is -- resolves against the wrong folder and comes back
+    "No such file" for a file that is plainly sitting there. The path was never
+    the interesting part of the command, so it should not be a thing to get
+    right.
+    """
+    p = Path(name)
+    if p.exists():
+        return p
+    for candidate in (PHOTOS / p.name, PHOTOS / name):
+        if candidate.exists():
+            return candidate
+    return p
 FIELDS = [
     "timestamp", "image", "food", "actual_g", "estimated_g", "error_g", "error_pct",
     "method", "confidence", "band_low", "band_high", "in_band",
@@ -90,22 +110,127 @@ def token_for_bench() -> tuple[str, str]:
         print(f"{RED}Could not sign in to the bench account.{OFF}")
         print(f"  {tok}")
         sys.exit(1)
-    return tok["access_token"], tok["user"]["id"]
+
+    uid = tok["user"]["id"]
+    _unmeter(uid)
+    _clear_today(uid)
+    return tok["access_token"], uid
+
+
+def _clear_today(uid: str) -> None:
+    """Wipe the bench account's meals for today before measuring anything.
+
+    The reasoning stage is told what the user has eaten so far, and it uses it:
+    on a bench that had been running all evening it remarked that the user had
+    consumed 19,715 kcal, "roughly 10x typical daily intake", and reasoned
+    about portions with that in mind. Every accuracy figure taken that evening
+    was measured with an absurd day total whispering in the model's ear.
+
+    A measuring instrument must not carry state between measurements. This
+    clears only the bench account, only for today, using the service key.
+    """
+    try:
+        from datetime import date
+
+        from app.db import service
+
+        sb = service()
+        today = date.today().isoformat()
+        meals = sb.table("meals").select("id").eq("user_id", uid).eq(
+            "day", today
+        ).execute()
+        ids = [m["id"] for m in (meals.data or [])]
+        for mid in ids:
+            sb.table("meal_items").delete().eq("meal_id", mid).execute()
+        if ids:
+            sb.table("meals").delete().eq("user_id", uid).eq("day", today).execute()
+        sb.table("daily_summaries").delete().eq("user_id", uid).eq("day", today).execute()
+        if ids:
+            print(f"  {DIM}cleared {len(ids)} bench meal(s) logged today{OFF}")
+    except Exception as exc:  # noqa: BLE001
+        # A bench that cannot clear its own history is still a usable bench.
+        print(f"  {YEL}could not clear today's bench meals: {str(exc)[:120]}{OFF}")
+
+
+def _unmeter(uid: str) -> None:
+    """Take the bench account off the free-tier scan quota.
+
+    The paywall gives free users three AI scans a day, which is a product
+    decision and should stay exactly as it is. But the bench is a measuring
+    instrument -- running twelve photos through it is the entire point, and
+    hitting a 429 on the fourth makes it useless. So this one account is
+    marked active, using the service key, on every run.
+
+    This is deliberately not a config flag: FREE_TIER_DAILY_SCANS stays at its
+    real value so local testing exercises the same paywall a user meets.
+    Nothing here touches any other account.
+    """
+    try:
+        from app.db import service
+        from app.services.identity import ensure_profile
+
+        # entitlements.user_id references profiles(id), so the profile has to
+        # exist before the entitlement row can.
+        ensure_profile(uid, BENCH_EMAIL)
+
+        sb = service()
+        existing = sb.table("entitlements").select("user_id").eq(
+            "user_id", uid
+        ).limit(1).execute()
+        row = {"tier": "pro", "is_active": True, "ai_scans_used_today": 0}
+        if existing.data:
+            sb.table("entitlements").update(row).eq("user_id", uid).execute()
+        else:
+            sb.table("entitlements").insert({**row, "user_id": uid,
+                                             "ai_scans_quota": 9999}).execute()
+    except Exception as exc:  # noqa: BLE001
+        print(f"{YEL}Could not lift the bench quota ({str(exc)[:120]}).{OFF}")
+        print(f"{DIM}  Scans will stop after the daily free allowance.{OFF}")
+
+
+class UploadFailed(RuntimeError):
+    """One photograph could not be uploaded. Not a reason to end the run."""
+
+
+UPLOAD_TRIES = 3
+UPLOAD_BACKOFF_S = 5.0
 
 
 def upload(path: Path, uid: str, token: str) -> str:
-    """Straight to Supabase Storage, same route the phone takes."""
-    key = f"{uid}/bench-{int(time.time())}-{path.name}"
-    url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/meal-photos/{key}"
+    """Straight to Supabase Storage, same route the phone takes.
+
+    RETRIES, AND RAISES RATHER THAN EXITS.
+
+    This called sys.exit(1) on any non-200. Twice in one evening a bench run
+    of 21 photographs x 3 runs died on a single transient upload -- once at
+    photo 4, once at photo 16 -- taking every photo after it with it. Sixty-odd
+    paid model calls bought a partial answer both times, and the cause was a
+    socket write timing out, not anything about the food.
+
+    A photograph that cannot be uploaded is one missing row. The bench already
+    knows how to report a photo it could not score; it did not know how to
+    survive one. Three tries with a short backoff, then raise -- and the caller
+    records it and carries on to the next photograph.
+    """
+    body = path.read_bytes()
     ctype = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
-    status, res = call(url, method="POST", raw=path.read_bytes(),
-                       headers={"apikey": settings.supabase_anon_key,
-                                "Authorization": f"Bearer {token}",
-                                "Content-Type": ctype}, timeout=90)
-    if status not in (200, 201):
-        print(f"{RED}Upload failed (HTTP {status}): {res}{OFF}")
-        sys.exit(1)
-    return key
+    last = ""
+    for attempt in range(1, UPLOAD_TRIES + 1):
+        key = f"{uid}/bench-{int(time.time())}-{path.name}"
+        url = (f"{settings.supabase_url.rstrip('/')}"
+               f"/storage/v1/object/meal-photos/{key}")
+        status, res = call(url, method="POST", raw=body,
+                           headers={"apikey": settings.supabase_anon_key,
+                                    "Authorization": f"Bearer {token}",
+                                    "Content-Type": ctype}, timeout=90)
+        if status in (200, 201):
+            return key
+        last = f"HTTP {status}: {res}"
+        if attempt < UPLOAD_TRIES:
+            print(f"  {YEL}upload attempt {attempt} failed ({last}) — "
+                  f"retrying in {UPLOAD_BACKOFF_S:.0f}s{OFF}")
+            time.sleep(UPLOAD_BACKOFF_S)
+    raise UploadFailed(f"{path.name}: {last}")
 
 
 def parse_actuals(text: str) -> dict[str, float]:
@@ -122,6 +247,31 @@ def parse_actuals(text: str) -> dict[str, float]:
     return out
 
 
+# Words that mean the same food to a kitchen scale. This is a HARNESS
+# convenience, not an accuracy setting: it decides which weighed number a
+# detection is scored against, never what the estimator computes.
+#
+# It exists because the biggest item on three photos went unscored. The scale
+# said "beef 335 g"; the model said "grilled meat skewer". No shared word, no
+# match, so the 335 g item -- 78% of the meal -- was silently dropped from the
+# per-item figure, leaving it computed almost entirely from 27 g of tomatoes.
+SAME_FOOD = [
+    {"beef", "steak", "meat", "kebab", "skewer", "brochette"},
+    {"chicken", "poultry", "drumstick", "thigh", "breast"},
+    {"potato", "potatoes"},
+    {"tomato", "tomatoes"},
+    {"pasta", "spaghetti", "noodles", "fideo", "casserole"},
+    {"rice"},
+    {"beans", "refried"},
+    # Rajas: chile strips in a cream sauce. The model will not say "rajas" --
+    # it says poblano, anaheim, green chile, or pepper strips, and all of those
+    # are the same food on the plate. Singular and plural both, because the
+    # matcher compares whole words.
+    {"rajas", "poblano", "poblanos", "anaheim", "chile", "chiles", "chilies",
+     "chilli", "chillies", "pepper", "peppers", "crema"},
+]
+
+
 def match(detected: str, actuals: dict[str, float]) -> tuple[str, float] | None:
     """Loose name matching -- the model says 'jasmine rice', you wrote 'rice'."""
     d = detected.lower()
@@ -133,6 +283,13 @@ def match(detected: str, actuals: dict[str, float]) -> tuple[str, float] | None:
         # any shared significant word
         if set(w for w in name.split() if len(w) > 3) & set(w for w in d.split() if len(w) > 3):
             return name, grams
+    # ...or words that mean the same food.
+    d_words = set(d.replace(",", " ").split())
+    for name, grams in actuals.items():
+        n_words = set(name.replace(",", " ").split())
+        for group in SAME_FOOD:
+            if (d_words & group) and (n_words & group):
+                return name, grams
     return None
 
 
@@ -147,9 +304,12 @@ def record(rows: list[dict]) -> None:
 
 
 def run_scan(args) -> int:
-    photo = Path(args.image)
+    photo = resolve_photo(args.image)
     if not photo.exists():
-        print(f"{RED}No such file: {photo}{OFF}")
+        print(f"{RED}No such file: {args.image}{OFF}")
+        if PHOTOS.exists():
+            names = sorted(f.name for f in PHOTOS.iterdir() if f.suffix.lower() in (".jpg", ".jpeg", ".png"))
+            print(f"  {DIM}photos\\ holds: " + ", ".join(names) + OFF)
         return 1
     actuals = parse_actuals(args.actual) if args.actual else {}
 
@@ -166,6 +326,8 @@ def run_scan(args) -> int:
         payload["meal_slot"] = args.slot
     if args.plate:
         payload["plate_diameter_mm"] = args.plate
+    if args.distance:
+        payload["camera_distance_mm"] = args.distance
 
     t0 = time.perf_counter()
     status, res = call(f"{args.api.rstrip('/')}/scans", method="POST", body=payload,
@@ -175,10 +337,17 @@ def run_scan(args) -> int:
     if status not in (200, 201):
         err = (res or {}).get("error", {})
         print(f"\n{RED}Scan failed (HTTP {status}): {err.get('message', res)}{OFF}")
-        if err.get("code") in ("upstream_error", "internal_error"):
-            print(f"  {YEL}Check ANTHROPIC_API_KEY and OPENAI_API_KEY in .env.")
-            print(f"  Both need billing enabled -- a zero-balance account 401s in a")
-            print(f"  way that looks exactly like a bad key.{OFF}")
+        if err.get("code") == "upstream_error":
+            print(f"  {YEL}A provider call failed. Check the keys with `dev keys`; a")
+            print(f"  zero-balance account 401s in a way that looks like a bad key.{OFF}")
+        elif err.get("code") == "internal_error":
+            # Do not speculate. An internal error is a bug in our own code far
+            # more often than a key problem, and guessing at the cause here has
+            # sent people to check billing while the real fault was a database
+            # constraint. Point at the tool that prints the actual traceback.
+            print(f"  {YEL}That is a bug on our side, not a key problem.")
+            print(f"  Run the same photo through the diagnostic for the real cause:")
+            print(f"    dev scandebug \"{photo}\"{OFF}")
         return 1
 
     items = res.get("items") or []
@@ -226,6 +395,15 @@ def run_scan(args) -> int:
     print(f"\n  {HDR}meal total: {totals.get('kcal', 0):.0f} kcal  "
           f"P{totals.get('protein_g', 0):.0f} C{totals.get('carbs_g', 0):.0f} "
           f"F{totals.get('fat_g', 0):.0f}{OFF}")
+
+    if args.total:
+        est_total = sum(float(i["grams"]) for i in items)
+        err_pct = (est_total - args.total) / args.total * 100
+        colour = GRN if abs(err_pct) <= 20 else (YEL if abs(err_pct) <= 40 else RED)
+        methods = sorted({i["estimation_method"] for i in items})
+        print(f"  {colour}weighed total {args.total:.0f} g  ->  estimated "
+              f"{est_total:.1f} g  ({err_pct:+.1f}%){OFF}"
+              f"   {DIM}via {', '.join(methods)}{OFF}")
 
     if res.get("notes"):
         print(f"\n  {DIM}how it was calculated:{OFF}")
@@ -304,8 +482,19 @@ def main() -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("image", nargs="?", help="path to the meal photo")
     p.add_argument("--actual", help='weighed grams, e.g. "rice=180, chicken=210"')
+    # For food you cannot split on a scale. Two tacos weigh 133 g together;
+    # nobody can weigh the tortilla apart from the egg inside it, and the model
+    # will quite reasonably report them as separate items. Per-item matching
+    # has nothing to match, and the run reports nothing at all -- so the
+    # measurement that IS available gets thrown away. This keeps it.
+    p.add_argument("--total", type=float,
+                   help="weighed grams for the WHOLE meal, when items cannot be weighed apart")
     p.add_argument("--slot", choices=["breakfast", "lunch", "dinner", "snack"])
     p.add_argument("--plate", type=float, help="plate diameter in mm, if you measured it")
+    # With the aspect ratio this gives the frame size by trigonometry, which is
+    # the only scale a photo with no plate and no reference object has.
+    p.add_argument("--distance", type=float,
+                   help="how far the lens was from the food, in mm (12 in = 305)")
     p.add_argument("--api", default="http://localhost:8000/v1")
     p.add_argument("--report", action="store_true", help="summarise recorded results")
     p.add_argument("--csv", action="store_true", help="with --report, dump raw rows")

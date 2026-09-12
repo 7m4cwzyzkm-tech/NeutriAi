@@ -210,14 +210,6 @@ async def deliver(notification_ids: Iterable[str] | None = None, limit: int = 20
     return {"sent": len(sent_ids), "skipped": len(skipped_ids)}
 
 
-def deliver_soon(notification_ids: Iterable[str]) -> None:
-    """Fire-and-forget delivery for events that should feel instant."""
-    try:
-        asyncio.get_running_loop().create_task(deliver(list(notification_ids)))
-    except RuntimeError:
-        pass  # no loop (sync context) — the worker will pick it up within a minute
-
-
 async def register_token(user_id: str, token: str) -> bool:
     """Store an Expo push token, clearing it from any other account first.
 

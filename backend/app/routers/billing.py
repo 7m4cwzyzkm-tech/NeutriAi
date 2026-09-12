@@ -1,7 +1,9 @@
 """Stripe checkout, portal, subscription status and webhooks."""
 from __future__ import annotations
 
+import structlog
 from fastapi import APIRouter, Header, Request, Response, status
+from fastapi.responses import JSONResponse
 
 from ..db import maybe_one
 from ..deps import CurrentUserDep, EntitlementDep
@@ -10,6 +12,8 @@ from ..models.billing import (
 )
 from ..services.billing import iap
 from ..services.billing import stripe_service as svc
+
+log = structlog.get_logger()
 
 router = APIRouter(tags=["billing"])
 
@@ -105,6 +109,32 @@ async def verify_google_purchase(
     return await iap.verify_google(user.id, product_id, purchase_token)
 
 
+def _store_reply(outcome: str) -> Response:
+    """Answer Apple and Google in the only language they act on: the status code.
+
+    `handle_*_notification` has always been able to say "deferred:" when it
+    could not settle a notification -- verification failed, the idempotency
+    claim could not be read either way. That string went into a JSON body under
+    a 200, and A 200 MEANS DELIVERED. Apple and Google stopped retrying, and
+    the renewal, cancellation or refund was lost for good. There is no
+    dashboard to replay a store notification from; the retry IS the recovery.
+    
+    So a deferred outcome now answers 503. Apple retries App Store Server
+    Notifications on a non-2xx for up to three days; Play Pub/Sub redelivers
+    on any non-2xx. Everything genuinely handled -- including a duplicate,
+    which really has been dealt with -- still answers 200, because asking a
+    store to resend something we already processed is its own kind of wrong.
+    """
+    deferred = str(outcome or "").startswith("deferred:")
+    if deferred:
+        log.warning("store_notification_deferred", outcome=outcome)
+    return JSONResponse(
+        {"received": not deferred, "outcome": outcome},
+        status_code=(status.HTTP_503_SERVICE_UNAVAILABLE if deferred
+                     else status.HTTP_200_OK),
+    )
+
+
 @router.post("/webhooks/apple", include_in_schema=False)
 async def apple_notifications(request: Request):
     """App Store Server Notifications V2. Register in App Store Connect.
@@ -114,11 +144,11 @@ async def apple_notifications(request: Request):
     """
     body = await request.json()
     outcome = await iap.handle_apple_notification(body.get("signedPayload", ""))
-    return {"received": True, "outcome": outcome}
+    return _store_reply(outcome)
 
 
 @router.post("/webhooks/google", include_in_schema=False)
 async def google_notifications(request: Request):
     """Play Real-Time Developer Notifications, delivered via Pub/Sub push."""
     outcome = await iap.handle_google_notification(await request.json())
-    return {"received": True, "outcome": outcome}
+    return _store_reply(outcome)

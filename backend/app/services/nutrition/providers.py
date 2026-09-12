@@ -18,6 +18,7 @@ Provider notes worth knowing:
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Any
 
 import httpx
@@ -63,6 +64,52 @@ _USDA_NUTRIENTS = {
 }
 
 
+_KEY_RE = re.compile(r"(api_key|apikey|app_key|key)=[^&\s]+", re.I)
+
+
+def _redact(text: str) -> str:
+    """Strip credentials out of anything on its way to a log.
+
+    httpx puts the full request URL in its exception messages, and these APIs
+    take the key as a query parameter -- so an unhandled error writes a live
+    credential to the log. This happened: a USDA key went into the terminal in
+    plaintext on every 400.
+    """
+    return _KEY_RE.sub(r"\1=***", text)
+
+
+def _match_score(description: str, query: str) -> float:
+    """How well a USDA description answers the query. Higher is better.
+
+    USDA descriptions put the food first and its qualifiers after commas:
+
+        "Rice, white, long-grain, regular, cooked"      head: rice
+        "Dirty rice"                                    head: dirty rice
+        "Squash, summer, spaghetti, cooked"             head: squash
+
+    Taking foods[0] blindly gave "rice" -> dirty rice and "spaghetti" ->
+    spaghetti squash. Both are real foods and both are the wrong one: dirty
+    rice contains meat and organ, and spaghetti squash is a vegetable with a
+    fifth of the carbohydrate. The grams can be perfect and the meal still be
+    wrong by 170 kcal.
+
+    So: reward the query appearing in the HEAD, penalise head words the query
+    never asked for, and give a smaller reward for appearing anywhere at all.
+    """
+    desc = description.lower()
+    head = desc.split(",")[0]
+    q = {t for t in re.split(r"[^a-z0-9]+", query.lower()) if len(t) > 2}
+    if not q:
+        return 0.0
+    head_tokens = {t for t in re.split(r"[^a-z0-9]+", head) if len(t) > 2}
+    all_tokens = {t for t in re.split(r"[^a-z0-9]+", desc) if len(t) > 2}
+
+    in_head = len(q & head_tokens) / len(q)
+    unasked = len(head_tokens - q) / max(1, len(head_tokens))
+    anywhere = len(q & all_tokens) / len(q)
+    return 4.0 * in_head - 1.0 * unasked + 1.0 * anywhere
+
+
 async def usda(client: httpx.AsyncClient, query: str) -> dict | None:
     if not settings.usda_api_key:
         return None
@@ -72,7 +119,9 @@ async def usda(client: httpx.AsyncClient, query: str) -> dict | None:
             params={
                 "api_key": settings.usda_api_key,
                 "query": query,
-                "pageSize": 3,
+                # Ten, not three: the right food is often not first, and
+                # _match_score needs candidates to choose between.
+                "pageSize": 10,
                 # Foundation/SR Legacy are lab-analysed; Survey is modelled.
                 "dataType": "Foundation,SR Legacy,Survey (FNDDS)",
                 "requireAllWords": "false",
@@ -83,21 +132,48 @@ async def usda(client: httpx.AsyncClient, query: str) -> dict | None:
         foods = r.json().get("foods") or []
         if not foods:
             return None
-        food = foods[0]
+        # NOT foods[0]. USDA's own ordering put "dirty rice" ahead of rice
+        # and spaghetti squash ahead of spaghetti.
+        food = max(foods, key=lambda f: _match_score(str(f.get("description", "")), query))
         out = _blank(food.get("description", query).lower(), "usda")
         out["source_id"] = str(food.get("fdcId"))
+        reported_energy = False
         for n in food.get("foodNutrients") or []:
             key = _USDA_NUTRIENTS.get(n.get("nutrientId"))
             if key and out.get(key, 0) == 0:
                 out[key] = float(n.get("value") or 0)
+            if key == "kcal_per_100g":
+                reported_energy = True
         for p in (food.get("foodPortions") or [])[:4]:
             if p.get("gramWeight"):
                 label = p.get("portionDescription") or p.get("modifier") or "portion"
                 out["serving_hints"].append({"label": label, "grams": float(p["gramWeight"])})
         out["raw"] = {"fdcId": food.get("fdcId"), "dataType": food.get("dataType")}
-        return out if out["kcal_per_100g"] > 0 else None
+        # A food really can have no calories -- water, black coffee, a diet
+        # soda -- and rejecting that answer sends it down the AI-estimate path,
+        # which fills every missing macro with a generic default. A 300 ml
+        # glass of water was logging ~450 kcal.
+        #
+        # What must still be rejected is a result where the provider reported
+        # no energy AT ALL, which is a different thing from reporting zero and
+        # is indistinguishable once it has been defaulted to 0.0. So each
+        # provider records whether the field was actually present.
+        return out if reported_energy else None
+    except httpx.HTTPStatusError as exc:
+        # Log WHAT was wrong, not the URL. The URL carries the api_key as a
+        # query parameter, so logging it puts a live credential into the
+        # terminal, the log file, and anywhere those are shipped. USDA returns a
+        # JSON body explaining the rejection; that is the useful part anyway.
+        body = ""
+        try:
+            body = exc.response.text[:300]
+        except Exception:  # noqa: BLE001
+            pass
+        log.warning("usda_failed", query=query,
+                    status=exc.response.status_code, detail=body)
+        return None
     except Exception as exc:  # noqa: BLE001
-        log.warning("usda_failed", query=query, error=str(exc)[:200])
+        log.warning("usda_failed", query=query, error=_redact(str(exc))[:200])
         return None
 
 
@@ -143,9 +219,18 @@ async def nutritionix(client: httpx.AsyncClient, query: str) -> dict | None:
                     {"label": m.get("measure", "serving"), "grams": float(m["serving_weight"])}
                 )
         out["raw"] = {"nix_item_id": f.get("nix_item_id"), "brand": f.get("brand_name")}
-        return out if out["kcal_per_100g"] > 0 else None
+        # A food really can have no calories -- water, black coffee, a diet
+        # soda -- and rejecting that answer sends it down the AI-estimate path,
+        # which fills every missing macro with a generic default. A 300 ml
+        # glass of water was logging ~450 kcal.
+        #
+        # What must still be rejected is a result where the provider reported
+        # no energy AT ALL, which is a different thing from reporting zero and
+        # is indistinguishable once it has been defaulted to 0.0. So each
+        # provider records whether the field was actually present.
+        return out if f.get("nf_calories") is not None else None
     except Exception as exc:  # noqa: BLE001
-        log.warning("nutritionix_failed", query=query, error=str(exc)[:200])
+        log.warning("nutritionix_failed", query=query, error=_redact(str(exc))[:200])
         return None
 
 
@@ -188,9 +273,18 @@ async def edamam(client: httpx.AsyncClient, query: str) -> dict | None:
                     {"label": m.get("label", "serving"), "grams": float(m["weight"])}
                 )
         out["raw"] = {"foodId": food.get("foodId"), "category": food.get("category")}
-        return out if out["kcal_per_100g"] > 0 else None
+        # A food really can have no calories -- water, black coffee, a diet
+        # soda -- and rejecting that answer sends it down the AI-estimate path,
+        # which fills every missing macro with a generic default. A 300 ml
+        # glass of water was logging ~450 kcal.
+        #
+        # What must still be rejected is a result where the provider reported
+        # no energy AT ALL, which is a different thing from reporting zero and
+        # is indistinguishable once it has been defaulted to 0.0. So each
+        # provider records whether the field was actually present.
+        return out if n.get("ENERC_KCAL") is not None else None
     except Exception as exc:  # noqa: BLE001
-        log.warning("edamam_failed", query=query, error=str(exc)[:200])
+        log.warning("edamam_failed", query=query, error=_redact(str(exc))[:200])
         return None
 
 
@@ -216,9 +310,3 @@ async def race_providers(query: str, order: list[str] | None = None) -> dict | N
     return None
 
 
-async def batch_lookup(queries: list[str]) -> dict[str, dict | None]:
-    """Resolve several foods concurrently — one meal photo, many items."""
-    results = await asyncio.gather(*(race_providers(q) for q in queries), return_exceptions=True)
-    return {
-        q: (r if isinstance(r, dict) else None) for q, r in zip(queries, results)
-    }

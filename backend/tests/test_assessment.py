@@ -90,3 +90,70 @@ def test_eating_curve_is_monotonic():
         assert v >= prev
         prev = v
     assert _expected_by_now(2300, datetime(2026, 1, 1, 3, 0, tzinfo=timezone.utc)) == 0
+
+
+# --- the home screen's fasting card ------------------------------------------
+
+def test_the_dashboard_finishes_the_fast_it_returns():
+    """The rollup returns `to_jsonb(f)` -- the raw `fasts` row, which carries a
+    start time and a target and nothing else. `pct`, `elapsed_minutes` and
+    `phase` are computed in `lifestyle._to_out`, and the rollup does not go
+    through it.
+
+    So the home screen rendered strokeDasharray="NaN" and read "NaNh / NaNm",
+    while the Fasting tab showed the same fast correctly -- one fast, two
+    readings, in one app.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.routers.lifestyle import _to_out
+
+    started = datetime.now(timezone.utc) - timedelta(minutes=200)
+    raw = {"id": "f1", "protocol": "16:8", "status": "active",
+           "started_at": started.isoformat(), "target_minutes": 960,
+           "actual_minutes": None, "ended_at": None}
+
+    # what the rollup hands over
+    for missing in ("pct", "elapsed_minutes", "phase"):
+        assert missing not in raw
+
+    out = _to_out(raw).model_dump(mode="json")
+    assert out["elapsed_minutes"] == pytest.approx(200, abs=1)
+    assert 0 < out["pct"] < 100
+    assert out["phase"]
+    # the two values the ring and the label divide by
+    assert isinstance(out["elapsed_minutes"], int)
+    assert out["elapsed_minutes"] // 60 == 3
+
+
+def test_the_dashboard_route_actually_does_it():
+    """Behavioural, not textual. The first version of this test checked that
+    the string "_to_out" appeared in the route's source -- and deleting the
+    line that used it left the import behind, so the check passed on a
+    mutation that broke the card."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.routers.profiles import finish_fast
+
+    started = datetime.now(timezone.utc) - timedelta(minutes=200)
+    payload = {"active_fast": {"id": "f1", "protocol": "16:8", "status": "active",
+                               "started_at": started.isoformat(),
+                               "target_minutes": 960, "actual_minutes": None,
+                               "ended_at": None}}
+    out = finish_fast(payload)["active_fast"]
+    for computed in ("pct", "elapsed_minutes", "phase"):
+        assert computed in out, f"{computed} is still missing from the dashboard"
+    assert out["elapsed_minutes"] == pytest.approx(200, abs=1)
+
+
+def test_a_broken_fast_costs_the_card_not_the_screen():
+    """A home screen missing one card beats a home screen that 500s."""
+    from app.routers.profiles import finish_fast
+
+    junk = finish_fast({"active_fast": {"id": "x"}, "meals": [1, 2]})
+    assert junk["active_fast"] is None
+    assert junk["meals"] == [1, 2], "the rest of the dashboard was lost too"
+
+    # and a dashboard with no fast at all is untouched
+    assert finish_fast({"meals": []}) == {"meals": []}
+    assert finish_fast(None) is None

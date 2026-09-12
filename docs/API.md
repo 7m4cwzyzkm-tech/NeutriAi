@@ -1,6 +1,6 @@
 # API reference
 
-Base URL `https://api.neutriai.app/v1`. Every endpoint except `/healthz`,
+Base URL `https://api.neutriai.com/v1`. Every endpoint except `/healthz`,
 `/v1/billing/plans` and `/v1/webhooks/stripe` requires:
 
 ```

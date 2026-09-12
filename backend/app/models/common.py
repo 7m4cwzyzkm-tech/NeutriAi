@@ -4,13 +4,79 @@ from datetime import date, datetime
 from enum import StrEnum
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 T = TypeVar("T")
 
 
 class Base(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+# What a request body is allowed to contain.
+#
+# Not a style rule -- a cost ceiling. `MealIn.items` had no length limit and
+# `MealItemIn.name` no size limit, and every unknown name misses the cache,
+# races three nutrition providers, and then falls through to a Claude call. One
+# request could buy ten thousand of those. The same shape appeared in recipe
+# ingredients and steps, workout sets, health-day pushes, post media paths and
+# the food search query -- six places, one omission repeated.
+#
+# So the limit lives on the BASE CLASS rather than on the fields. Field
+# annotations have to be remembered on every new model by every future edit,
+# and the evidence in this repo is that they will not be: this exact rule was
+# written for one feature and missed the next six.
+MAX_LIST_ITEMS = 200
+# Generous on purpose. A pasted recipe is genuinely long, and rejecting a real
+# one to save bytes would be a worse bug than the one this closes.
+MAX_STRING_CHARS = 20_000
+MAX_NESTING = 8
+
+
+def _within_limits(value: Any, depth: int = 0) -> None:
+    """Walk a request body and refuse the shapes that cost money.
+
+    Depth-limited as well, because a deeply nested body is its own denial of
+    service -- against this walk before it ever reaches the database.
+    """
+    if depth > MAX_NESTING:
+        raise ValueError("This request is nested too deeply.")
+    if isinstance(value, str):
+        if len(value) > MAX_STRING_CHARS:
+            raise ValueError(
+                f"One of these values is too long "
+                f"({len(value):,} characters; the limit is {MAX_STRING_CHARS:,})."
+            )
+    elif isinstance(value, (list, tuple)):
+        if len(value) > MAX_LIST_ITEMS:
+            raise ValueError(
+                f"That is too many items at once "
+                f"({len(value):,}; the limit is {MAX_LIST_ITEMS})."
+            )
+        for item in value:
+            _within_limits(item, depth + 1)
+    elif isinstance(value, dict):
+        if len(value) > MAX_LIST_ITEMS:
+            raise ValueError("That is too many fields at once.")
+        for key, item in value.items():
+            _within_limits(key, depth + 1)
+            _within_limits(item, depth + 1)
+
+
+class InputBase(Base):
+    """Anything a client sends. Bounded before it reaches the database.
+
+    Separate from `Base` because responses are built by this app, not by a
+    caller: a feed of 500 posts is a legitimate response and would be an
+    illegitimate request, and putting the cap on the shared base would turn a
+    long timeline into a 500.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _bounded(cls, data: Any) -> Any:
+        _within_limits(data)
+        return data
 
 
 class Page(Base, Generic[T]):

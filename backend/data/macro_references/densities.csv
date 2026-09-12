@@ -1,0 +1,76 @@
+# NeutriAI :: sourced food densities (g/ml)
+#
+# Density is the term that turns a measured footprint into grams. It sits in the
+# formula as a straight multiplier -- grams = area x height x profile x DENSITY
+# -- so a value 20% wrong is a portion 20% wrong, on every scan of that food,
+# forever. It is also the only term in the pipeline that can be looked up rather
+# than estimated, because other people have already weighed these foods
+# carefully and published the results.
+#
+# Every row here has a source. Rows are NOT invented, reasoned, or adjusted to
+# make a bench number look better; where a published value disagrees with what
+# the weighed bench says, both are recorded and the disagreement is left visible
+# in the `note` column rather than split down the middle.
+#
+# SOURCES
+#   FAO2      FAO/INFOODS Density Database v2.0 (2012), 638 entries, 20 food
+#             groups. The standard reference for food density.
+#             fao.org/fileadmin/templates/food_composition/documents/density_DB_v2_0_01.pdf
+#   FAO1      FAO/INFOODS Density Database v1.0 (July 2011). Kept because it
+#             carries composite dishes v2.0 dropped.
+#             fao.org/fileadmin/templates/food_composition/documents/upload/Density_databse_v1_final.pdf
+#   USDAcup   A USDA FoodData Central cup weight, converted: density = g_per_cup / 236.588.
+#             This is how a published gram weight becomes a density; USDA does
+#             not publish density directly.
+#   BENCH     Measured here, against food on a kitchen scale. Only where it
+#             disagrees with a published value, and the disagreement is noted.
+#
+# HOW TO ADD A ROW
+#   Find a cup weight or a published density. Put the number, the source tag and
+#   the citation in. Do not add a row you reasoned out -- an unsourced guess in a
+#   file called "references" is worse than no file, because the next person
+#   trusts it.
+#
+key,density_g_ml,source,citation,note
+# --- grains and starches -----------------------------------------------------
+rice,0.67,USDAcup,"USDA cooked white rice 158 g/cup",FAO2 says 0.73 for rice boiled; 0.67 is what the weighed bench supports and it fixed a +19% to +22% over-read on two meals. Disagreement left standing.
+pasta,0.59,FAO2,"pasta/noodles boiled 0.59",FAO2 also lists short macaroni boiled at 0.55; 0.59 is the general noodle figure.
+spaghetti,0.59,FAO2,"pasta/noodles boiled 0.59",
+bread,0.29,FAO2,"bread 0.29",white bread is listed separately at 0.42; 0.29 is the general figure.
+corn,0.90,FAO2,"corn/maize boiled 0.90",was 0.72 by estimate.
+potato,0.59,FAO2,"potato english boiled 0.59",
+sweet potato,0.65,FAO2,"sweet potato boiled 0.65",
+yam,0.79,FAO2,"yam boiled 0.79",
+# --- legumes -----------------------------------------------------------------
+refried beans,1.02,USDAcup,"USDA 174296 refried beans canned vegetarian 242 g/cup",A paste with no air gaps. This is the value the estimator most needs to get right on a Mexican plate.
+beans,0.79,FAO2,"kidney beans dry boiled 0.79",whole beans with gaps between them; distinct from refried.
+kidney beans,0.79,FAO2,"kidney beans dry boiled 0.79",
+cowpeas,0.75,FAO2,"cowpeas dried boiled 0.75",
+soybean,0.79,FAO2,"soybean boiled 0.79",
+mung beans,0.76,FAO2,"greengram boiled 0.76",
+# --- dairy and eggs ----------------------------------------------------------
+milk,1.04,FAO2,"milk cow whole 1.04",
+yogurt,1.06,FAO2,"yoghurt plain unsweetened 1.06",
+grated cheese,0.34,FAO2,"cheese emmentaler grated 0.34",grated only. A solid block is near 1.05 and must not use this row.
+egg,0.60,FAO1,"egg chicken boiled/poached 0.60 (FNDDS 4.1)",Whole boiled eggs piled together; the gaps are most of the difference from 1.03.
+# --- fish and shellfish ------------------------------------------------------
+prawns,0.77,FAO1,"prawns whole boiled without shell 0.77",
+shrimp,0.77,FAO1,"prawns whole boiled without shell 0.77",
+# --- soups and wet dishes ----------------------------------------------------
+bean soup,1.054,FAO2,"bean soup 1.054",
+chicken noodle soup,1.00,FAO2,"chicken noodle soup 1.0",
+thick soup,1.09,FAO2,"soup thick (squash potato) 1.09",
+beef stew,1.05,FAO1,"beef stew canned 1.05",
+# --- composite dishes --------------------------------------------------------
+# These are the rows that matter most, because a composite is exactly what the
+# name-matching used to miss -- it fell through to a generic 0.85 for every one.
+casserole,0.933,FAO1,"tuna noodle casserole 0.933",
+spaghetti casserole,0.933,FAO1,"tuna noodle casserole 0.933",nearest published analogue: baked pasta bound with sauce and protein.
+spaghetti and meatballs,1.038,FAO1,"spaghetti and meat balls canned 1.038",
+beef and noodles,1.038,FAO1,"beef and noodles in gravy 1.038",with gravy; FAO1 lists the same dish without sauce at 0.65.
+chicken and dumplings,1.038,FAO1,"chicken and dumplings 1.038",
+# --- vegetables and fruit ----------------------------------------------------
+cherry tomatoes,0.63,USDAcup,"USDA 170457 tomatoes red ripe raw cherry 149 g/cup",Whole tomatoes piled loose. Was 0.85 by fallback -- 35% too high on the exact item that has been over-reading.
+tomato,0.76,USDAcup,"USDA 170457 tomatoes red ripe raw chopped 180 g/cup",chopped, so fewer gaps than whole cherry tomatoes.
+# --- fats --------------------------------------------------------------------
+olive oil,0.918,FAO2,"oil olive 0.918",FAO2 gives 0.88-0.96 across oils.

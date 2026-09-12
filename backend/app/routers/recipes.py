@@ -226,6 +226,28 @@ async def adapt_recipe(
     )
 
 
+@router.get("/shopping-lists/saved", response_model=list[dict])
+async def saved_shopping_lists(user: CurrentUserDep, limit: int = Query(20, le=100)):
+    """The shopping lists adapting a recipe has saved.
+
+    These rows were being written and never read. A user adapted a recipe, the
+    app stored a named shopping list, and no route could return it -- so the
+    feature existed in the database and nowhere else. Found by a wiring audit
+    rather than by anyone using it, which is the whole problem with a write that
+    nothing reads: it fails silently and looks like it worked.
+
+    The path is two segments so that /{recipe_id} cannot claim it -- that route
+    matches a single segment only. Worth stating, because the near-miss is real:
+    a one-segment /shopping-lists WOULD have been swallowed by /{recipe_id},
+    which is declared above it, and answered 404 for a path that exists.
+    """
+    return rows(
+        user.sb.table("shopping_lists").select("*")
+        .eq("user_id", user.id).order("created_at", desc=True)
+        .limit(limit).execute()
+    )
+
+
 @router.get("/{recipe_id}/shopping-list")
 async def shopping_list(recipe_id: str, user: CurrentUserDep, servings: int = Query(0, ge=0)):
     """Aisle-grouped shopping list, scaled to the servings the user wants."""

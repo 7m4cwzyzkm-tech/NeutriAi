@@ -4,10 +4,10 @@ from datetime import date
 
 from pydantic import Field
 
-from .common import ActivityLevel, Base, DietMode, Goal, Sex
+from .common import InputBase, ActivityLevel, Base, DietMode, Goal, Sex
 
 
-class ProfileIn(Base):
+class ProfileIn(InputBase):
     handle: str | None = Field(None, min_length=3, max_length=24, pattern=r"^[a-zA-Z0-9_.]+$")
     display_name: str | None = Field(None, max_length=80)
     bio: str | None = Field(None, max_length=280)
@@ -45,7 +45,7 @@ class ProfileOut(Base):
     onboarded_at: str | None = None
 
 
-class RestrictionIn(Base):
+class RestrictionIn(InputBase):
     kind: str = Field("allergy", pattern="^(allergy|intolerance|avoid|religious|preference)$")
     label: str = Field(min_length=1, max_length=60)
     severity: str = Field("moderate", pattern="^(mild|moderate|severe|anaphylactic)$")
@@ -64,7 +64,7 @@ class TargetsOut(Base):
     rationale: dict = {}
 
 
-class BodyMetricIn(Base):
+class BodyMetricIn(InputBase):
     weight_kg: float | None = Field(None, ge=20, le=400)
     body_fat_pct: float | None = Field(None, ge=2, le=70)
     waist_cm: float | None = None

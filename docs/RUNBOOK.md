@@ -929,7 +929,7 @@ after an outage.
 3. **Users and Access → Integrations → In-App Purchase** → generate a key.
    Save the `.p8` (downloadable once), the Key ID and the Issuer ID.
 4. **App Information → App Store Server Notifications** → set the production
-   *and* sandbox URLs to `https://api.neutriai.app/v1/webhooks/apple`.
+   *and* sandbox URLs to `https://api.neutriai.com/v1/webhooks/apple`.
 
 ```ini
 APPLE_BUNDLE_ID=app.neutriai.mobile
@@ -946,7 +946,7 @@ APPLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIGT...\n-----END PRIVATE KEY----
    Download the JSON.
 3. **Monetization setup → Real-time developer notifications** → create a
    Pub/Sub topic, then a **push** subscription to
-   `https://api.neutriai.app/v1/webhooks/google`.
+   `https://api.neutriai.com/v1/webhooks/google`.
 
 ```ini
 ANDROID_PACKAGE_NAME=app.neutriai.mobile
@@ -1087,7 +1087,7 @@ Either way:
 - [ ] Live mode, two prices: $6.99/month, $50/year
 - [ ] Trial set **per checkout session**, not on the price — otherwise a user
       who cancels and returns gets a second free trial
-- [ ] Webhook → `https://api.neutriai.app/v1/webhooks/stripe`, the 7 events from
+- [ ] Webhook → `https://api.neutriai.com/v1/webhooks/stripe`, the 7 events from
       `HANDLED` in `stripe_service.py`
 - [ ] Customer Portal enabled, cancellation allowed
 - [ ] `stripe trigger checkout.session.completed` → confirm the entitlement flips
@@ -1096,12 +1096,12 @@ Either way:
 
 | Provider | Redirect URI | Lead time |
 |---|---|---|
-| Fitbit | `https://api.neutriai.app/v1/integrations/callback/fitbit` | Same day |
+| Fitbit | `https://api.neutriai.com/v1/integrations/callback/fitbit` | Same day |
 | Google Fit | `.../callback/google_fit` | **Weeks** — verified consent screen |
 | Garmin | Health API + push to `/v1/health/push` | Weeks — approval-gated |
 | Apple / Samsung | none | — |
 
-Set `OAUTH_REDIRECT_BASE=https://api.neutriai.app/v1/integrations/callback` and
+Set `OAUTH_REDIRECT_BASE=https://api.neutriai.com/v1/integrations/callback` and
 make sure every provider's registered URI matches **exactly**, trailing slash
 included.
 
@@ -1143,10 +1143,10 @@ eas build --platform android --profile production
 ### 10.7 Final verification
 
 ```bash
-curl -s https://api.neutriai.app/healthz | jq
-curl -s https://api.neutriai.app/readyz | jq            # database: reachable
-curl -s https://api.neutriai.app/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
-curl -s https://api.neutriai.app/docs                    # 404 — correct in prod
+curl -s https://api.neutriai.com/healthz | jq
+curl -s https://api.neutriai.com/readyz | jq            # database: reachable
+curl -s https://api.neutriai.com/v1/billing/plans | jq '.[].amount_cents'  # 699, 5000
+curl -s https://api.neutriai.com/docs                    # 404 — correct in prod
 ```
 
 Then, on a real device from a store build:

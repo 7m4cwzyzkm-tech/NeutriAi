@@ -1,9 +1,10 @@
 /** Navigation tree + auth gate. */
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Text } from 'react-native';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { DarkTheme, NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { PushTarget, RootStackParamList, TabParamList } from './types';
 import { supabase } from '../api/supabase';
 import { useApp } from '../state/store';
 import { usePushNotifications } from '../native/notifications';
@@ -17,11 +18,12 @@ import { RecipesScreen } from '../screens/RecipesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import PlateCalibrationScreen from '../screens/PlateCalibrationScreen';
 import { MealDetailScreen } from '../screens/MealDetailScreen';
 import { DeleteAccountScreen } from '../screens/DeleteAccountScreen';
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const ICON: Record<string, string> = {
   Home: '◎', Train: '⌁', Scan: '⊕', Recipes: '♨', Feed: '⌂', Profile: '☺',
@@ -80,13 +82,42 @@ export function RootNavigator() {
   const session = useApp((s) => s.session);
   const setSession = useApp((s) => s.setSession);
   const openPaywall = useApp((s) => s.openPaywall);
-  const navRef = useNavigationContainerRef();
+  const navRef = useNavigationContainerRef<RootStackParamList>();
 
-  // Registers the device on every launch (tokens rotate) and routes taps.
-  usePushNotifications((route, params) => {
-    if (route === 'Paywall') return openPaywall();
-    if (navRef.isReady()) navRef.navigate(route as never, params as never);
-  });
+  /**
+   * Registers the device on every launch (tokens rotate) and routes taps.
+   *
+   * useCallback is load-bearing, not tidiness: usePushNotifications depends on
+   * this function, so an inline arrow would re-register the listener and
+   * re-run push registration on every render.
+   */
+  const openTarget = useCallback((target: PushTarget) => {
+    // The paywall is a modal owned by app state, not a route.
+    if (target.kind === 'paywall') {
+      openPaywall();
+      return;
+    }
+    if (!navRef.isReady()) return;
+    switch (target.kind) {
+      case 'fasting':
+        navRef.navigate('Fasting');
+        break;
+      // Home/Train/Scan/Recipes are tabs INSIDE Main, not top-level routes.
+      // Navigating to them by bare name is what the old `as never` cast was
+      // hiding, and it does not reliably work.
+      case 'tab':
+        navRef.navigate('Main', { screen: target.tab });
+        break;
+      case 'feed':
+        navRef.navigate('Main', { screen: 'Feed', params: { postId: target.postId } });
+        break;
+      case 'profile':
+        navRef.navigate('Main', { screen: 'Profile', params: { userId: target.userId } });
+        break;
+    }
+  }, [navRef, openPaywall]);
+
+  usePushNotifications(openTarget);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -98,17 +129,17 @@ export function RootNavigator() {
     <NavigationContainer
       ref={navRef}
       linking={linking}
+      // Spread the library's own dark theme rather than hand-building one.
+      // The Theme type differs between React Navigation 6 and 7 (7 added a
+      // `fonts` block, 6 rejects it), and hardcoding either shape breaks on
+      // the other. Taking the installed theme and overriding only colours is
+      // correct on both.
       theme={{
-        dark: true,
+        ...DarkTheme,
         colors: {
+          ...DarkTheme.colors,
           primary: c.accent, background: c.bg, card: c.surface,
           text: c.text, border: c.border, notification: c.accent,
-        },
-        fonts: {
-          regular: { fontFamily: 'System', fontWeight: '400' },
-          medium: { fontFamily: 'System', fontWeight: '500' },
-          bold: { fontFamily: 'System', fontWeight: '700' },
-          heavy: { fontFamily: 'System', fontWeight: '800' },
         },
       }}
     >
@@ -124,6 +155,11 @@ export function RootNavigator() {
             {/* Onboarding is a stack screen, not a tab: it is a one-time flow
                 with its own progress bar and no tab bar to escape through. */}
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen
+              name="PlateCalibration"
+              component={PlateCalibrationScreen}
+              options={{ title: 'Your plate' }}
+            />
             <Stack.Screen
               name="MealDetail"
               component={MealDetailScreen}

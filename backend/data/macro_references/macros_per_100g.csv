@@ -1,0 +1,43 @@
+# NeutriAI :: sourced macros per 100 g
+#
+# WHAT THIS IS FOR, AND WHAT IT IS NOT FOR
+#
+# The weight of the food is decided by the geometry pipeline -- footprint,
+# height, calibrated vessel size, and what we learn from a user's own
+# corrections. Nothing in this file touches that. This file answers the SECOND
+# question only: given a weight, what are the macros?
+#
+#   grams (geometry + our own collected data)  ->  macros (this table)
+#
+# That separation is deliberate. Weight is measured; macros are looked up. Mixing
+# the two lets a change to a lookup table quietly move a number that days of
+# measurement went into stabilising.
+#
+# WHERE IT SITS IN THE LOOKUP ORDER
+#
+#   1. the shared food_facts cache      -- what a real lookup already returned
+#   2. a live USDA lookup               -- the authority, when it is reachable
+#   3. THIS FILE                        -- published values, offline, cited
+#   4. an AI estimate                   -- a model asked to recall a number
+#   5. a flat default                   -- 150 kcal, 6 g protein
+#
+# It exists to push (4) further down. Asking a model for "standard reference
+# values" produces a number nobody can check, in a field where being a third
+# light is the known failure of every competing app. A cited row beats a
+# recalled one even when the recalled one happens to be right, because only one
+# of them can be audited.
+#
+# SOURCES
+#   USDA   USDA FoodData Central, Standard Release. The code column is the
+#          FDC food code, so any row can be re-checked at
+#          fdc.nal.usda.gov/food-details/<code>
+#
+# Values are per 100 g of the food AS EATEN -- cooked where the food is eaten
+# cooked. A raw-weight macro on a cooked portion is a large error in the
+# direction nobody notices, because it looks reasonable.
+#
+key,kcal,protein_g,carbs_g,fat_g,source,code,note
+refried beans,83,5.3,13.5,0.9,USDA,174296,"Refried beans, canned, vegetarian"
+quinoa,120,4.4,21.3,1.9,USDA,168917,"Quinoa, cooked"
+brown rice,122,2.7,25.6,1.0,USDA,169704,"Rice, brown, long-grain, cooked"
+chicken breast,165,31.0,0.0,3.6,USDA,171477,"Chicken, broilers or fryers, breast, meat only, cooked, roasted"

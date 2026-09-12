@@ -4,10 +4,10 @@ from datetime import datetime, time
 
 from pydantic import Field
 
-from .common import Base
+from .common import InputBase, Base
 
 
-class WaterIn(Base):
+class WaterIn(InputBase):
     amount_ml: int = Field(gt=0, le=4000)
     container: str | None = None
     logged_at: datetime | None = None
@@ -24,7 +24,7 @@ class WaterDayOut(Base):
     on_pace: bool = True
 
 
-class HydrationSettingsIn(Base):
+class HydrationSettingsIn(InputBase):
     daily_goal_ml: int | None = Field(None, ge=500, le=8000)
     reminder_enabled: bool | None = None
     reminder_start: time | None = None
@@ -33,7 +33,7 @@ class HydrationSettingsIn(Base):
     sync_apple_health: bool | None = None
 
 
-class FastStartIn(Base):
+class FastStartIn(InputBase):
     protocol: str = Field("16:8", pattern=r"^(16:8|18:6|20:4|omad|5:2|custom)$")
     custom_hours: float | None = Field(None, ge=1, le=72)
     started_at: datetime | None = None
@@ -55,7 +55,7 @@ class FastOut(Base):
     streak: int = 0
 
 
-class FastingSettingsIn(Base):
+class FastingSettingsIn(InputBase):
     protocol: str | None = Field(None, pattern=r"^(16:8|18:6|20:4|omad|5:2|custom)$")
     custom_fast_hours: float | None = Field(None, ge=1, le=72)
     eating_window_start: time | None = None

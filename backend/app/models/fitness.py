@@ -4,10 +4,10 @@ from datetime import date, datetime
 
 from pydantic import Field
 
-from .common import Base
+from .common import InputBase, Base
 
 
-class WorkoutSetIn(Base):
+class WorkoutSetIn(InputBase):
     exercise_name: str
     exercise_slug: str | None = None
     set_index: int = 1
@@ -20,7 +20,7 @@ class WorkoutSetIn(Base):
     is_warmup: bool = False
 
 
-class WorkoutIn(Base):
+class WorkoutIn(InputBase):
     title: str = "Workout"
     kind: str = "strength"
     started_at: datetime | None = None
@@ -48,7 +48,7 @@ class WorkoutOut(Base):
     new_prs: list[dict] = []
 
 
-class EquipmentScanIn(Base):
+class EquipmentScanIn(InputBase):
     image_paths: list[str] = Field(min_length=1, max_length=4)
     space_note: str | None = Field(None, max_length=200)
 
@@ -61,7 +61,7 @@ class EquipmentScanOut(Base):
     fallback_to_calisthenics: bool
 
 
-class PlanRequest(Base):
+class PlanRequest(InputBase):
     goal: str = Field("build_muscle", max_length=40)
     days_per_week: int = Field(4, ge=1, le=7)
     weeks: int = Field(4, ge=1, le=12)
@@ -96,7 +96,7 @@ class PlanOut(Base):
     days: list[PlanDayOut] = []
 
 
-class HealthDayIn(Base):
+class HealthDayIn(InputBase):
     """What the phone pushes up from HealthKit / Health Connect."""
 
     day: date

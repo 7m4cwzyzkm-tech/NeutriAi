@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraGeometry, measureCameraGeometry } from '../native/depth';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,17 +18,9 @@ import { Body, Button, Card, Chip, H1, H2, Label, Loading, Row, Screen } from '.
 import { uploadImage } from '../api/supabase';
 import { useScanMeal } from '../hooks/useApi';
 import type { ScanResult } from '../api/types';
+import { methodLabel } from '../lib/method';
 
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
-
-const METHOD_LABEL: Record<string, string> = {
-  plate_reference: 'Plate reference',
-  depth_model: 'Depth estimate',
-  multi_image: 'Multi-angle',
-  pixel_area: 'Pixel area',
-  ai_prior: 'Typical serving',
-  user_entered: 'You entered this',
-};
 
 export function ScanScreen() {
   const c = useTheme();
@@ -39,14 +32,34 @@ export function ScanScreen() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const scan = useScanMeal();
   const cameraRef = React.useRef<CameraView>(null);
+  // Geometry belongs to the moment the shutter fired -- by the time the
+  // user taps Analyse the phone has moved and any distance is stale.
+  const [geometry, setGeometry] = useState<CameraGeometry>({});
+  // Retaking specifically to give the photo a scale. Only ever set by the
+  // "no scale in this photo" banner, so the card guide appears when it will
+  // actually help and never as one more thing to read past.
+  const [needCard, setNeedCard] = useState(false);
 
   async function capture() {
-    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
-    if (photo?.uri) setShots((s) => [...s, photo.uri].slice(0, 3));
+    // Measured alongside the capture, not before or after it, and never
+    // awaited on its own -- measureCameraGeometry resolves to {} rather than
+    // throwing or hanging, so a missing or slow sensor cannot block a photo.
+    const [photo, measured] = await Promise.all([
+      cameraRef.current?.takePictureAsync({ quality: 0.8 }),
+      measureCameraGeometry(),
+    ]);
+    if (photo?.uri) {
+      setShots((s) => [...s, photo.uri].slice(0, 3));
+      // The first shot is the one the estimator scales from.
+      setGeometry((g) => (Object.keys(g).length ? g : measured));
+    }
   }
 
   async function pickFromLibrary() {
     const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, mediaTypes: ['images'] });
+    // A photo from the library carries no distance we can trust -- it may be
+    // from another device, another day, another room. Leave geometry empty and
+    // let the estimator fall back honestly.
     if (!res.canceled && res.assets[0]) setShots((s) => [...s, res.assets[0].uri].slice(0, 3));
   }
 
@@ -58,6 +71,7 @@ export function ScanScreen() {
       const res = await scan.mutateAsync({
         image_paths: paths,
         meal_slot: slot ?? undefined,
+        ...geometry,
       });
       setResult(res);
     } catch (e: any) {
@@ -74,6 +88,59 @@ export function ScanScreen() {
   // ---------------------------------------------------------------- results
   if (result) {
     const a = result.assessment;
+
+    /**
+     * A scan that found nothing is a FAILURE, and must look like one.
+     *
+     * This screen used to render every result the same way, so a failed scan
+     * announced "Scan complete — 0 kcal", showed a vague "worth a second look"
+     * card, and put the actual reason in 12pt faint grey at the very bottom
+     * under "How this was calculated". The real error was on screen the whole
+     * time, styled as a footnote. Someone reading that has no idea what went
+     * wrong or whether to retry.
+     */
+    const failed = result.items.length === 0;
+
+    if (failed) {
+      return (
+        <Screen>
+          <SafeAreaView style={{ flex: 1 }}>
+            <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+              <View>
+                <Label>Scan failed</Label>
+                <H1>Nothing was logged</H1>
+              </View>
+
+              <Card style={{ borderColor: c.danger }}>
+                <Label>What went wrong</Label>
+                <View style={{ gap: 8, marginTop: space.sm }}>
+                  {(result.notes.length ? result.notes : ['No reason was returned.']).map((n, i) => (
+                    <Body key={i}>{n}</Body>
+                  ))}
+                </View>
+              </Card>
+
+              <Card>
+                <Label>Details</Label>
+                <View style={{ gap: 4, marginTop: space.sm }}>
+                  <Text style={[type.caption, { color: c.textFaint }]}>status: {result.status}</Text>
+                  <Text style={[type.caption, { color: c.textFaint }]}>
+                    took {((result.latency_ms ?? 0) / 1000).toFixed(1)}s
+                  </Text>
+                  <Text style={[type.caption, { color: c.textFaint }]}>scan {result.scan_id}</Text>
+                </View>
+              </Card>
+
+              <Row gap={space.md}>
+                <Button title="Try another photo" style={{ flex: 1 }}
+                        onPress={() => { setResult(null); setShots([]); setNeedCard(false); }} />
+              </Row>
+            </ScrollView>
+          </SafeAreaView>
+        </Screen>
+      );
+    }
+
     return (
       <Screen>
         <SafeAreaView style={{ flex: 1 }}>
@@ -99,6 +166,29 @@ export function ScanScreen() {
                 ) : null}
               </Row>
             </View>
+
+            {result.portion_measured === false ? (
+              <Card style={{ borderColor: c.warn, borderWidth: 2 }}>
+                <Label>Not measured</Label>
+                <Body style={{ marginTop: 4 }}>
+                  Nothing in this photo sets a size — no plate edge, no card, no distance — so
+                  these numbers are a typical serving, not your portion. They are usually light.
+                </Body>
+                <Row gap={space.md} style={{ marginTop: space.md }}>
+                  <Button
+                    title="Retake with a card"
+                    style={{ flex: 1 }}
+                    onPress={() => { setNeedCard(true); setResult(null); setShots([]); }}
+                  />
+                  <Button
+                    title="Keep the estimate"
+                    variant="secondary"
+                    style={{ flex: 1 }}
+                    onPress={() => nav.navigate('Home')}
+                  />
+                </Row>
+              </Card>
+            ) : null}
 
             {result.needs_review ? (
               <Card style={{ borderColor: c.warn }}>
@@ -130,7 +220,7 @@ export function ScanScreen() {
                         }}
                       />
                       <Text style={[type.caption, { color: c.textFaint }]}>
-                        {METHOD_LABEL[item.estimation_method] ?? item.estimation_method}
+                        {methodLabel(item.estimation_method)}
                       </Text>
                     </Row>
                   </View>
@@ -239,16 +329,37 @@ export function ScanScreen() {
             borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 200,
           }}
         />
+        {/* A card is 85.6 mm on its long edge, the same for every bank in the
+            world, which is why it works as a ruler at all. It only works if it
+            is IN the shot and lying flat beside the food -- one measured 12%
+            small because it sat on the table rather than on the plate. */}
+        {needCard ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute', bottom: '34%', alignSelf: 'center',
+              width: 132, height: 83, borderRadius: 8,
+              borderWidth: 2, borderStyle: 'dashed', borderColor: c.warn,
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Text style={[type.caption, { color: c.warn, fontWeight: '600' }]}>card here</Text>
+          </View>
+        ) : null}
+
         <Text
           style={[
             type.caption,
             {
               position: 'absolute', top: '13%', width: '100%', textAlign: 'center',
-              color: 'rgba(255,255,255,0.85)',
+              color: needCard ? c.warn : 'rgba(255,255,255,0.85)',
+              fontWeight: needCard ? '600' : '400',
             },
           ]}
         >
-          Fit the whole plate inside the circle
+          {needCard
+            ? 'Lay any bank card flat beside the food, in shot'
+            : 'Fit the whole plate inside the circle'}
         </Text>
 
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%' }}>

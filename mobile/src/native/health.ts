@@ -9,175 +9,80 @@
  * but WRITE back only water and workouts. Reading everything and writing
  * nothing back makes the app a data black hole; writing back health data we
  * merely inferred would pollute the user's medical record.
+ *
+ * CURRENT STATE — READ THIS BEFORE "FIXING" THE STUBS BELOW
+ * --------------------------------------------------------
+ * The reads are not implemented right now, and that is deliberate.
+ *
+ * react-native-health and react-native-health-connect are old-architecture
+ * bridge modules. The legacy architecture was REMOVED in Expo SDK 55 /
+ * React Native 0.82, so neither library can load on this runtime at all —
+ * this is not a packaging problem that a reinstall fixes.
+ *
+ * They were also not safe to merely "lazy require". Metro resolves
+ * require('literal-string') at BUILD time no matter where the call sits —
+ * inside a function, inside a try/catch, it makes no difference. A lazy
+ * require defers execution, not resolution. An uninstalled module referenced
+ * that way fails the whole bundle, which is exactly how this stub came to be.
+ *
+ * The previous working implementation is preserved verbatim in
+ * docs/HEALTH_NATIVE.md. The permission strings and record types below are
+ * kept live rather than buried in that doc, because they are the part that is
+ * tedious to rediscover and easy to get subtly wrong.
+ *
+ * To reinstate: pick new-architecture libraries, implement readAppleHealth /
+ * readHealthConnect against the constants below, and return DayPayload[]. The
+ * server contract does not change.
  */
 import { Platform } from 'react-native';
 import { api } from '../api/client';
 
-const READ_WINDOW_DAYS = 7;
+export const READ_WINDOW_DAYS = 7;
 
-type PushProvider = 'apple_health' | 'samsung_health';
+export type PushProvider = 'apple_health' | 'samsung_health';
 
-interface DayPayload {
+export interface DayPayload {
   day: string;
   provider: PushProvider;
   [key: string]: unknown;
 }
 
-// ---------------------------------------------------------------------------
-// Apple HealthKit (react-native-health)
-// ---------------------------------------------------------------------------
-async function readAppleHealth(): Promise<DayPayload[]> {
-  const AppleHealthKit = require('react-native-health').default;
+/**
+ * HealthKit identifiers, exactly as Apple spells them. Wrong casing here fails
+ * silently — the permission is simply never granted and reads return empty.
+ */
+export const APPLE_HEALTH_PERMISSIONS = {
+  read: [
+    'StepCount', 'DistanceWalkingRunning', 'FlightsClimbed',
+    'ActiveEnergyBurned', 'BasalEnergyBurned', 'HeartRate',
+    'RestingHeartRate', 'HeartRateVariability', 'Vo2Max', 'SleepAnalysis',
+    'Workout',
+  ],
+  write: ['Water', 'Workout'],
+} as const;
 
-  const permissions = {
-    permissions: {
-      read: [
-        'StepCount', 'DistanceWalkingRunning', 'FlightsClimbed',
-        'ActiveEnergyBurned', 'BasalEnergyBurned', 'HeartRate',
-        'RestingHeartRate', 'HeartRateVariability', 'Vo2Max', 'SleepAnalysis',
-        'Workout',
-      ],
-      write: ['Water', 'Workout'],
-    },
-  };
+/** Health Connect record types, in the read set the targets actually need. */
+export const HEALTH_CONNECT_RECORD_TYPES = [
+  'Steps', 'ActiveCaloriesBurned', 'BasalMetabolicRate', 'HeartRate',
+  'RestingHeartRate', 'SleepSession', 'Distance',
+] as const;
 
-  await new Promise<void>((resolve, reject) => {
-    AppleHealthKit.initHealthKit(permissions, (err: string) =>
-      err ? reject(new Error(err)) : resolve(),
-    );
-  });
-
-  const end = new Date();
-  const start = new Date(end.getTime() - READ_WINDOW_DAYS * 86400_000);
-  const opts = { startDate: start.toISOString(), endDate: end.toISOString() };
-
-  const call = <T>(fn: string): Promise<T> =>
-    new Promise((resolve) =>
-      AppleHealthKit[fn](opts, (_err: unknown, results: T) => resolve(results ?? ([] as unknown as T))),
-    );
-
-  const [steps, active, basal, distance, resting, sleep] = await Promise.all([
-    call<any[]>('getDailyStepCountSamples'),
-    call<any[]>('getActiveEnergyBurned'),
-    call<any[]>('getBasalEnergyBurned'),
-    call<any[]>('getDailyDistanceWalkingRunningSamples'),
-    call<any[]>('getRestingHeartRateSamples'),
-    call<any[]>('getSleepSamples'),
-  ]);
-
-  // Bucket every sample stream by calendar day and merge.
-  const byDay = new Map<string, DayPayload>();
-  const bucket = (iso: string) => {
-    const day = iso.slice(0, 10);
-    if (!byDay.has(day)) byDay.set(day, { day, provider: 'apple_health' });
-    return byDay.get(day)!;
-  };
-
-  const sum = (rows: any[], key: string, field = 'value') => {
-    for (const r of rows ?? []) {
-      const d = bucket(r.startDate ?? r.date);
-      d[key] = (Number(d[key]) || 0) + Number(r[field] ?? 0);
-    }
-  };
-
-  sum(steps, 'stepCount');
-  sum(active, 'activeEnergyBurned');
-  sum(basal, 'basalEnergyBurned');
-  sum(distance, 'distanceWalkingRunning');
-
-  for (const r of resting ?? []) {
-    bucket(r.startDate).restingHeartRate = Number(r.value);
-  }
-  for (const r of sleep ?? []) {
-    const d = bucket(r.startDate);
-    const minutes =
-      (new Date(r.endDate).getTime() - new Date(r.startDate).getTime()) / 60000;
-    if (r.value === 'ASLEEP' || r.value === 'CORE' || r.value === 'DEEP' || r.value === 'REM') {
-      d.sleepAnalysisAsleep = (Number(d.sleepAnalysisAsleep) || 0) + minutes;
-      if (r.value === 'DEEP') d.sleepAnalysisDeep = (Number(d.sleepAnalysisDeep) || 0) + minutes;
-      if (r.value === 'REM') d.sleepAnalysisREM = (Number(d.sleepAnalysisREM) || 0) + minutes;
-    }
-  }
-
-  return [...byDay.values()].map((d) => ({
-    ...d,
-    stepCount: d.stepCount ? Math.round(Number(d.stepCount)) : undefined,
-    activeEnergyBurned: d.activeEnergyBurned ? Math.round(Number(d.activeEnergyBurned)) : undefined,
-    basalEnergyBurned: d.basalEnergyBurned ? Math.round(Number(d.basalEnergyBurned)) : undefined,
-    sleepAnalysisAsleep: d.sleepAnalysisAsleep ? Math.round(Number(d.sleepAnalysisAsleep)) : undefined,
-  }));
+/**
+ * Whether this build can read the platform health store.
+ *
+ * Always false today. Kept as a function rather than a constant so callers are
+ * written against a runtime check from the start — when a development build
+ * gains the native module, only this file changes.
+ */
+export function healthAvailable(): boolean {
+  return false;
 }
 
-// ---------------------------------------------------------------------------
-// Health Connect (Android / Samsung)
-// ---------------------------------------------------------------------------
-async function readHealthConnect(): Promise<DayPayload[]> {
-  const HC = require('react-native-health-connect');
-
-  const available = await HC.initialize();
-  if (!available) throw new Error('Health Connect is not available on this device.');
-
-  await HC.requestPermission([
-    { accessType: 'read', recordType: 'Steps' },
-    { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
-    { accessType: 'read', recordType: 'BasalMetabolicRate' },
-    { accessType: 'read', recordType: 'HeartRate' },
-    { accessType: 'read', recordType: 'RestingHeartRate' },
-    { accessType: 'read', recordType: 'SleepSession' },
-    { accessType: 'read', recordType: 'Distance' },
-  ]);
-
-  const end = new Date();
-  const start = new Date(end.getTime() - READ_WINDOW_DAYS * 86400_000);
-  const filter = {
-    timeRangeFilter: {
-      operator: 'between' as const,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    },
-  };
-
-  const read = async (type: string) => {
-    try {
-      const { records } = await HC.readRecords(type, filter);
-      return records ?? [];
-    } catch {
-      return [];
-    }
-  };
-
-  const [steps, active, distance, sleep, resting] = await Promise.all([
-    read('Steps'), read('ActiveCaloriesBurned'), read('Distance'),
-    read('SleepSession'), read('RestingHeartRate'),
-  ]);
-
-  const byDay = new Map<string, DayPayload>();
-  const bucket = (iso: string) => {
-    const day = String(iso).slice(0, 10);
-    if (!byDay.has(day)) byDay.set(day, { day, provider: 'samsung_health' });
-    return byDay.get(day)!;
-  };
-
-  for (const r of steps) bucket(r.startTime).steps = (Number(bucket(r.startTime).steps) || 0) + Number(r.count ?? 0);
-  for (const r of active)
-    bucket(r.startTime).activeCalories =
-      (Number(bucket(r.startTime).activeCalories) || 0) + Number(r.energy?.inKilocalories ?? 0);
-  for (const r of distance)
-    bucket(r.startTime).distance =
-      (Number(bucket(r.startTime).distance) || 0) + Number(r.distance?.inMeters ?? 0);
-  for (const r of sleep) {
-    const mins = (new Date(r.endTime).getTime() - new Date(r.startTime).getTime()) / 60000;
-    bucket(r.startTime).sleepDuration = (Number(bucket(r.startTime).sleepDuration) || 0) + mins;
-  }
-  for (const r of resting) bucket(r.time).restingHeartRate = Number(r.beatsPerMinute ?? 0);
-
-  return [...byDay.values()].map((d) => ({
-    ...d,
-    steps: d.steps ? Math.round(Number(d.steps)) : undefined,
-    activeCalories: d.activeCalories ? Math.round(Number(d.activeCalories)) : undefined,
-    sleepDuration: d.sleepDuration ? Math.round(Number(d.sleepDuration)) : undefined,
-  }));
-}
+/** The one message the UI should show. Phrased for a user, not a developer. */
+export const HEALTH_UNAVAILABLE_MESSAGE =
+  Platform.OS === 'ios'
+    ? 'Apple Health sync needs the full NeutriAI app. It is not available in Expo Go.'
+    : 'Health Connect sync needs the full NeutriAI app. It is not available in Expo Go.';
 
 /**
  * Read the last week from the platform health store and push it to NeutriAI.
@@ -188,8 +93,15 @@ export async function syncHealthToServer(provider?: PushProvider): Promise<numbe
   const target: PushProvider =
     provider ?? (Platform.OS === 'ios' ? 'apple_health' : 'samsung_health');
 
-  const days =
-    target === 'apple_health' ? await readAppleHealth() : await readHealthConnect();
+  if (!healthAvailable()) {
+    // Throwing rather than returning 0 on purpose: 0 means "synced, nothing
+    // new", and a user who taps Sync deserves to be told it did not happen
+    // rather than watching it silently succeed forever.
+    throw new Error(HEALTH_UNAVAILABLE_MESSAGE);
+  }
+
+  const days: DayPayload[] = [];
+  void target;
 
   if (!days.length) return 0;
   await api.fitness.pushHealth(days);
@@ -197,10 +109,9 @@ export async function syncHealthToServer(provider?: PushProvider): Promise<numbe
 }
 
 /** Write a water log back to the platform store, when the user opts in. */
-export async function writeWaterToHealth(ml: number): Promise<void> {
-  if (Platform.OS !== 'ios') return;
-  const AppleHealthKit = require('react-native-health').default;
-  await new Promise<void>((resolve) => {
-    AppleHealthKit.saveWater({ value: ml / 1000, unit: 'liter' }, () => resolve());
-  });
+export async function writeWaterToHealth(_ml: number): Promise<void> {
+  // Silent no-op by design, unlike the sync above. Water logging succeeds in
+  // NeutriAI either way; mirroring it to Apple Health is a bonus, and failing
+  // the user's water log because a bonus is unavailable would be wrong.
+  if (!healthAvailable()) return;
 }

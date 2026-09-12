@@ -11,10 +11,18 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { request } from '../api/client';
+import type { PushTarget } from '../navigation/types';
 
 Notifications.setNotificationHandler({
+  // shouldShowAlert used to mean both of the flags below. iOS 14 separated
+  // them, and expo-notifications followed: a banner is the drop-down at the
+  // top of the screen, the list is the entry that stays in Notification
+  // Centre. Both are wanted here — a fasting reminder the user swipes away
+  // should still be findable afterwards.
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -50,11 +58,32 @@ export async function registerForPush(): Promise<string | null> {
   }
   if (status !== 'granted') return null;
 
+  // An Expo push token is minted against an EAS project. Without a projectId
+  // getExpoPushTokenAsync THROWS rather than returning null, and because this
+  // function is called fire-and-forget from a useEffect, that surfaced as an
+  // unhandled promise rejection on a screen that has nothing to do with push.
+  //
+  // Not having one yet is an expected state, not a failure: the project is not
+  // linked to EAS until `eas init`, which happens when we make a development
+  // build. Skip cleanly and say why.
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-  const token = (await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  )).data;
+  if (!projectId) {
+    console.warn(
+      '[push] no EAS projectId — push registration skipped. ' +
+      'Run `eas init` to link this project; push cannot work until then.',
+    );
+    return null;
+  }
+
+  let token: string;
+  try {
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  } catch (err) {
+    // Expo's push service being unreachable must not take down the app.
+    console.warn('[push] could not obtain an Expo push token', err);
+    return null;
+  }
 
   try {
     await request('/me/push-token', { method: 'POST', query: { token } });
@@ -64,26 +93,62 @@ export async function registerForPush(): Promise<string | null> {
   return token;
 }
 
-/** Register on launch, and route taps to the right screen. */
-export function usePushNotifications(navigate: (route: string, params?: object) => void) {
+/**
+ * Translate a deep link into a navigation target, or null if we do not
+ * recognise it.
+ *
+ * The links the backend actually emits today, and nothing else:
+ *   neutriai://home            motivation nudges
+ *   neutriai://fasting         fast-window reminders
+ *   neutriai://billing         payment failed / subscription lapsed
+ *   neutriai://post/{id}       likes, comments, mentions
+ *   neutriai://profile/{id}    new follower
+ *
+ * Returning null for anything else is the point: an old build receiving a link
+ * a newer server invented should do nothing, not navigate somewhere arbitrary.
+ */
+export function targetForDeepLink(link: string): PushTarget | null {
+  const [route, id] = link.replace('neutriai://', '').split('/');
+  switch (route) {
+    case 'home':     return { kind: 'tab', tab: 'Home' };
+    case 'train':    return { kind: 'tab', tab: 'Train' };
+    case 'scan':     return { kind: 'tab', tab: 'Scan' };
+    case 'recipes':  return { kind: 'tab', tab: 'Recipes' };
+    case 'fasting':  return { kind: 'fasting' };
+    case 'billing':  return { kind: 'paywall' };
+    case 'post':     return { kind: 'feed', postId: id || undefined };
+    case 'profile':  return { kind: 'profile', userId: id || undefined };
+    default:         return null;
+  }
+}
+
+/**
+ * Register on launch, and route taps to the right screen.
+ *
+ * `onOpen` MUST be stable across renders — wrap it in useCallback. The effect
+ * below depends on it, and an inline arrow is a new function every render,
+ * which would tear down and re-add the listener and re-run registerForPush()
+ * on every single render: repeated permission checks and a push-token POST per
+ * render.
+ */
+export function usePushNotifications(onOpen: (target: PushTarget) => void) {
   const responded = useRef(false);
 
   useEffect(() => {
-    registerForPush();
+    // Deliberately not awaited — push registration must never delay the UI.
+    // But an un-caught floating promise is how a failure in here became a
+    // full-screen error toast on the auth screen, so it is caught explicitly.
+    registerForPush().catch((err) => {
+      console.warn('[push] registration failed', err);
+    });
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       if (responded.current) return;
       const data = response.notification.request.content.data as Record<string, unknown>;
-      const link = String(data?.deep_link ?? '');
-      // neutriai://post/123 -> ['post', '123']
-      const [route, id] = link.replace('neutriai://', '').split('/');
-      const map: Record<string, string> = {
-        home: 'Home', fasting: 'Fasting', billing: 'Paywall',
-        post: 'Feed', profile: 'Profile', train: 'Train',
-      };
-      if (map[route]) navigate(map[route], id ? { id } : undefined);
+      const target = targetForDeepLink(String(data?.deep_link ?? ''));
+      if (target) onOpen(target);
     });
 
     return () => sub.remove();
-  }, [navigate]);
+  }, [onOpen]);
 }

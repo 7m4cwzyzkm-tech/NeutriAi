@@ -123,6 +123,12 @@ export const api = {
     scan: (payload: {
       image_paths: string[]; meal_slot?: string; calibration_id?: string;
       plate_diameter_mm?: number;
+      // Camera geometry, when the device can measure it. Absent on devices
+      // that cannot; the server falls back to a weaker rung rather than
+      // failing, so these are always optional.
+      camera_distance_mm?: number;
+      camera_fov_deg?: number;
+      camera_aspect_ratio?: number;
     }) => request<ScanResult>('/scans', { method: 'POST', body: payload, timeoutMs: 60000, retries: 0 }),
     getScan: (id: string) => request<unknown>(`/scans/${id}`),
     meals: (day?: string) => request<Meal[]>('/meals', { query: { day } }),

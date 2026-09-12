@@ -170,3 +170,184 @@ def test_encryption_round_trips(monkeypatch):
 
     monkeypatch.setattr(security.settings, "token_encryption_key", Fernet.generate_key().decode())
     assert security.decrypt(security.encrypt("provider-token")) == "provider-token"
+
+
+# --- a photo path is not a free-text field ------------------------------------
+
+def test_a_scan_cannot_be_asked_for_someone_elses_photo():
+    """`/v1/scans` took `image_paths` verbatim and fetched them with the service
+    key, which bypasses row-level security and the storage policy by design.
+    Nothing between the request and the download compared the path to the
+    caller, so posting another user's object key returned their meal, analysed.
+
+    The route's own docstring claimed RLS enforced the prefix. RLS enforces the
+    UPLOAD. The read is a different door.
+    """
+    import posixpath
+
+    def allowed(user_id: str, path: str) -> bool:
+        clean = posixpath.normpath(str(path or "").strip().lstrip("/"))
+        return not clean.startswith("..") and clean.startswith(f"{user_id}/")
+
+    me = "11111111-1111-1111-1111-111111111111"
+    them = "22222222-2222-2222-2222-222222222222"
+
+    assert allowed(me, f"{me}/IMG_0001.jpg")
+    assert allowed(me, f"/{me}/sub/IMG_0001.jpg")
+
+    for hostile in (f"{them}/IMG_0042.jpg",
+                    f"{me}/../{them}/IMG_0042.jpg",
+                    f"{me}/../../{them}/x.jpg",
+                    "../secrets.jpg",
+                    "IMG_0042.jpg",
+                    f"{me}xyz/IMG.jpg",
+                    "", None):
+        assert not allowed(me, hostile), hostile
+
+
+def test_the_route_actually_performs_that_check():
+    """A helper nothing calls is the defect this project keeps finding."""
+    import inspect
+
+    from app.routers import scans
+    src = inspect.getsource(scans.create_scan)
+    assert "posixpath.normpath" in src
+    assert "Forbidden" in src
+
+
+# --- the rate limiter counts addresses, not headers ---------------------------
+
+class _Req:
+    def __init__(self, headers=None, host="203.0.113.7"):
+        self.headers = headers or {}
+        self.client = type("C", (), {"host": host})() if host else None
+
+
+def test_the_limit_cannot_be_shrugged_off_by_changing_a_header():
+    """It keyed on the last 32 characters of the Authorization header, which
+    the caller chooses.
+
+    Measured before the fix: 50,000 requests with a rotating header, 0 blocked,
+    and 50,000 buckets retained that were never evicted. The same 1,000
+    requests with NO header got 880 blocked -- so it throttled honest anonymous
+    traffic and waved the attack through.
+    """
+    from app.main import _client_key
+
+    rotating = {_client_key(_Req({"authorization": f"Bearer {i}" * 20}))
+                for i in range(500)}
+    assert len(rotating) == 1, "a rotating header still produces separate buckets"
+    assert rotating == {"203.0.113.7"}
+
+
+def test_a_forwarded_header_is_believed_only_behind_a_proxy(monkeypatch):
+    """Trusting `x-forwarded-for` unconditionally hands the rotating key
+    straight back in a different header."""
+    from app import main
+    from app.config import settings
+
+    spoof = _Req({"x-forwarded-for": "198.51.100.4"})
+    monkeypatch.setattr(settings, "trust_proxy_header", False)
+    assert main._client_key(spoof) == "203.0.113.7"
+    monkeypatch.setattr(settings, "trust_proxy_header", True)
+    assert main._client_key(spoof) == "198.51.100.4"
+
+
+def test_the_bucket_store_cannot_be_grown_without_bound():
+    """A defaultdict that never evicts is a memory leak whose rate the attacker
+    sets. The cap has to be a cap, not a target."""
+    from collections import deque
+
+    from app import main
+
+    main._hits.clear()
+    try:
+        for i in range(main.RATE_LIMIT_BUCKETS + 500):
+            main._hits[f"ip-{i}"] = deque()
+            while len(main._hits) > main.RATE_LIMIT_BUCKETS:
+                main._hits.popitem(last=False)
+        assert len(main._hits) <= main.RATE_LIMIT_BUCKETS
+        # and it is the OLDEST that goes, not the newest
+        assert "ip-0" not in main._hits
+        assert f"ip-{main.RATE_LIMIT_BUCKETS + 499}" in main._hits
+    finally:
+        main._hits.clear()
+
+
+def test_long_addresses_cannot_bloat_a_key():
+    from app.main import _client_key
+    from app.config import settings
+
+    original = settings.trust_proxy_header
+    try:
+        settings.trust_proxy_header = True
+        key = _client_key(_Req({"x-forwarded-for": "9" * 5000}))
+        assert len(key) <= 64
+    finally:
+        settings.trust_proxy_header = original
+
+
+# --- a request body is not an open cheque -------------------------------------
+
+def test_one_request_cannot_buy_ten_thousand_model_calls():
+    """`MealIn.items` had no length limit and `MealItemIn.name` no size limit.
+    Every unknown name misses the cache, races three nutrition providers, and
+    falls through to a Claude call -- so one request could buy ten thousand of
+    them, on a free account.
+    """
+    import pytest as _p
+
+    from app.models.common import MAX_LIST_ITEMS, MAX_STRING_CHARS
+    from app.models.nutrition import MealIn, MealItemIn
+
+    one = {"name": "rice", "grams": 100}
+    MealIn(items=[one] * MAX_LIST_ITEMS)              # at the limit, fine
+    with _p.raises(Exception):
+        MealIn(items=[one] * 10_000)
+
+    MealItemIn(name="mexican rice", grams=77)
+    with _p.raises(Exception):
+        MealItemIn(name="x" * (MAX_STRING_CHARS + 1), grams=77)
+
+
+def test_the_limit_is_on_the_base_class_not_sprinkled_on_fields():
+    """The same omission appeared in six places: meal items, recipe ingredients
+    and steps, workout sets, health-day pushes, post media paths, and the food
+    search query. A rule that has to be remembered on every new model will be
+    forgotten on the next one -- it already was, six times.
+
+    So every request model inherits the bound, and this test says so by name.
+    """
+    from app.models.common import InputBase
+    from app.models import fitness, lifestyle, nutrition, profile, recipes, social
+
+    for module in (nutrition, fitness, lifestyle, profile, recipes, social):
+        for name in dir(module):
+            obj = getattr(module, name)
+            if not isinstance(obj, type) or not name.endswith(("In", "Request")):
+                continue
+            assert issubclass(obj, InputBase), (
+                f"{module.__name__}.{name} is a request model that is not bounded")
+
+
+def test_a_deeply_nested_body_is_refused_before_it_costs_anything():
+    """A body nested a thousand deep is its own denial of service -- against
+    the walk that checks it, before it reaches the database."""
+    import pytest as _p
+
+    from app.models.common import _within_limits
+
+    deep = {"a": 1}
+    for _ in range(30):
+        deep = {"a": deep}
+    with _p.raises(ValueError):
+        _within_limits(deep)
+
+
+def test_responses_are_not_capped():
+    """The cap belongs on requests only. A feed of 500 posts is a legitimate
+    response and an illegitimate request; capping the shared base would turn a
+    long timeline into a 500."""
+    from app.models.common import Page
+
+    assert len(Page[int](items=list(range(500))).items) == 500

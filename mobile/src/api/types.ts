@@ -48,6 +48,15 @@ export interface ScanResult {
   overall_confidence: number; confidence_band: 'low' | 'medium' | 'high';
   needs_review: boolean; notes: string[]; latency_ms?: number | null;
   assessment?: Assessment | null;
+  /** Which rung of the geometry ladder sized this meal, if any. */
+  scale_source?: string | null;
+  /**
+   * Whether anything in the photo actually set a scale. False means the numbers
+   * are a typical serving rather than this plate: measured against weighed
+   * meals those come in about 27% light, and no amount of estimator work can
+   * reach them. Defaults true so an older API response is not misreported.
+   */
+  portion_measured?: boolean;
 }
 
 export interface Meal {

@@ -3,17 +3,20 @@ from __future__ import annotations
 
 from datetime import date
 
+import structlog
 from fastapi import APIRouter, Query
 
 from ..db import maybe_one, one, rows, service
 from ..deps import CurrentUserDep
-from ..errors import AppError, NotFound, Unauthorized
+from ..errors import AppError, NotFound
 from ..models.common import Ok
 from ..models.profile import (
     BodyMetricIn, ProfileIn, ProfileOut, RestrictionIn, TargetsOut,
 )
-from ..services import account, push
+from ..services import account, identity, push
 from ..services.nutrition.macros import compute_targets
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/me", tags=["profile"])
 
@@ -36,41 +39,12 @@ def _recompute_targets(user_id: str, profile: dict) -> dict:
 
 @router.get("", response_model=ProfileOut)
 async def get_profile(user: CurrentUserDep):
-    row = maybe_one(user.sb.table("profiles").select("*").eq("id", user.id).limit(1).execute())
-    if row:
-        return ProfileOut(**row)
-
-    # No profile yet. Two very different situations produce this, and they need
-    # opposite responses:
-    #
-    #   a) first call after signup  -> create the profile
-    #   b) the account was deleted  -> the token is still cryptographically
-    #      valid (correct signature, not yet expired) but the auth user is
-    #      gone. Creating a profile would violate profiles.id -> auth.users(id).
-    #
-    # Case (b) used to surface as a 500. A deleted user's app can hold a valid
-    # JWT for up to an hour, so that meant every request failing opaquely
-    # instead of the client simply signing out.
-    handle = (user.email or f"user{user.id[:8]}").split("@")[0][:20]
-    handle = "".join(c for c in handle if c.isalnum() or c in "_.") or f"u{user.id[:8]}"
-
-    for candidate in (handle, f"{handle}{user.id[:4]}"):
-        try:
-            created = service().table("profiles").insert(
-                {"id": user.id, "handle": candidate, "display_name": handle}
-            ).execute()
-            return ProfileOut(**created.data[0])
-        except Exception as exc:  # noqa: BLE001
-            message = str(exc).lower()
-            # 23503 = foreign key violation: no matching auth.users row.
-            if "23503" in message or "foreign key" in message or "auth.users" in message:
-                raise Unauthorized(
-                    "This account no longer exists. Please sign in again."
-                ) from exc
-            # Anything else is a handle collision; fall through and retry once.
-            continue
-
-    raise AppError("Could not create your profile. Please try again.", code="profile_create_failed")
+    """The profile is created by the auth dependency on first authenticated
+    request, so by the time this runs it exists. ensure_profile is still the
+    call made here rather than a bare select: it keeps this endpoint correct
+    on its own terms, and it is the one place that returns the deleted-account
+    401 if the row is somehow absent."""
+    return ProfileOut(**identity.ensure_profile(user.id, user.email))
 
 
 @router.patch("", response_model=ProfileOut)
@@ -116,9 +90,44 @@ async def get_targets(user: CurrentUserDep, recompute: bool = Query(False)):
 @router.get("/dashboard")
 async def dashboard(user: CurrentUserDep, day: date | None = None):
     """One round trip for the entire home screen."""
-    return user.sb.rpc(
+    data = user.sb.rpc(
         "dashboard", {"p_day": (day or date.today()).isoformat()}
     ).execute().data
+
+    # The active fast, finished off.
+    #
+    # The rollup returns `to_jsonb(f)` -- the raw `fasts` row, which has a start
+    # time and a target and nothing else. `pct`, `elapsed_minutes` and `phase`
+    # are computed, in `lifestyle._to_out`, and the rollup does not go through
+    # it. So the home screen's ring rendered strokeDasharray="NaN" and read
+    # "NaNh / NaNm" while the Fasting tab showed the same fast correctly.
+    #
+    # Finished HERE rather than in the SQL on purpose. Computing it a second
+    # time in plpgsql would be two implementations of one rule -- fasting phase
+    # boundaries, of all things -- and they would drift the first time either
+    # was touched.
+    return finish_fast(data)
+
+
+def finish_fast(data):
+    """Fill in the computed half of the active fast.
+
+    A named function rather than four lines inside the route, because a test
+    that can only read the route's SOURCE is not a test: the first version of
+    this checked that the string "_to_out" appeared somewhere in the function,
+    and deleting the line that used it left the import behind, so the check
+    passed on a mutation that broke the feature.
+    """
+    if not isinstance(data, dict) or not isinstance(data.get("active_fast"), dict):
+        return data
+    try:
+        from .lifestyle import _to_out
+        data["active_fast"] = _to_out(data["active_fast"]).model_dump(mode="json")
+    except Exception as exc:  # noqa: BLE001
+        # A home screen missing one card beats a home screen that 500s.
+        log.warning("dashboard_fast_enrich_failed", error=str(exc)[:200])
+        data["active_fast"] = None
+    return data
 
 
 @router.get("/restrictions")

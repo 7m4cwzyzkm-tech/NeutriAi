@@ -4,10 +4,10 @@ from datetime import datetime
 
 from pydantic import Field
 
-from .common import Base
+from .common import InputBase, Base
 
 
-class CheckoutRequest(Base):
+class CheckoutRequest(InputBase):
     plan: str = Field("monthly", pattern="^(monthly|annual)$")
     promo_code: str | None = Field(None, max_length=40)
     success_url: str | None = None

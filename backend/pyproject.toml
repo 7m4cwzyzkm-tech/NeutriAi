@@ -23,6 +23,7 @@ dependencies = [
   "tenacity>=9.0",
   "python-multipart>=0.0.12",
   "apscheduler>=3.10",
+  "opencv-python-headless>=4.10",
 ]
 
 [project.optional-dependencies]

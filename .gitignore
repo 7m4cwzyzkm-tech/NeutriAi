@@ -17,3 +17,13 @@ photos/
 *.egg-info/
 .eggs/
 *.egg
+
+# Run transcripts. `dev depthcheck` writes one next to the repo so nobody has
+# to redirect output; they are one run's notes, not part of the build.
+depthcheck*.txt
+depthsurvey*.txt
+survey*.txt
+
+# File deliveries from a Claude session land here. One conversation's
+# attachments, not part of the build, and `dev dead` scans source trees.
+Claude outputs/

@@ -51,6 +51,78 @@ const DIETS = [
 const lbToKg = (lb: number) => lb * 0.45359237;
 const inToCm = (inches: number) => inches * 2.54;
 
+/**
+ * Date of birth entry, MM/DD/YYYY.
+ *
+ * This was a bare TextInput demanding "YYYY-MM-DD", with Continue gated on a
+ * regex against it. Anyone typing a date the way they normally write one got a
+ * dead button and no explanation. A gate the user cannot see is worse than a
+ * rejection they can read.
+ *
+ * So: take digits in any arrangement, insert the slashes ourselves, and say
+ * out loud what is wrong when it is wrong.
+ */
+const MIN_AGE_YEARS = 13;
+const MAX_AGE_YEARS = 120;
+
+const BIRTH_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+/** Keep only digits, cap at 8 (MMDDYYYY), and re-insert the slashes. */
+function formatBirthInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/**
+ * The API speaks ISO, the human speaks MM/DD/YYYY. Convert at the boundary
+ * rather than storing an ambiguous string: 03/04/1990 is March in one
+ * convention and April in another, and a date that means two things is a bug
+ * waiting for a user in a different country.
+ */
+export function toISODate(value: string): string | null {
+  const m = BIRTH_PATTERN.exec(value);
+  return m ? `${m[3]}-${m[1]}-${m[2]}` : null;
+}
+
+/**
+ * Why not just a pattern match: MM/DD/YYYY happily matches 13/45/2025 and
+ * 02/31/2026. The BMR equation takes an age, and an impossible date produces a
+ * plausible-looking wrong number rather than an error — the worst outcome for
+ * something every calorie target is derived from.
+ */
+function birthDateProblem(value: string): string | null {
+  if (!value) return null;                       // untouched: say nothing yet
+  const m = BIRTH_PATTERN.exec(value);
+  if (!m) return null;                           // still typing
+
+  const mm = Number(m[1]), dd = Number(m[2]), yyyy = Number(m[3]);
+  const date = new Date(Date.UTC(yyyy, mm - 1, dd));
+  // Round-trip check: JS rolls 02/31 forward into March, so a date that does
+  // not come back as the same day was never real.
+  const real =
+    date.getUTCFullYear() === yyyy &&
+    date.getUTCMonth() === mm - 1 &&
+    date.getUTCDate() === dd;
+  if (!real) return 'That date does not exist. Check the month and day.';
+
+  const now = new Date();
+  let age = now.getUTCFullYear() - yyyy;
+  const hadBirthday =
+    now.getUTCMonth() > mm - 1 || (now.getUTCMonth() === mm - 1 && now.getUTCDate() >= dd);
+  if (!hadBirthday) age -= 1;
+
+  if (age < 0) return 'That date is in the future.';
+  if (age < MIN_AGE_YEARS) return `NeutriAI is for ages ${MIN_AGE_YEARS} and over.`;
+  if (age > MAX_AGE_YEARS) return 'Please check the year.';
+  return null;
+}
+
+function birthDateValid(value: string): boolean {
+  return BIRTH_PATTERN.test(value) && birthDateProblem(value) === null;
+}
+
 export function OnboardingScreen() {
   const c = useTheme();
   const nav = useNavigation<any>();
@@ -61,7 +133,7 @@ export function OnboardingScreen() {
   const [imperial, setImperial] = useState(true);
 
   const [sex, setSex] = useState<'male' | 'female' | 'other' | null>(null);
-  const [birth, setBirth] = useState('');            // YYYY-MM-DD
+  const [birth, setBirth] = useState('');            // MM/DD/YYYY as typed
   const [heightFt, setHeightFt] = useState('');
   const [heightIn, setHeightIn] = useState('');
   const [heightCm, setHeightCm] = useState('');
@@ -77,7 +149,7 @@ export function OnboardingScreen() {
   const weightValue = imperial ? lbToKg(Number(weight || 0)) : Number(weight || 0);
 
   const stepValid = [
-    Boolean(sex) && /^\d{4}-\d{2}-\d{2}$/.test(birth),
+    Boolean(sex) && birthDateValid(birth),
     heightValue >= 60 && heightValue <= 260 && weightValue >= 20 && weightValue <= 400,
     Boolean(activity),
     Boolean(goal),
@@ -88,7 +160,7 @@ export function OnboardingScreen() {
     setSaving(true);
     try {
       const patch: Record<string, unknown> =
-        step === 0 ? { sex, birth_date: birth }
+        step === 0 ? { sex, birth_date: toISODate(birth) }
         : step === 1 ? {
             height_cm: Math.round(heightValue * 10) / 10,
             weight_kg: Math.round(weightValue * 10) / 10,
@@ -161,14 +233,23 @@ export function OnboardingScreen() {
                   </Row>
                   <Label>Date of birth</Label>
                   <TextInput
-                    value={birth} onChangeText={setBirth}
-                    placeholder="YYYY-MM-DD" placeholderTextColor={c.textFaint}
-                    keyboardType="numbers-and-punctuation"
+                    value={birth}
+                    // Slashes are inserted for you — type 09051984 and it lands
+                    // in the same place as 09/05/1984.
+                    onChangeText={(t) => setBirth(formatBirthInput(t))}
+                    placeholder="MM/DD/YYYY" placeholderTextColor={c.textFaint}
+                    keyboardType="number-pad"
+                    maxLength={10}
                     style={{
                       backgroundColor: c.surfaceAlt, borderRadius: radius.md,
                       padding: space.lg, color: c.text, fontSize: 16,
                     }}
                   />
+                  {birthDateProblem(birth) ? (
+                    <Body style={{ color: c.danger }}>{birthDateProblem(birth)}</Body>
+                  ) : (
+                    <Body dim>Month, then day, then year.</Body>
+                  )}
                 </Card>
               </>
             ) : null}
@@ -326,7 +407,13 @@ export function OnboardingScreen() {
                     Water goal: {(targets.water_ml / 1000).toFixed(1)} L. Fibre: {targets.fiber_g} g.
                   </Text>
                 </Card>
-                <Button title="Start tracking" onPress={() => nav.navigate('Main', { screen: 'Home' })} />
+                {/* One optional screen before the app proper. Measuring the
+                    plate once moves every future scan onto the estimator's
+                    most accurate rung; skipping costs nothing. */}
+                <Button
+                  title="Start tracking"
+                  onPress={() => nav.navigate('PlateCalibration')}
+                />
               </>
             ) : null}
           </ScrollView>

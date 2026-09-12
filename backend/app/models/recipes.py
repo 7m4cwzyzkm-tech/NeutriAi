@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from .common import Base, Macros
+from .common import InputBase, Base, Macros
 
 
-class IngredientIn(Base):
+class IngredientIn(InputBase):
     raw_text: str = Field(min_length=1, max_length=200)
     name: str | None = None
     quantity: float | None = None
@@ -14,14 +14,14 @@ class IngredientIn(Base):
     is_optional: bool = False
 
 
-class StepIn(Base):
+class StepIn(InputBase):
     n: int
     text: str = Field(min_length=1, max_length=1000)
     minutes: int | None = None
     tip: str | None = None
 
 
-class RecipeIn(Base):
+class RecipeIn(InputBase):
     title: str = Field(min_length=2, max_length=120)
     summary: str = ""
     photo_paths: list[str] = []
@@ -58,7 +58,7 @@ class RecipeOut(Base):
     save_count: int = 0
 
 
-class AdaptRequest(Base):
+class AdaptRequest(InputBase):
     """Ask the AI to rewrite a recipe for this user's constraints."""
 
     target_servings: int | None = Field(None, ge=1, le=50)

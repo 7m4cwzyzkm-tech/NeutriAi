@@ -23,15 +23,9 @@ import { Body, Button, Card, Chip, Divider, H1, H2, Label, Loading, Row, Screen 
 import { api } from '../api/client';
 import { keys } from '../hooks/useApi';
 import type { Meal, MealSlot } from '../api/types';
+import { methodLabel } from '../lib/method';
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout'];
-
-const METHOD_LABEL: Record<string, string> = {
-  plate_reference: 'Plate reference', depth_model: 'Depth estimate',
-  multi_image: 'Multi-angle', pixel_area: 'Pixel area',
-  ai_prior: 'Typical serving', user_entered: 'You entered this',
-  barcode: 'Barcode',
-};
 
 interface EditableItem {
   id?: string;
@@ -42,6 +36,20 @@ interface EditableItem {
   proteinPerGram: number;
   carbsPerGram: number;
   fatPerGram: number;
+  // Carried even though the screen never displays them.
+  //
+  // Correcting one gram value used to send fiber, sugar and sodium as zero,
+  // and the backend takes a supplied macro block over its own lookup -- so
+  // editing a meal silently dropped the day's fibre and made the next scan's
+  // "fibre is N g short" advice wrong. Nothing on screen said it happened,
+  // because the header shows calories and those were right.
+  fiberPerGram: number;
+  sugarPerGram: number;
+  sodiumPerGram: number;
+  // Where this sat in the scan, fixed at load time. NOT its position in the
+  // edited list: removing a row shifts everything below it, and a correction
+  // paired against the wrong detection teaches the wrong food's height.
+  sourceIndex: number;
   confidence: number;
   method: string;
   removed: boolean;
@@ -84,6 +92,10 @@ export function MealDetailScreen() {
               proteinPerGram: Number(i.protein_g || 0) / g,
               carbsPerGram: Number(i.carbs_g || 0) / g,
               fatPerGram: Number(i.fat_g || 0) / g,
+              fiberPerGram: Number(i.fiber_g || 0) / g,
+              sugarPerGram: Number(i.sugar_g || 0) / g,
+              sodiumPerGram: Number(i.sodium_mg || 0) / g,
+              sourceIndex: index,
               confidence: Number(i.confidence ?? 0.5),
               method: i.estimation_method ?? 'user_entered',
               removed: false,
@@ -132,17 +144,29 @@ export function MealDetailScreen() {
       await api.nutrition.correctMeal(mealId, {
         title: title || meal?.title || 'Meal',
         meal_slot: slot,
+        // Sent back deliberately. The body carried no `notes` key, and the
+        // backend writes the field unconditionally -- so correcting a gram
+        // value erased whatever the person had written about the meal, with
+        // no way to get it back.
+        ...(meal ? { notes: meal.notes ?? null } : {}),
         items: items
           .filter((i) => !i.removed && i.grams > 0)
           .map((i) => ({
             name: i.name,
             grams: i.grams,
+            // Which detected item this edits. Without it a RENAME cannot be
+            // matched back to the scan -- the name is the thing that changed --
+            // so the app learned nothing from the single most useful
+            // correction a person can make.
+            source_index: i.sourceIndex,
             macros: {
               kcal: i.kcalPerGram * i.grams,
               protein_g: i.proteinPerGram * i.grams,
               carbs_g: i.carbsPerGram * i.grams,
               fat_g: i.fatPerGram * i.grams,
-              fiber_g: 0, sugar_g: 0, sodium_mg: 0,
+              fiber_g: i.fiberPerGram * i.grams,
+              sugar_g: i.sugarPerGram * i.grams,
+              sodium_mg: i.sodiumPerGram * i.grams,
             },
           })),
       });
@@ -261,7 +285,7 @@ export function MealDetailScreen() {
                         backgroundColor: confidenceColor(c, item.confidence),
                       }} />
                       <Text style={[type.caption, { color: c.textFaint }]}>
-                        {METHOD_LABEL[item.method] ?? item.method}
+                        {methodLabel(item.method)}
                         {item.grams !== item.originalGrams
                           ? `  ·  AI said ${Math.round(item.originalGrams)} g`
                           : ''}

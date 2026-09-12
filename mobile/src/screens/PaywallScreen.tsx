@@ -20,11 +20,17 @@ import { api } from '../api/client';
 import { keys, useSubscription } from '../hooks/useApi';
 import { useApp } from '../state/store';
 import {
-  attachPurchaseListener, loadProducts, purchase, restorePurchases, storeName,
-  type PlanId, type StoreProduct,
+  attachPurchaseListener, billingAvailable, loadProducts, purchase, restorePurchases,
+  storeName, type PlanId, type StoreProduct,
 } from '../native/purchases';
 
-const NATIVE = Platform.OS === 'ios' || Platform.OS === 'android';
+/**
+ * Store billing needs BOTH a store platform and the native billing module.
+ * In Expo Go, and in any build without it, the module is absent — offering a
+ * "Subscribe" button that cannot charge anyone is worse than falling through
+ * to Stripe web checkout, which works everywhere.
+ */
+const NATIVE = (Platform.OS === 'ios' || Platform.OS === 'android') && billingAvailable();
 
 export function PaywallSheet() {
   const c = useTheme();

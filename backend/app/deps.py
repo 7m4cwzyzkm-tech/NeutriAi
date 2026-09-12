@@ -5,12 +5,16 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, Header, Request
 
 from .config import settings
 from .db import maybe_one, service
-from .errors import PaymentRequired, QuotaExceeded, Unauthorized
+from .errors import PaymentRequired, QuotaExceeded, Unauthorized, UpstreamError
+
+log = structlog.get_logger()
 from .security import decode_supabase_jwt
+from .services.identity import ensure_profile_cached
 
 
 @dataclass(slots=True)
@@ -38,6 +42,10 @@ async def current_user(
     uid = claims.get("sub")
     if not uid:
         raise Unauthorized("Token has no subject.")
+    # Every user-scoped table has a FK to profiles(id). Guarantee the row
+    # exists here so no route has to care whether GET /me ran first.
+    # One query per user per process; see services.identity.
+    ensure_profile_cached(uid, claims.get("email"))
     return CurrentUser(id=uid, email=claims.get("email"), jwt=token, claims=claims)
 
 
@@ -98,16 +106,36 @@ async def consume_ai_scan(user: CurrentUserDep, ent: EntitlementDep) -> dict:
     Free users get a small daily allowance so the app is usable before they
     pay; Pro users are unmetered but still counted for cost observability.
     """
-    sb = service()
-    used = int(ent.get("ai_scans_used_today") or 0)
-    if not ent.get("is_active") and used >= int(ent.get("ai_scans_quota") or 0):
+    is_active = bool(ent.get("is_active"))
+    try:
+        # Counted in the DATABASE, in one statement.
+        #
+        # This used to read the count, add one, and write it back. Two scans
+        # arriving together both read the same number and both wrote one more
+        # than it, so N concurrent requests cost ONE quota unit -- a free user
+        # got unlimited scans by sending them at once, and every one of those
+        # is a paid GPT-4o call. Verified against PostgreSQL 16: 40 concurrent
+        # requests against a quota of 3 now allow exactly 3.
+        result = service().rpc("consume_ai_scan", {
+            "p_user_id": str(user.id),
+            "p_is_active": is_active,
+            "p_pro_ceiling": int(settings.pro_daily_scan_ceiling),
+        }).execute()
+        row = (getattr(result, "data", None) or [{}])[0]
+    except Exception as exc:  # noqa: BLE001
+        # A counter that cannot be reached must not become a free pass. Failing
+        # closed on a paid call is the right direction: the user retries, and
+        # nobody discovers that breaking the database is how you get free scans.
+        log.warning("scan_quota_unavailable", error=str(exc)[:200])
+        raise UpstreamError("Could not check your scan allowance. Try again.") from exc
+
+    if not row.get("allowed", False):
         raise QuotaExceeded(
-            "You have used today's free AI scans.",
-            detail={"used": used, "quota": ent.get("ai_scans_quota"), "upgrade": True},
+            "You have used today's AI scans."
+            if is_active else "You have used today's free AI scans.",
+            detail={"used": row.get("used"), "quota": row.get("quota"),
+                    "upgrade": not is_active},
         )
-    sb.table("entitlements").update({"ai_scans_used_today": used + 1}).eq(
-        "user_id", user.id
-    ).execute()
     return ent
 
 

@@ -34,7 +34,8 @@ VALID_EQUIPMENT = {
 # Equipment detection
 # ---------------------------------------------------------------------------
 async def scan_equipment(user_id: str, image_paths: list[str], space_note: str | None) -> dict:
-    images = await fetch_images("equipment-photos", image_paths)
+    # Equipment detection has no geometry, so only the encoded image is used.
+    images = [p.b64 for p in await fetch_images("equipment-photos", image_paths)]
     if not images:
         return {"equipment": ["none"], "detected": [], "confidence": 0.0,
                 "space_note": space_note or "", "fallback": True}

@@ -222,6 +222,79 @@ async def verify_apple(user_id: str, transaction_id: str, sandbox: bool = False)
             "environment": "sandbox" if sandbox else "production"}
 
 
+# What a genuine duplicate looks like coming back from Postgres.
+#
+# The idempotency claim inserts the notification id and treats a failure as
+# "we have seen this already". That is right for a UNIQUE VIOLATION and wrong
+# for everything else -- and it was catching everything else. A database blip
+# during the claim was reported as a duplicate, the endpoint answered 200, and
+# Apple and Google stopped retrying. A renewal, a cancellation or a refund was
+# then lost permanently, silently, with no dashboard to replay it from.
+#
+# Matched on the message because that is what the client surfaces; 23505 is the
+# SQLSTATE for unique_violation.
+_DUPLICATE_SIGNS = ("23505", "duplicate key", "already exists",
+                    "violates unique constraint")
+
+
+def is_duplicate(exc: Exception) -> bool:
+    """Is this the claim losing a race, or is it the database being unwell?
+
+    Defaults to FALSE, deliberately. A retried duplicate costs one wasted
+    round trip -- the claim simply fails again. A swallowed real notification
+    costs somebody their subscription. When the reason cannot be read, the safe
+    answer is 'not a duplicate', so the store retries.
+    """
+    text = f"{type(exc).__name__} {exc}".lower()
+    return any(sign in text for sign in _DUPLICATE_SIGNS)
+
+
+class NotHandled(Exception):
+    """The notification was not processed, and this is the outcome to report.
+
+    A RAISE rather than a returned string, and the reason is the failure mode.
+    A returned outcome can be dropped by a caller that forgets to read it -- a
+    mutation proved exactly that, and the build still passed -- and dropping it
+    means carrying on as though the idempotency claim had succeeded.
+
+    Raising fails SAFE in both directions. Caught, the handler reports the
+    outcome and the router picks the status code. Uncaught, the request 500s,
+    which is a non-2xx, which is what makes Apple and Google send it again.
+    The worst case of forgetting is a retry; the worst case of dropping a
+    returned string is a lost subscription.
+    """
+
+    def __init__(self, outcome: str):
+        super().__init__(outcome)
+        self.outcome = outcome
+
+
+def claim_event(row: dict) -> None:
+    """Claim this notification id, or raise NotHandled saying why not.
+
+    Returns None only on a successful claim, so there is no value to ignore.
+    """
+    try:
+        service().table("stripe_events").insert(row).execute()
+        return
+    except Exception as exc:  # noqa: BLE001
+        # `event_id`, NOT `event`. structlog's bound logger is
+        # meth(event, *args, **kw) -- the MESSAGE is the `event` argument, so a
+        # kwarg of that name arrives as a second value for the same parameter
+        # and the call raises TypeError before it logs anything.
+        #
+        # It raised here instead of NotHandled on every duplicate store
+        # notification, which is the one path that must stay quiet: the store
+        # retried, hit the same crash, and retried again. The message strings
+        # are unchanged -- they are what the log is grepped by.
+        if is_duplicate(exc):
+            log.info("iap_notification_replay_ignored", event_id=row.get("id"))
+            raise NotHandled("duplicate") from exc
+        log.warning("iap_claim_failed", event_id=row.get("id"),
+                    error=str(exc)[:200])
+        raise NotHandled("deferred:claim_failed") from exc
+
+
 async def handle_apple_notification(signed_payload: str) -> str:
     """App Store Server Notifications V2.
 
@@ -241,15 +314,15 @@ async def handle_apple_notification(signed_payload: str) -> str:
     # Idempotency, exactly as with Stripe: claim the notification id first.
     notification_id = payload.get("notificationUUID") or f"apple:{original_tx}:{time.time()}"
     try:
-        service().table("stripe_events").insert({
+        claim_event({
             "id": f"apple:{notification_id}",
             "type": f"apple.{notification_type}.{subtype}".rstrip("."),
             "payload": {"notificationType": notification_type, "subtype": subtype,
                         "originalTransactionId": original_tx},
             "status": "received",
-        }).execute()
-    except Exception:
-        return "duplicate"
+        })
+    except NotHandled as why:
+        return why.outcome
 
     sub = maybe_one(
         service().table("subscriptions").select("user_id")
@@ -259,23 +332,54 @@ async def handle_apple_notification(signed_payload: str) -> str:
         log.warning("apple_notification_unknown_user", original_tx=original_tx)
         return "ignored:unknown_user"
 
-    is_active = notification_type in APPLE_LIVE or (
-        notification_type == "DID_FAIL_TO_RENEW" and subtype == "GRACE_PERIOD"
-    )
-    if notification_type in APPLE_DEAD:
-        is_active = False
+    # THE NOTIFICATION IS A DOORBELL, NOT A DOCUMENT.
+    #
+    # Nothing above this line has been verified. Apple signs these with a
+    # certificate chain rooted at the Apple Root CA and `_decode_jws` does not
+    # check it, so every field read so far is attacker-controlled: the
+    # notification type, the product, the expiry date. Acting on them directly
+    # -- which is what this function used to do -- means a forged DID_RENEW
+    # with an expiry in 2099 grants permanent free Pro, and a forged REVOKE
+    # cancels a paying customer.
+    #
+    # So the notification is used for exactly two things, neither of them a
+    # claim: an idempotency key, and an identifier to look up. The entitlement
+    # then comes from asking Apple's own API what the subscription actually is,
+    # authenticated with our App Store Connect key.
+    #
+    # The worst a forged notification can now do is make us re-check a real
+    # subscription that already belongs to a real user. It cannot grant
+    # anything, and it cannot take anything away.
+    #
+    # This is deliberately not hand-rolled X.509 chain verification. That is a
+    # security boundary where subtle bugs live, it would need Apple's root
+    # certificate pinned by fingerprint, and re-fetching gives a stronger
+    # guarantee for less code: even a perfectly valid signature only tells you
+    # Apple sent it, not that the contents are still true.
+    try:
+        result = await verify_apple(sub["user_id"], original_tx)
+    except (AppError, UpstreamError) as exc:
+        # Left unprocessed on purpose. Apple retries its notifications, and a
+        # row marked processed would never be retried by us either.
+        log.warning("apple_notification_unverified", original_tx=original_tx,
+                    notification=notification_type, error=str(exc)[:200])
+        service().table("stripe_events").update({
+            "status": "failed", "error": str(exc)[:400],
+        }).eq("id", f"apple:{notification_id}").execute()
+        return f"deferred:{notification_type}"
 
-    apply_entitlement(
-        user_id=sub["user_id"],
-        product_id=info.get("productId", ""),
-        is_active=is_active,
-        expires_at=_ms_to_dt(info.get("expiresDate")),
-        source="apple_iap",
-        original_transaction_id=original_tx,
-    )
     service().table("stripe_events").update({
         "status": "processed", "processed_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", f"apple:{notification_id}").execute()
+    # Logged as a COMPARISON, which is the only job the notification type has
+    # left. What it claims and what Apple's API says should agree; when they do
+    # not, that is either a race worth knowing about or somebody probing the
+    # endpoint with forged notifications, and neither is visible otherwise.
+    claimed = (True if notification_type in APPLE_LIVE
+               else False if notification_type in APPLE_DEAD else None)
+    log.info("apple_notification_processed", notification=notification_type,
+             claimed_active=claimed, apple_says_active=result.get("is_active"),
+             disagreed=(claimed is not None and claimed != result.get("is_active")))
     return f"processed:{notification_type}"
 
 
@@ -358,6 +462,12 @@ async def verify_google(user_id: str, product_id: str, purchase_token: str) -> d
             "expires_at": expires.isoformat() if expires else None}
 
 
+# Google purchase tokens are long opaque strings -- hundreds of characters in
+# practice. This is a floor, not a format check: what it exists to reject is the
+# empty one, which turned the subscriber lookup into a match-everybody wildcard.
+MIN_GOOGLE_TOKEN = 20
+
+
 async def handle_google_notification(message: dict) -> str:
     """Play Real-Time Developer Notifications, delivered via Pub/Sub push.
 
@@ -371,25 +481,40 @@ async def handle_google_notification(message: dict) -> str:
     if not sub_notice:
         return "ignored:not_a_subscription"
 
-    purchase_token = sub_notice.get("purchaseToken")
+    purchase_token = str(sub_notice.get("purchaseToken") or "")
+    # A purchase token is long and opaque. Anything short is not one, and an
+    # EMPTY one used to be catastrophic: the lookup below is a LIKE on the first
+    # 32 characters, so an empty token made the pattern `google_iap:%%`, which
+    # matches every subscriber. The first row won, and an anonymous request
+    # could cancel a stranger's subscription -- repeatedly, using a fresh
+    # message id each time to slip past the idempotency insert.
+    if len(purchase_token) < MIN_GOOGLE_TOKEN:
+        log.warning("google_notification_short_token", length=len(purchase_token))
+        return "ignored:bad_token"
     notification_type = int(sub_notice.get("notificationType") or 0)
     message_id = (message.get("message") or {}).get("messageId", purchase_token)
 
     try:
-        service().table("stripe_events").insert({
+        claim_event({
             "id": f"google:{message_id}",
             "type": f"google.subscription.{notification_type}",
             "payload": payload, "status": "received",
-        }).execute()
-    except Exception:
-        return "duplicate"
+        })
+    except NotHandled as why:
+        return why.outcome
 
     sub = maybe_one(
         service().table("subscriptions").select("user_id")
-        .like("stripe_subscription_id", f"google_iap:%{purchase_token[:32]}%")
+        # An exact match, not a LIKE. The wildcards were there to survive a
+        # token stored with a different prefix, and they turned a lookup into a
+        # search: a token of "%" matches everyone, and a `_` in a token is a
+        # single-character wildcard in SQL, so even an honest token could match
+        # the wrong row.
+        .eq("stripe_subscription_id", f"google_iap:{purchase_token}")
         .limit(1).execute()
     )
     if not sub:
+        log.warning("google_notification_unknown_token")
         return "ignored:unknown_user"
 
     if notification_type in GOOGLE_LIVE:

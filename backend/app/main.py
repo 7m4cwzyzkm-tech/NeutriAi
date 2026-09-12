@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections import defaultdict, deque
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
 
 import structlog
@@ -89,7 +89,41 @@ async def observability(request: Request, call_next):
 # In-process sliding window. Fine for a single instance; swap the store for
 # Redis (see docs/DEPLOYMENT.md) the moment you run more than one.
 # ---------------------------------------------------------------------------
-_hits: dict[str, deque[float]] = defaultdict(deque)
+# Bounded on purpose. The old store was a defaultdict keyed on whatever the
+# caller put in the Authorization header, and it never evicted anything: 50,000
+# requests with a rotating header left 50,000 buckets behind, a slow memory leak
+# an attacker controls the rate of. An LRU with a hard cap cannot be grown.
+RATE_LIMIT_BUCKETS = 20_000
+_hits: OrderedDict[str, deque[float]] = OrderedDict()
+
+
+def _client_key(request: Request) -> str:
+    """Who to count this request against.
+
+    THE ADDRESS, NOT THE TOKEN, and that is the fix.
+
+    This middleware runs before authentication, so anything it reads from the
+    request is unverified. The old key was the last 32 characters of the
+    Authorization header, which the caller chooses: measured, 50,000 requests
+    with a rotating header got 0 blocked, while 1,000 requests with no header at
+    all got 880 blocked -- so it throttled honest anonymous traffic and waved
+    the attack through.
+
+    An address is not free to rotate, which is the property a pre-auth limit
+    needs. Per-USER fairness is a different question with a different answer:
+    the scan quota in deps.py runs AFTER the token is verified, which is the
+    only place a user id can be trusted.
+
+    `x-forwarded-for` is honoured only when the deployment says it is behind a
+    proxy. Trusting it unconditionally would hand the rotating key straight
+    back, in a different header.
+    """
+    if settings.trust_proxy_header:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        first = forwarded.split(",")[0].strip()
+        if first:
+            return first[:64]
+    return (request.client.host if request.client else "unknown")[:64]
 # Provider webhooks must never be rate limited: Apple and Google burst
 # notifications after an outage, and a 429 to Stripe starts a 3-day retry storm.
 EXEMPT = {
@@ -102,11 +136,15 @@ EXEMPT = {
 async def rate_limit(request: Request, call_next):
     if request.url.path in EXEMPT:
         return await call_next(request)
-    key = request.headers.get("authorization", "")[-32:] or (
-        request.client.host if request.client else "anon"
-    )
+    key = _client_key(request)
     now = time.time()
-    window = _hits[key]
+    window = _hits.get(key)
+    if window is None:
+        window = _hits[key] = deque()
+        # Make room before adding, so the cap is a cap rather than a target.
+        while len(_hits) > RATE_LIMIT_BUCKETS:
+            _hits.popitem(last=False)
+    _hits.move_to_end(key)
     while window and now - window[0] > 60:
         window.popleft()
     if len(window) >= settings.rate_limit_per_minute:
@@ -117,6 +155,8 @@ async def rate_limit(request: Request, call_next):
             headers={"retry-after": "60"},
         )
     window.append(now)
+    if not window:                      # nothing left in the minute: drop it
+        _hits.pop(key, None)
     return await call_next(request)
 
 

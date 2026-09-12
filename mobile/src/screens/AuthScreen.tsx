@@ -13,14 +13,57 @@ export function AuthScreen() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function submit() {
     setBusy(true);
     setError(null);
-    const fn = mode === 'signup' ? supabase.auth.signUp : supabase.auth.signInWithPassword;
-    const { error: err } = await fn({ email: email.trim(), password });
-    if (err) setError(err.message);
-    setBusy(false);
+    setNotice(null);
+
+    const credentials = { email: email.trim().toLowerCase(), password };
+
+    try {
+      // Call THROUGH the client, never a detached reference.
+      //
+      //   const fn = supabase.auth.signUp;   // <- loses `this`
+      //   await fn(credentials);             // <- TypeError, every time
+      //
+      // Supabase's auth methods are instance methods that use `this`
+      // internally, so pulling one off the object and calling it bare throws
+      // before it ever reaches the network. Combined with the missing
+      // try/finally below, that left this button spinning forever with no
+      // error shown — it looked like a hung request and was not one.
+      const { data, error: err } =
+        mode === 'signup'
+          ? await supabase.auth.signUp(credentials)
+          : await supabase.auth.signInWithPassword(credentials);
+
+      if (err) {
+        setError(err.message);
+        return;
+      }
+
+      // Sign-up succeeds with NO session when the project requires email
+      // confirmation. The auth listener never fires, so without this the
+      // screen simply sits there looking broken after a successful signup.
+      if (mode === 'signup' && !data.session) {
+        setNotice(
+          data.user
+            ? `Check ${credentials.email} for a confirmation link, then sign in.`
+            : 'Account created. Confirm your email, then sign in.',
+        );
+      }
+      // On success WITH a session, onAuthStateChange in App.tsx navigates.
+      // Nothing to do here.
+    } catch (e: any) {
+      // A thrown error (network down, misconfigured client) is not the same as
+      // a returned one, and previously escaped entirely.
+      setError(e?.message ?? 'Could not reach NeutriAI. Check your connection.');
+    } finally {
+      // In `finally` on purpose: every path above must clear the spinner,
+      // including the ones that return early or throw.
+      setBusy(false);
+    }
   }
 
   return (
@@ -67,6 +110,7 @@ export function AuthScreen() {
           ))}
 
           {error ? <Text style={[type.body, { color: c.danger }]}>{error}</Text> : null}
+          {notice ? <Text style={[type.body, { color: c.accent }]}>{notice}</Text> : null}
 
           <Button
             title={mode === 'signup' ? 'Start free trial' : 'Sign in'}

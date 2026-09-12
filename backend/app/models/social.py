@@ -4,10 +4,10 @@ from datetime import datetime
 
 from pydantic import Field
 
-from .common import Base
+from .common import InputBase, Base
 
 
-class PostIn(Base):
+class PostIn(InputBase):
     kind: str = Field("text", pattern="^(meal|workout|recipe|progress|text|milestone)$")
     body: str = Field("", max_length=2000)
     media_paths: list[str] = []
@@ -31,7 +31,7 @@ class PostOut(Base):
     attached: dict | None = None
 
 
-class CommentIn(Base):
+class CommentIn(InputBase):
     body: str = Field(min_length=1, max_length=1000)
     parent_id: str | None = None
 

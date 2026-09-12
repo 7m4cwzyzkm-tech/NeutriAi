@@ -6,9 +6,13 @@ The hybrid split, and why:
   good at "what objects are in this picture, where, and how much of the frame do
   they occupy". We ask it for geometry, not nutrition.
 * **Claude** does *reasoning*. Given the detections plus the user's profile and
-  history, it resolves ambiguity ("is that rice or couscous, given the cuisine
-  cues?"), sanity-checks portion sizes against real-world priors, and writes the
-  human-facing advice.
+  history, it resolves ambiguity ("is that rice or couscous?"), sanity-checks
+  portion sizes against real-world priors, and writes the human-facing advice.
+
+  Note the boundary: context can help NAME a food, never decide whether it is
+  there. Reasoning about which foods belong together led it to delete a third
+  of a weighed test meal for "cuisine coherence". The photograph is the
+  evidence; the model's expectations are not.
 
 Each call is wrapped so that a provider outage degrades instead of 500ing:
 ``ask_vision`` and ``ask_reasoning`` both return ``None`` on failure and the
@@ -163,14 +167,26 @@ async def _claude(
             }
         )
     content.append({"type": "text", "text": user_text})
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "system": system,
+        "messages": [{"role": "user", "content": content}],
+    }
+    # temperature is not accepted by every model/SDK combination. Where it is
+    # rejected the SDK raises TypeError before any request is sent, and the
+    # whole reasoning pass fails -- silently, because the caller is built to
+    # degrade rather than 500. That meant every scan quietly ran without the
+    # reasoning step while still reporting a result, which is the worst kind of
+    # failure: invisible. Ask for it, drop it if it is refused.
+    attempt = dict(kwargs, temperature=0.2)
     try:
-        resp = await _anthropic().messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=0.2,
-            system=system,
-            messages=[{"role": "user", "content": content}],
-        )
+        resp = await _anthropic().messages.create(**attempt)
+    except TypeError as exc:
+        if "temperature" not in str(exc):
+            raise
+        log.info("temperature_unsupported", model=model)
+        resp = await _anthropic().messages.create(**kwargs)
     except Exception as exc:  # noqa: BLE001
         if any(s in str(exc).lower() for s in ("rate limit", "timeout", "overloaded", "529")):
             raise TransientAiError(str(exc)) from exc
@@ -266,6 +282,3 @@ async def record_usage(call: AiCall, user_id: str | None) -> None:
         log.debug("ai_usage_write_failed", pipeline=call.pipeline)
 
 
-async def gather_calls(*coros):
-    """Run model calls concurrently; a failure in one never cancels the rest."""
-    return await asyncio.gather(*coros, return_exceptions=True)

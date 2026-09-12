@@ -35,6 +35,45 @@ class Settings(BaseSettings):
     ai_daily_cost_ceiling_usd: float = 50.0
     ai_timeout_s: float = 45.0
 
+    # ---- depth model (height measured from the photo, not assumed) ----
+    #
+    # Off by default: with no provider configured the app measures no heights
+    # and every portion uses its prior, which is exactly today's behaviour.
+    #
+    # Deliberately provider-agnostic. `depth_provider` picks the dialect and
+    # everything the model itself needs -- which weights, which encoder -- is
+    # config rather than code, because the licence matters more than the vendor:
+    # Depth Anything V2 SMALL is Apache-2.0, and its Base, Large and Giant
+    # siblings are CC-BY-NC and cannot legally serve a paid app.
+    depth_provider: Literal["", "replicate", "http"] = ""
+    depth_api_key: str = ""
+    depth_endpoint: str = ""             # "http" dialect: the full POST URL
+    depth_model_version: str = ""        # "replicate" dialect: the version id
+    depth_model_input: str = ""          # extra JSON merged into the model input
+    depth_image_field: str = "image"     # what the model calls its image input
+    depth_output_field: str = ""         # "http" dialect: JSON key holding the map
+    depth_timeout_s: float = 25.0
+
+    # ---- segmenter (SAM2: which pixels are which food, and where the plate is) ----
+    #
+    # Off by default. Unconfigured, the app measures the split exactly as it does
+    # today -- from the model's own area claim, on a 0.05 grid.
+    segmenter_provider: Literal["", "replicate", "http"] = ""
+    # "prompted": the model takes point coordinates and returns that
+    # point's mask. "auto": it takes no points, returns every mask it
+    # finds, and we choose -- which is what meta/sam-2 actually is.
+    # Getting this wrong is a call that is made, billed, and useless:
+    # run `dev segcheck` and it will say which one the model is.
+    segmenter_mode: Literal["prompted", "auto"] = "prompted"
+    segmenter_api_key: str = ""
+    segmenter_endpoint: str = ""
+    segmenter_model_version: str = ""
+    segmenter_model_input: str = ""
+    segmenter_image_field: str = "image"
+    segmenter_points_field: str = "point_coords"
+    segmenter_output_field: str = ""
+    segmenter_timeout_s: float = 30.0
+
     # ---- nutrition data providers ----
     usda_api_key: str = ""
     edamam_app_id: str = ""
@@ -71,13 +110,27 @@ class Settings(BaseSettings):
     garmin_consumer_secret: str = ""
     google_fit_client_id: str = ""
     google_fit_client_secret: str = ""
-    oauth_redirect_base: str = "https://api.neutriai.app/v1/integrations/callback"
+    oauth_redirect_base: str = "https://api.neutriai.com/v1/integrations/callback"
 
     # ---- infra ----
     redis_url: str = "redis://localhost:6379/0"
     token_encryption_key: str = ""          # 32-byte urlsafe base64 (Fernet)
     free_tier_daily_scans: int = 3
+    # A subscription is not a blank cheque.
+    #
+    # Pro used to be unmetered, which is a subscription-priced hole: one
+    # account, unlimited GPT-4o vision calls, at a per-scan cost the
+    # subscription does not cover. High enough that no real person meets it,
+    # low enough that a script does.
+    pro_daily_scan_ceiling: int = 200
     rate_limit_per_minute: int = 120
+    # Is there a load balancer in front of this?
+    #
+    # Decides whether `x-forwarded-for` is believed. Off by default because a
+    # header the caller can set is a rate-limit key the caller can rotate, and
+    # that is the exact bug this replaced. Turn it on only when something in
+    # front is guaranteed to overwrite the header.
+    trust_proxy_header: bool = False
 
     @field_validator("cors_origins", "nutrition_provider_order", mode="before")
     @classmethod

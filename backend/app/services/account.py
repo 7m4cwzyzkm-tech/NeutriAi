@@ -27,6 +27,7 @@ import structlog
 
 from ..config import settings
 from ..db import maybe_one, rows, service
+from . import identity
 
 log = structlog.get_logger()
 
@@ -199,6 +200,11 @@ def delete_account(user_id: str) -> dict:
         # the profile explicitly so the rest of the tables cascade from it.
         sb.table("profiles").delete().eq("id", user_id).execute()
         report["profile_deleted_explicitly"] = True
+
+    # Drop the "this id has a profile" cache entry. Without this, a still-valid
+    # JWT from the deleted account would skip the existence check on this
+    # process and fail later on a foreign key instead of getting a clean 401.
+    identity.forget(user_id)
 
     report["completed_at"] = datetime.now(timezone.utc).isoformat()
     log.info("account_deleted", user_id=user_id,
