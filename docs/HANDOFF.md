@@ -638,3 +638,104 @@ prompts. A real prompt carries COORDINATES.
 pipeline. Dry by default. The test is one number: a mask near 9% of frame makes
 composite foods measurable; 1-2% means the ceiling is real and the design has to
 work around composites rather than through them.
+
+---
+
+## sam3, measured — 12 Sep 2026. Four predictions, all archived in evidence/
+
+### A PREDICTION MISS, RECORDED AS ONE
+
+The fries footprint was called at **10.2%** and came back at **13.09%** — right
+direction, right order of magnitude, **wrong by 28%**. That is a miss, not a
+confirmation, and it is written here as a miss because a prediction that is
+"basically right" is exactly how the refuted claims in this file's own list got
+their confidence.
+
+### What sam3 returns, and what it does not
+
+    photo  concept              detections   union      verdict
+    35     cheeseburger                  1   10.08%     whole burger, clean
+    35     french fries                 14   13.09%     per-fry instances
+    23     brussels sprouts              5    1.99%     4-5 sprouts, correct
+    30     croutons                     14    4.54%     every visible crouton
+    30     romaine lettuce               0    EMPTY
+    30     parmesan                      0    EMPTY
+    30     caesar salad                  0    EMPTY
+
+Empty means literally `{"boxes": [], "scores": [], "masks": []}` — 40 bytes, no
+low-confidence entries filtered out. A clean null.
+
+**THE INSTANCE-VS-DISH READ WAS WRONG.** It predicted that ingredient nouns
+would work where the dish name failed. `croutons` did. `romaine lettuce` and
+`parmesan` did not, and both are ingredient nouns. The line is not dish versus
+ingredient, it is:
+
+    DISCRETE SEPARABLE OBJECTS      croutons, fries, sprouts, a burger    found
+    AMORPHOUS OR CONTINUOUS MATTER  leaves, shreds, sauce, a whole dish   empty
+
+That is a worse result than the first read, because the foods it fails on are
+the leafy and shredded ones — precisely the ones a footprint was always going
+to be hardest for, and 123 g of caesar salad is mostly the lettuce it cannot
+see.
+
+Four concepts cost ONE prediction: sam3's `prompts` is an array and it returns
+one result file per prompt, positionally. So a scan carrying one prompt per
+detected food is the same call count as SAM2's one call per photograph —
+**replacing is not more expensive than supplementing, and cost cannot be the
+reason to choose.**
+
+### THE FOOTPRINT IS THE DOMINANT ERROR, AND IT IS UPSTREAM OF EVERYTHING TUNED SO FAR
+
+    item     production measured   sam3      ratio    the model's own box
+    burger              1.35%     10.08%     7.5x     9.00%
+    fries               4.36%     13.09%     3.0x     5.99%
+
+Both footprints are several times too small, and sam3's burger mask (10.08%)
+EXCEEDS the model's whole bounding box for it (9.00%). The vision model's box
+is 53% of the burger's true extent at IoU 0.414 — it misses 159 px of the top
+and 209 px of the right while overhanging 67 px onto the plate. **No
+box-prompted segmenter constrained to that box can return the burger, however
+good it is.** SAM2's 1.35% was never only SAM2's fault, and "composite foods are
+structurally unmeasurable" was too pessimistic: they are measurable, the box is
+wrong.
+
+### AND THE THIRD "FITTED AS A PAIR" TRAP — DENSITY, SHAPE AND AREA COMPOSE
+
+Backing the fries height out three ways gives three answers, and the spread is
+NOT noise:
+
+    footprint 13.09% of a 763.3 cm2 frame            = 99.9 cm2
+    65 g at density 0.60, no shape factor            = 10.8 mm
+    65 g at the pipeline's composite 0.85 x loose 0.50 = 15.3 mm
+    65 g at the potato row 0.59, no shape factor     = 11.0 mm
+
+The 10.8 and the 16.0 quoted earlier differ by exactly the SHAPE FACTOR
+(0.60 / 0.406 = 1.48 = 16.0 / 10.8), not by the density.
+
+**Which density the fries actually used:** not the potato row. `potato 0.59`
+never matches, because lookup is by exact key and the food is named "potato,
+french fries, from fresh, fried". That name resolves to food group
+**`composite`, density 0.85** — a mixed-dish figure applied to a single food.
+Backing the effective multiplier out of the geometry gives **0.406**, and
+`composite 0.85 x loose 0.50 = 0.425`, 5% apart. So the fries were sized at
+about 0.85 g/ml with a 0.50 shape factor.
+
+**Bulk or material:** BULK. `potato 0.59` is FAO's "potato english boiled",
+and solid potato flesh is about 1.05-1.10 g/cm3 — potatoes sink in water. A
+figure of 0.59 is packed pieces with voids between them. The table's own header
+confirms the intent: "grams = area x height x profile x DENSITY", i.e. a
+density meant to pair with a BOUNDING volume.
+
+And `SHAPE_FACTORS` is documented in `portion.py` as bundling two corrections:
+the pile's profile AND how much of a bounding box the food fills. So with tight
+per-instance masks:
+
+  * the AREA no longer contains the gaps between pieces
+  * the DENSITY still discounts for voids
+  * the SHAPE FACTOR still discounts for box fill
+
+Three terms fitted to compose against a loose blob, applied to a tight mask.
+**A segmenter swap therefore needs a RE-DERIVATION, not a re-fit** — which is
+the same trap as the height constants and the mask cache, now for the third
+time in one day. The pattern: every constant in this pipeline was fitted
+against a particular upstream, and none of them records which.
