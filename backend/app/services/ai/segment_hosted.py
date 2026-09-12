@@ -344,7 +344,24 @@ def dump_masks(image: bytes, shape: tuple[int, int], raw: list, pool: list,
         digest = hashlib.sha256(image).hexdigest()
         out = Path(dest)
         out.mkdir(parents=True, exist_ok=True)
+        # ONE FILE PER SCAN, NEVER ONE PER DIGEST.
+        #
+        # The digest names the BYTES, and repeat scans of one photograph can
+        # send identical bytes -- that is exactly what `--runs N` does, and the
+        # memo makes it likelier still. Keyed on digest alone the second scan
+        # overwrites the first, and the question those runs are asked to settle
+        # is whether the pool differs BETWEEN them. The evidence would be
+        # destroyed by the instrument built to collect it, silently, and the
+        # run would have to be paid for twice.
+        #
+        # So the digest keeps naming the bytes (the tie to `sam2_auto_masks`
+        # survives, and a single-scan dump keeps the plain name) and a counter
+        # separates the scans. `box_replay` globs `masks-*.npz` and reads each.
         path = out / f"masks-{digest[:16]}.npz"
+        n = 1
+        while path.exists():
+            n += 1
+            path = out / f"masks-{digest[:16]}-{n}.npz"
         H, W = shape
         # packbits keeps a 1024x1024 bool from costing a megabyte each; the
         # shape travels alongside so unpacking cannot guess it wrong.

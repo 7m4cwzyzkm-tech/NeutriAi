@@ -1042,3 +1042,32 @@ def test_segment_boxes_dumps_the_pool_it_actually_chose_from(tmp_path, monkeypat
     assert (got["pool"][0] == on_plate).all()
     assert got["boxes"] == [box]
     assert got["plate_hint"] is not None and (got["plate_hint"] == plate_hint).all()
+
+
+def test_a_second_scan_of_the_same_bytes_does_not_overwrite_the_first(
+        tmp_path, monkeypatch):
+    """`--runs N` sends identical bytes N times, and each scan must survive.
+
+    The digest names the BYTES, so repeat scans of one photograph collide on
+    it. Whether the pool differs between those scans is the question the runs
+    are paid for; letting the second clobber the first would destroy that
+    evidence with no error, and the run would have to be bought again.
+    """
+    import hashlib
+
+    monkeypatch.setenv(S.MASK_DUMP_ENV, str(tmp_path))
+    a, b = _blob(200, 200, 30), _blob(120, 120, 20)
+
+    first = S.dump_masks(b"same-bytes", (400, 400), [a, b], [a], [], [(1, 1)])
+    second = S.dump_masks(b"same-bytes", (400, 400), [a, b], [a, b], [], [(1, 1)])
+
+    assert first != second, "the second scan overwrote the first"
+    assert len(list(tmp_path.glob("masks-*.npz"))) == 2
+
+    digest = hashlib.sha256(b"same-bytes").hexdigest()
+    assert pathlib.Path(first).name == f"masks-{digest[:16]}.npz"
+    assert pathlib.Path(second).name == f"masks-{digest[:16]}-2.npz"
+
+    # And each file still holds its OWN scan, not the other's.
+    assert len(S.load_mask_dump(first)["pool"]) == 1
+    assert len(S.load_mask_dump(second)["pool"]) == 2
