@@ -195,6 +195,212 @@ tilt of 3.2 deg the output is identical to switch-off. **One photo, two items --
 evidence, not proof.** Whether the height path works is untested either way, and
 tomorrow's shoot tests it.
 
+---
+
+## D. Plan for 13 Sep, dependency-ordered. Nothing below is built tonight.
+
+### 1. USDA POST — precondition, in flight in the worktree
+
+### 2. Axis convention (section B), landed after USDA
+
+**It does NOT move the bench.** The parsed ellipse reaches exactly two consumers:
+`GeometryHint.tilt_deg`, read only by the height path (`USE_MEASURED_HEIGHT = False`),
+and `scale_learning.observe_width_mm` (vision.py:1745), whose calibration the bench
+never reads because every bench row sends `plate_diameter_mm`. The depth path takes
+its ellipse from pixels. Proof when it lands: re-run the paired replay on the cached
+detections before and after; grams must be identical. (Bench scans with a detected
+card will file different `vessel_observations` rows -- a side effect, not a gram.)
+
+**What it does:** removes the x0.75 portrait factor from scale learning, and unblocks
+the tilt gate. **It closes part of the 62%-low error, not all of it:** the model's
+~0.10 plate under-read remains, so learned widths stay ~-16%, about -29% grams, until
+scale learning uses the pixel rim (section A, fix 2).
+
+### 3. Measured height — ready when Gil's data lands
+
+Harness per section 2 of the earlier notes. Tilt from the pixels, never the parser.
+Discriminators k = r x D / H and m = M / (rho x A x H) as pre-registered, plus
+`height_ratio_self` as the plate-independent check.
+
+### 4. Monocular depth in the DEPTH_PROVIDER socket — ASSESSMENT, not built
+
+**Verdict: the idea survives. The rung does not demand an absolute distance.** It has
+two hard prerequisites.
+
+**What the rung expects** (vision.py:866-931, depth_map.py):
+
+- raw photo bytes, the model's `plate_bbox`, and **`plate_diameter_mm`**;
+- a provider whose `units == "relative_inverse"`;
+- a plate mask measured from pixels (`plate_is_measured`; box ellipses refused), not
+  cropped by the frame, with at most 35% of the rim annulus under food, and a plane fit
+  with rim roughness at most 0.35 of the food's relief;
+- plate tilt **20-65 deg**, from the plate mask's own second moments.
+
+It returns a MEAN height per item, which portion.py uses with the profile factor set to
+1.0 (portion.py:2428), overriding the prior and any learned height (portion.py:2143-2149).
+
+**A relative map is anchored without any distance.** The model returns D = s/Z + t.
+Subtracting the plate plane kills t (a world plane is exactly affine in 1/Z across the
+image). The plate's foreshortening pins s/Z^2, giving h = dD x k x sin(tilt) / |grad D|
+with k = diameter / major axis px (depth_map.py:305-380). No focal length, no camera
+distance. **Tonight's offline self-test** (`python -m scripts.depth_probe`, ray-traced,
+no network): 20.50 mm recovered against 20.00 mm at 33.7 deg, and a colour-mapped map
+refused.
+
+**The two prerequisites:**
+
+- **A diameter.** Height scales with k, linearly in the diameter. For a subscriber the
+  only diameter is a calibration -- the section A blocker. A learned plate -38% in
+  width would scale heights -38% on top of -62% area: **grams x0.24, -76%.** Section A
+  must land before depth reaches a subscriber.
+- **An angled photo.** Error amplification 1/tan^2(tilt) + 2: 9.5x at 20 deg, 5x at 30,
+  3x at 45. Top-down photos are refused, not answered.
+
+**How the plate anchors it, and what the card adds:**
+
+- The plate supplies the plane (an annulus at 0.80-0.97 of its radius), the gradient
+  and the tilt.
+- The card is not used by the depth path today. **A card lying ON the plate floor** is
+  a known-size patch of that same plane: it gives k at the plane (with tilt from its
+  corners), which would remove the dependence on `plate_diameter_mm` -- and so on scale
+  learning. The card is too small to carry the gradient itself; the plate annulus still
+  does that.
+- **A card on the table** sits on a different plane (the measured +10% linear excess)
+  and should not anchor depth.
+
+**Cost:** `chenxwh/depth-anything-v2` on Replicate: A100, ~2 s, ~$0.0013 per run
+(model page, 12 Sep). SAM2 is ~2 cents per photo in this repo, so depth adds roughly
+7% of the SAM2 cost, plus ~2 s and cold starts.
+
+**LICENCE TRAP, verified from the model's API schema:** input `model_size` has enum
+Small / Base / Large and **defaults to "Large"**. Small is Apache-2.0; Base and Large
+are CC-BY-NC-4.0. A default configuration would ship non-commercial weights in a paid
+app. The config must send `model_size: "Small"` (via `depth_model_input`) -- and Small
+is the weaker model. The output schema was not expanded: whether a grey map comes back
+(`depth_hosted` refuses colour maps) is unverified until one paid `dev depthcheck 13`.
+
+**Which bench photos can test it from cached images tonight: none.**
+
+- Every scored bench photo is top-down by pixel rim tilt (3.2-14.1 deg), below the
+  20 deg floor, and no depth map has ever been cached.
+- **`depthsurvey.txt` in the repo root is stale and wrong.** Its "9 of 16 measurable" and
+  its seven readings of exactly 41.4 deg come from box ellipses, before
+  `plate_is_measured` existed. Today's `depth_probe.plate_of` refuses them. Pixel tilts
+  for those photos are 13-22 deg.
+- Legacy photos at the floor with weighed grams -- 13 (22 deg), 08c and 14 (20 deg) --
+  would be paid, at ~9.5x amplification, with no ruler heights: a weak test.
+- The first valid test is tomorrow's 45 deg frames: about 8 foods x $0.0013.
+
+**Honest failure modes:**
+
+- **Top-down photos:** refused, and they are the bench's whole protocol.
+- **Reflective food** (sauce, glaze, grapes): specular highlights make false bumps and
+  dips; the mean moves with them.
+- **Shadow:** the food's own shadow reads low. In the rim annulus it corrupts the plane
+  (the roughness gate may catch it); inside the item mask it is clipped at zero but
+  still lowers the mean.
+- **A plate filling the frame:** refused as cropped (2% border tolerance), not wrong. A
+  plate more than 35% covered is refused too.
+- **Patterned or embossed rims:** texture copies into depth. On Gil's beaded plate the
+  0.80-0.97 annulus sits on the bead ring.
+- **Bowls and crocks:** the support surface is not the rim plane, and the path needs a
+  plate.
+- **Thin food** (tortilla, chips): below the resolution of an 8-bit map.
+- **Edge smoothing** at pile boundaries bleeds plate into food, and a mask over separate
+  pieces includes their gaps -- both read low. The item mask is the colour rule, not SAM2.
+- **The model's output is only approximately affine in 1/Z.** The derivation is exact
+  for an exact relative-inverse map, and verified only on a ray-traced one.
+
+**Recommendation:** do not build before the ruler set exists. When it does, configure
+Small, run `dev depthcheck 13` once to prove the output format, then score the depth
+mean height against m x H from the ruler on each 45 deg frame.
+
+### INTAKE FORMAT for the calibration set — specified before the photos
+
+**Files.** Photos go under `photos/calib-2026-09-13/` (gitignored; the card must be
+non-live). **Phone originals only**, with EXIF: tonight's chat-forwarded images were
+recompressed to 1500x2000 against 4284x5712 originals. One manifest,
+`photos/calib-2026-09-13/session.json`:
+
+    {
+      "session": "2026-09-13",
+      "scale":  {"model": "...", "resolution_g": 1},
+      "ruler":  {"graduation_mm": 1, "zero_offset_mm": 0},
+      "card":   {"live": false, "placement": "on_plate_floor"},
+      "cup":    {"cup_id": "C1", "empty_g": 0, "water_full_g": 0},
+      "plates": [{"plate_id": "P1", "description": "white beaded ceramic",
+                  "type": "flat|rimmed|foam|bowl",
+                  "diameter_mm_tape": 260, "rim_height_mm": 0,
+                  "measured": "outer edge to outer edge, widest"}],
+      "foods": [{
+        "food_id": "F01", "name_as_eaten": "cooked white rice", "prep": "boiled",
+        "shape_word": "mound",
+        "plate_id": "P1",
+        "mass_g": 0, "mass_method": "plate tared, food added",
+        "bulk": {"cup_id": "C1", "loose_food_g": 0, "packing": "spooned, not pressed, levelled"},
+        "ruler_peak_mm_typed": 0,
+        "pile_moved_between_frames": false,
+        "frames": [
+          {"file": "IMG_0000.jpeg", "role": "topdown"},
+          {"file": "IMG_0001.jpeg", "role": "angled_45", "ruler": "standing, touching the peak"},
+          {"file": "IMG_0002.jpeg", "role": "side_level", "ruler": "standing, touching the peak"},
+          {"file": "IMG_0003.jpeg", "role": "scale_display"}
+        ],
+        "notes": ""
+      }]
+    }
+
+- **`shape_word`** is the code's `_classify_shape` vocabulary (flat, mound, loose,
+  cluster, liquid, wrapped, topped_flat, chunky), not the refuted five-class taxonomy.
+  ~8 foods maps onto 8 words. For `liquid` in a bowl, the ruler reads fill depth.
+- **Typed numbers are cross-checks.** Every quantity that can be read from a photo is
+  read from the photo. `scale_display` is optional and cheap: mass read from the
+  display, not transcribed.
+- **Do not move the plate between the top-down and angled frames:** m needs the same
+  pile's footprint A and height H.
+- Cup volume is derived from `water_full_g - empty_g` (1 g = 1 ml). Loose-cup packing
+  may differ from pile packing; record how it was filled.
+
+**What this set measures, stated precisely:** the true PEAK height H of each pile, and
+the true profile m = M / (rho x A x H). It does **not** measure `HEIGHT_PRIORS_MM`
+directly. Those rows are effective heights fitted against the RAILED area -- and
+`MEASURED_HEIGHTS_MM` and the 9.2/21.0 pair against measured footprints -- so each
+absorbs its paired area and density bias. Comparing a ruler H to a table row is the pair
+trap again. The set gives the physical truth each table should reproduce once its
+paired terms are re-derived together.
+
+### READING THE RULER FROM THE PHOTO, not trusting a typed number
+
+**Placement,** asked of Gil: ruler vertical, zero end on the plate surface (record
+`zero_offset_mm`, the end-to-zero distance), graduated face to the camera, touching the
+pile at its highest point.
+
+**Preferred frame: `side_level`** -- camera at pile height, square to the ruler. A peak
+point x mm nearer the camera than the ruler shows up offset by ~x in a 45 deg frame; a
+level frame removes that. The 45 deg frame's ruler is the cross-check.
+
+**Extraction, per ruler frame:**
+
+1. The harness writes an overlay. Annotated (clicked once, stored in the manifest as
+   pixel coordinates): the ruler axis and three labelled graduations, e.g. 0, 50 and
+   100 mm.
+2. A 1-D projective map along the ruler from those three points (cross-ratio). It is
+   exact under perspective; uniform tick spacing is not assumed.
+3. **Automatic check:** the FFT period of intensity along the ruler axis gives the
+   local px per mm. It must agree with the three-point map within 2%, or the frame is
+   re-annotated.
+4. **Pile top:** the highest food pixel (SAM2 mask, else the colour mask) within a narrow
+   band beside the ruler, projected onto the axis -- horizontally, in the level frame.
+5. H_photo = map(pile top) - map(plate contact) - `zero_offset_mm`.
+6. **Compared with `ruler_peak_mm_typed`:** a gap larger than max(3 mm, 7%) is flagged.
+   The photo value is used; the typed one is kept for audit.
+
+**Footprint A** comes from the top-down frame: the card-on-plate homography (the
+detector's corners) maps the food mask into mm^2 in the plate's own plane.
+
+**Grape series (45 / 90 / 180 g):** scored against the existing portion-sensitivity
+pre-registration, independently of all of the above.
+
 ## 0. A premise corrected first
 
 On the current bench `height_ratio` is NULL on 39 of 41 items, not present on 39. The
