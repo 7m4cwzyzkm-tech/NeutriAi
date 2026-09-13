@@ -114,17 +114,31 @@ async def usda(client: httpx.AsyncClient, query: str) -> dict | None:
     if not settings.usda_api_key:
         return None
     try:
-        r = await client.get(
+        # POST, NOT GET. Part of USDA's front-door node pool rejects a request
+        # line containing %28 / %29 with an nginx HTML 400, intermittently: the
+        # GET with dataType "Survey (FNDDS)" failed 18 of 30, and a query of
+        # "rice (white, cooked)" with no dataType failed 15 of 30. The same
+        # fields in a JSON body failed 0 of 30. A failed search sends the food
+        # to a cached ai_estimate row, whose LLM density outranks the density
+        # table -- one photo read caesar salad 350 g during a failure and 98 g
+        # when USDA answered. So nothing with parentheses may ride in the URL,
+        # and a food name from a vision model can carry them.
+        #
+        # Do not drop "Survey (FNDDS)" instead: that changes which foods are
+        # searched, and so the density and the grams. The key stays in the URL;
+        # it has no parentheses. tests/test_usda_post.py pins the food selected
+        # for the bench names to the fdcId a successful GET selected.
+        r = await client.post(
             "https://api.nal.usda.gov/fdc/v1/foods/search",
-            params={
-                "api_key": settings.usda_api_key,
+            params={"api_key": settings.usda_api_key},
+            json={
                 "query": query,
                 # Ten, not three: the right food is often not first, and
                 # _match_score needs candidates to choose between.
                 "pageSize": 10,
                 # Foundation/SR Legacy are lab-analysed; Survey is modelled.
-                "dataType": "Foundation,SR Legacy,Survey (FNDDS)",
-                "requireAllWords": "false",
+                "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)"],
+                "requireAllWords": False,
             },
             timeout=_TIMEOUT,
         )
