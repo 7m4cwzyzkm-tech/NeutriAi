@@ -202,7 +202,7 @@ def hint_for(detection: dict, fetched, plate_diameter_mm, camera_distance_mm) ->
     reference = next((p.reference for p in fetched if p.reference), None)
     return GeometryHint(
         plate_ellipse_area_ratio=(float(detection.get("plate_area_ratio") or 0) or None),
-        plate_ellipse_wh=vision._plate_ellipse(detection),
+        plate_ellipse_wh=vision._plate_ellipse(detection, measured_aspect),
         plate_diameter_mm=plate_diameter_mm,
         reference_area_mm2=None,
         depth_mm=camera_distance_mm,

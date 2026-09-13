@@ -501,8 +501,32 @@ def _num(value, default: float | None = None) -> float | None:
     return out
 
 
-def _plate_ellipse(detection: dict) -> tuple[float, float] | None:
-    """Read the vessel's apparent (w, h), tolerating the shapes models return.
+def _plate_ellipse(detection: dict, aspect: float | None) -> tuple[float, float] | None:
+    """The vessel's apparent (w, h) as PER-AXIS fractions: w of the image's
+    width, h of its height. That is what every consumer reads.
+
+    It is NOT what the model reports. Measured on 26 bench photos, the model
+    gives w and h both as fractions of the image's LONG side, portrait and
+    landscape alike (mean |diff| to the pixel rim 0.099 long-side against 0.245
+    per-axis). Read raw, a round plate shot straight down parsed as arccos(0.75)
+    = 41.4 degrees on every 3:4 photo, and `scale_learning.observe_width_mm`
+    multiplied a portrait frame's SHORT side by a long-side share: x0.75 on
+    every learned width. Converted here, once, because this is the only place a
+    model `plate_ellipse` becomes numbers -- `GeometryHint.tilt_deg` and
+    `observe_width_mm` are then correct as written.
+
+    `aspect` is width / height of the frame the model was shown. Without it the
+    fractions cannot be converted and a guessed tilt is worse than none: None.
+    Required, not defaulted, so a caller that forgets it fails loudly instead of
+    silently reading the old convention.
+
+    Not in this conversion, deliberately: the model's ~0.10 under-read of the
+    plate. That is a measurement bias, and folding it into a unit conversion
+    would hide it.
+
+    A converted fraction can exceed 1.0 (a portrait plate spanning more than the
+    frame's width). It is returned as is; `observe_width_mm` already refuses a
+    share above 1.
 
     Same liberality as the item bounding boxes: a dict, a bare [w, h] list, or
     nulls. A malformed ellipse means no tilt reading, never a failed scan.
@@ -520,7 +544,18 @@ def _plate_ellipse(detection: dict) -> tuple[float, float] | None:
         return None
     if not (0 < w <= 1.0 and 0 < h <= 1.0):
         return None
-    return (w, h)
+    try:
+        aspect = float(aspect)
+    except (TypeError, ValueError):
+        return None
+    if not aspect > 0:
+        return None
+    if aspect < 1.0:
+        # Portrait: the long side is the height. h is already height units;
+        # w is a share of the height, so widen it into width units.
+        return (w / aspect, h)
+    # Landscape (or square): the long side is the width.
+    return (w, h * aspect)
 
 
 def _visible_fraction(det: dict) -> float | None:
@@ -1695,7 +1730,7 @@ async def _run_scan(
         # ellipse as the camera tilts, and h/w is the cosine of that tilt — the
         # only free measurement of camera angle we have, and the thing that says
         # whether this photo contains any height information at all.
-        plate_ellipse_wh=_plate_ellipse(detection),
+        plate_ellipse_wh=_plate_ellipse(detection, measured_aspect or camera_aspect_ratio),
         plate_diameter_mm=(
             plate_diameter_mm
             or (_num(calibration.get("real_diameter_mm"))

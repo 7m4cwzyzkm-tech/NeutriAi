@@ -124,7 +124,7 @@ async def one(photo: str, plate, weights: dict, distance) -> list[tuple]:
         aspect_ratio=prepared.aspect,
         vessel=(str(detection.get("container")) if detection.get("container") else None),
         vessel_shape=detection.get("container_shape"),
-        plate_ellipse_wh=_plate_ellipse(detection),
+        plate_ellipse_wh=_plate_ellipse(detection, prepared.aspect),
         reference_kind=(ref.kind if ref else None),
         reference_frame_width_mm=(ref.frame_width_mm if ref else None),
         reference_tilt_deg=(ref.tilt_deg if ref else None),

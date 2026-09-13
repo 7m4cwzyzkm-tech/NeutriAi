@@ -1,0 +1,65 @@
+{
+ "_about": "Recorded model responses for the plate_ellipse convention. plate_ellipse is the gpt-4o response cached by the 12 Sep uncalibrated sweep (docs/evidence/2026-09-13-meal-replay/inputs/sweep_cache). width/height are the scan path's decode (EXIF-rotated, longest edge 1568). hough_rim_diameter_px is food_seg._plate_by_hough's circle on that decode: a SIZE only -- a Hough circle is round by construction and says nothing about tilt. Every bench photograph was shot top-down (bench protocol). No photo bytes: the frames show a live card with a name on it.",
+ "photos": [
+  {
+   "photo": "22-roast-beef-plate.jpg",
+   "width": 1568,
+   "height": 1176,
+   "orientation": "landscape",
+   "plate_ellipse": {
+    "w": 0.5,
+    "h": 0.5
+   },
+   "container_shape": "round",
+   "hough_rim_diameter_px": 995.0
+  },
+  {
+   "photo": "23-brussels-sprouts-plate.jpg",
+   "width": 1176,
+   "height": 1568,
+   "orientation": "portrait",
+   "plate_ellipse": {
+    "w": 0.4,
+    "h": 0.4
+   },
+   "container_shape": "round",
+   "hough_rim_diameter_px": 759.0
+  },
+  {
+   "photo": "34-pizza-slice-plate.jpg",
+   "width": 1568,
+   "height": 1176,
+   "orientation": "landscape",
+   "plate_ellipse": {
+    "w": 0.55,
+    "h": 0.55
+   },
+   "container_shape": "round",
+   "hough_rim_diameter_px": 1093.0
+  },
+  {
+   "photo": "35-slider-fries-plate.jpg",
+   "width": 1176,
+   "height": 1568,
+   "orientation": "portrait",
+   "plate_ellipse": {
+    "w": 0.7,
+    "h": 0.7
+   },
+   "container_shape": "round",
+   "hough_rim_diameter_px": 1123.5
+  },
+  {
+   "photo": "44-grapes-spread.jpg",
+   "width": 1568,
+   "height": 1176,
+   "orientation": "landscape",
+   "plate_ellipse": {
+    "w": 0.6,
+    "h": 0.6
+   },
+   "container_shape": "round",
+   "hough_rim_diameter_px": 985.0
+  }
+ ]
+}

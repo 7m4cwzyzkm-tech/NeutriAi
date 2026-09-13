@@ -959,7 +959,10 @@ class GeometryHint:
     image_count: int = 1
     vessel: str | None = None                       # what the food is served on/in
     vessel_shape: str | None = None                 # round | square | rectangular | oval
-    plate_ellipse_wh: tuple[float, float] | None = None  # apparent (w, h) of the vessel
+    # Apparent (w, h) of the vessel as PER-AXIS fractions: w of the frame's width,
+    # h of its height. The model reports long-side fractions; vision._plate_ellipse
+    # converts them at the parse boundary, and every reader here assumes per-axis.
+    plate_ellipse_wh: tuple[float, float] | None = None
     reference_kind: str | None = None                # what was found in the pixels
     reference_frame_width_mm: float | None = None    # frame width it measures, in mm
     reference_tilt_deg: float | None = None          # camera tilt, from its own shape
@@ -984,11 +987,12 @@ class GeometryHint:
         w, h = self.plate_ellipse_wh
         if not (w and h) or w <= 0 or h <= 0:
             return None
-        # w and h are fractions of the image WIDTH and HEIGHT respectively --
-        # the prompt asks for "a fraction of the image" for each. For a round
-        # plate photographed straight down that makes h/w the frame's own
-        # aspect ratio rather than 1, so an overhead 4:3 shot reported 41
-        # degrees of tilt. Convert h into width-units before comparing.
+        # w and h are PER-AXIS fractions (w of the width, h of the height), as
+        # vision._plate_ellipse delivers them. For a round plate photographed
+        # straight down h/w is then the frame's own aspect ratio rather than 1,
+        # so h is converted into width-units before comparing. The model's raw
+        # numbers are long-side fractions and must never reach this directly:
+        # read raw, every overhead 3:4 photo reported 41.4 degrees.
         aspect = self.aspect_ratio
         if not aspect or aspect <= 0:
             # Without the frame's shape the two numbers are not comparable, and
