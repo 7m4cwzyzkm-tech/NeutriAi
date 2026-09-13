@@ -25,11 +25,37 @@ improves.
 -> 0.457, a ratio of 0.703 (0.659 on the 21 `vessel_reference` items). A full
 0.40 pull toward a constant prior scales the SD by 0.60; an uncorrelated scale
 term would push the ratio above 1. So 0.70 confirms compression of about the
-blend's size. One refinement: the regression slope of uncalibrated on
-calibrated log error is 0.49 (0.54 vessel-only), BELOW the 0.60 floor. Either
-the pull is toward a prior that itself carries information about the true
-weight, or this draw's vessel names happened to correlate with the calibrated
-errors. The check cannot separate those two.
+blend's size.
+
+The raw slope of uncalibrated on calibrated log error is 0.49 (0.54 on vessel
+items), below that floor. **Resolved: the geometry term itself differs between
+the arms** (Gil's explanation 3). The vessel prior changes the area (200 / 229 /
+270 mm), so the raw slope is not a clean estimate of (1 - w). Controlling for
+each item's area factor, the slope on the 21 vessel items is **0.597** -- the
+0.60 floor. The vessel names did not line up with the errors (correlation of
+area factor with calibrated error: -0.16).
+
+**Is the serving guess real signal? Tested directly; the answer splits.**
+
+    serving guess vs weighed mass, 28 items    Pearson r +0.91 on log grams, Spearman +0.88
+    calibrated geometry vs weighed mass        Pearson r +0.69
+    mean |ln error|   serving guess 0.423      calibrated geometry 0.462
+    correlation of the two errors              -0.24: they err in opposite directions,
+                                               which is why averaging them helps
+
+- ACROSS foods the guess is strong: it knows chips are ~25 g and spaghetti ~250.
+- WITHIN a food it carries no portion information. The same weight photographed
+  twice: tortilla chips 28 g / 28 g (weighed 25); grapes 150 g / 150 g (weighed
+  90); trail mix 50 g / 30 g (weighed 44), and that moved only because the NAME
+  moved, "mixed nuts and dried fruits" vs "trail mix". It returns a serving
+  size for the food, not a reading of the plate. Nine distinct values across
+  28 items: 28, 30, 50, 60, 85, 150, 200, 250, 300.
+
+So the blend is defensible as a food-type prior and indefensible as a portion
+measurement. A portion that departs from typical is pulled back toward
+typical in proportion to the weight -- the ceiling argument in its sharpest
+form. n = 3 same-weight pairs; the pattern is structural (a serving table), not
+a sampling accident.
 
 **The design question -- stated, not answered. Do NOT change any blend weight.**
 The weight already follows the rung, and the rung encodes whether the SCALE was
@@ -402,7 +428,11 @@ unions, compute `largest_piece_share` for each, and see whether it crosses `0.80
 
 ## Launch blockers, unrelated to accuracy
 
-- Supabase migrations **0017 and 0018** unrun.
+- ~~Supabase migrations **0017 and 0018** unrun.~~ STALE, checked 12 Sep: the
+  live tables already carry 0017's and 0018's columns
+  (`scan_calibrations.vessel/samples/learned`, `food_scans.vessel`) and
+  0020-0023's (`width_error_pct`, `observations`, `vessel_observations`,
+  `portion_learning`).
 - Apple JWS signature verification, a live Stripe key, and privacy / support / terms URLs
   before store submission.
 - `conftest.py`'s docstring claims "NO TEST TALKS TO A NETWORK PROVIDER" but pins only the
@@ -1476,10 +1506,13 @@ size itself being in question. 10 is not in the sweep set.
 
 ---
 
-## CAMERA DISTANCE — THE PRIORITY LEAD. Reported, not built. 12 Sep 2026
+## CAMERA DISTANCE — LEAD WITHDRAWN, SCORED FAILED. 12 Sep 2026
 
-The only scale source found tonight that needs no object in frame and no action
-from the user.
+Recommended as the priority lead and withdrawn by Gil the same night. The
+premise -- that the phone already knows its distance -- was false: the native
+sensor module does not exist. The 0-11% match on rows 40-45 was two declared
+numbers agreeing, not a sensor validated. What follows is kept as the map of
+the path, not as a recommendation.
 
 ### The path, end to end
 
@@ -1529,9 +1562,12 @@ nothing asked. (Ceiling 0.84 vs 0.80; band 0.20 vs 0.22.)
    is too short for plane initialisation.
 3. Android: ARCore Depth API where supported; Camera2 `LENS_FOCUS_DISTANCE` is a
    crude, often uncalibrated fallback.
-4. FOV from the device on every scan (ARCamera intrinsics; Camera2 sensor size
-   and focal length). Cheap, independent of AR, and never sent today; a 5 deg
-   FOV error is ~16% of area (portion.py:1702-1706).
+4. **FOV ships with depth or not at all.** `camera_fov_deg` is read in exactly
+   one place, portion.py:1712, inside the depth rung, and multiplied by
+   `depth_mm` at :1728. With no distance it is never used. (An earlier version
+   of this entry called it a cheap independent win; Gil verified it is not.)
+   Once a distance exists, a 5 deg FOV error is ~16% of area
+   (portion.py:1702-1706), so the device's real FOV has to come with it.
 5. Tilt. Rung 2 assumes the camera looks straight down; a raycast distance on
    a tilted shot runs along the ray, not the height. ARKit's camera transform
    gives height and tilt directly -- the same table-plane homography the
@@ -1556,10 +1592,13 @@ frame-area ratio. Linear scale = sqrt(area ratio) = D/(D-h).
 - **Magnitude: NOT parallax alone.** It needs the food's footprint 34-44 mm
   above the card. Chips and grapes on a 3 g foam plate sit perhaps 5-20 mm up,
   which at D 280-316 is 4-8% linear and 7-16% of area -- the ~10% the file
-  predicts. The remaining ~15-25% of area comes from the declared 222 mm plate
-  (the card implies 253-260 mm at zero parallax) or from the card measurement.
-  This data cannot separate them; a tape across the foam plate would settle the
-  first.
+  predicts.
+- **Revised by the yardstick check below.** The card over-reads the
+  TAPE-MEASURED 229 mm plate by a median +10% linear (+21% area) across 16
+  photos -- the same excess it shows on the 222 mm rows. So the rest of the gap
+  on 43/44 is most simply the card instrument itself at the table plane, not
+  evidence that 222 is wrong. The 222 figure is still unmeasured; the tape
+  settles it.
 
 **Product consequence.** A card lying ON the plate, in the food's plane, has no
 table-to-plate parallax: it removes the debt instead of correcting for it, and
@@ -1567,3 +1606,116 @@ IMG_4198 shows the detector finds a card on a white plate easily (consensus
 6/6). Two limits: food with height still stands above the card by about half
 its height (~3% linear, ~7% area for a 20 mm heap at D 300), and "put the card
 on the plate" is still an ask, as the card already is.
+
+---
+
+## THE YARDSTICK — where every declared bench diameter came from. 12 Sep 2026
+
+    rows                     declared  source in the repo                                     measured?
+    17-30, 34-36 (plate)     229 mm    "the 9-inch 320 g plate" (bench_all.py:179); "228.6
+                                       mm plate ... confirmed against a tape measure"
+                                       (NEXT-SESSION.md:40-41); tape 228.6 vs card 240.0
+                                       (portion.py:1642-1647)                                 YES, tape
+    31, 32, 33 (crock)       114 mm    "the 4.5 in crock" (bench_all.py:141); 114.3 "confirmed
+                                       against a tape measure" (same two sources)             YES, tape
+    40-45 (foam plate)       222 mm    "8.75 inches of Styrofoam weighing 3 g"
+                                       (bench_all.py:178-180; height_fit.py:107).
+                                       No measurement recorded anywhere.                     NO -- ASSUMED
+    14 (legacy) and the      254 mm    "carried at 267-269 mm for weeks before a tape said
+    saved calibration                  254" (bench_all.py:65); "my dinner plate", 254         YES, tape
+    tonight's beaded plate   260 mm    Gil: "10 1/4 wide"                                     tape pending
+
+Both tape figures are exact inch conversions (9.00 in, 4.50 in), so they were
+read to about an eighth of an inch, +/-3 mm.
+
+**The 222 mm rows (40-45) rest on an assumed ground truth.** Every
+calibrated-arm error on those six rows, photo 44's +19.9% included, is measured
+against a number nobody has recorded putting a tape on.
+
+### What the card implies for each plate
+
+The card lies on the table and the rim stands above it, so the card reads the
+rim LARGE. Card long side from the detector's quad (43, 44) or a colour-box
+minAreaRect checked on a contact sheet; Hough rim, visually verified only on
+23, 4190, 4197 and 4198.
+
+    229 mm plate, 16 photos      card implies 242-278 mm, median 252   +10% linear, +21% area
+    222 mm foam plate, 6 photos  card implies 230-256 mm, median 244   +10% linear
+    114 mm crock, photo 31       card implies 144 mm, +27% (the repo's own tape-vs-card note: +30%)
+    photo 32                     Hough found the underliner plate (244 mm), not the crock: invalid
+
+**This does not convict the 222.** The card over-reads the TAPE-MEASURED 229
+plate by the same ~10% it over-reads the 222 plate, and photo 44's +15% sits
+inside the 229 plate's own +6% to +21% spread. The simplest reading is one card
+instrument with a ~10% table-plane excess -- about twice the +5% the repo's
+single tape-vs-card note recorded -- not a wrong declaration. Until the tape,
+222 is unverified rather than refuted, and photo 44's true calibrated error lies
+somewhere between about +20% and +65%.
+
+---
+
+## A CLASS OF DEFECT: A PATH BUILT FROM BOTH ENDS WITH NOBODY WALKING THE MIDDLE — 12 Sep 2026
+
+Four instances tonight. Each passes its own tests, because the defect is the
+connection, not the code.
+
+1. **Sourced densities.** `densities.csv` is loaded, then discarded:
+   `USE_SOURCED_DENSITIES = False` (portion.py:1305).
+2. **Card corners.** Computed and validated in reference_cv, returned on
+   `ReferenceFind`, dropped at vision.py:1727.
+3. **The card rung.** `reference_object` sits on the ladder but is unreachable
+   whenever a plate diameter is declared -- every current bench row.
+4. **Camera distance.** Client capture, request schema, storage and rung are
+   all wired; the `NeutriDepth` sensor behind them does not exist.
+
+### The standing check
+
+For every rung, every constant table or data file, and every client field: **is
+there a test that fails when the path is broken END TO END, not per stage?**
+
+- **Rungs.** For each key of `_METHOD_CEILING`, drive the scan pipeline from a
+  request the client can actually send (stubbed model and providers, no
+  network) to a returned item with that `estimation_method`. A rung no real
+  request reaches fails.
+- **Tables and data files.** For each one loaded, perturbing one entry must move
+  a production output. Loaded-and-ignored fails.
+- **Client fields.** For each `ScanRequest` field: (a) changing it must change
+  the `ScanResult`, and (b) something on a real device must produce it. A field
+  nothing produces, or nothing reads, fails.
+- **Returned fields.** Every field of a result dataclass (`ReferenceFind`,
+  `PortionEstimate`) must be read by app code outside its own module -- the
+  static counterpart of tests/test_wiring.py's script-reachability check.
+- **Deliberate switches.** Anything intentionally off is listed, with its
+  reason, in one allowlist, so "off" is a decision on record rather than
+  silence.
+
+### What it would flag today, besides the four (each checked in code or data)
+
+- **The `multi_image` rung.** `reconcile_multi_image` (portion.py:2599) is
+  called only by tests and scripts/portion_lab.py. The client sends up to 3
+  shots and `ScanRequest` accepts 4, but they go into one detection call. 0 of
+  521 `meal_items` are `multi_image`.
+- **The measured-height path.** `USE_MEASURED_HEIGHT = False` (portion.py:743):
+  the model's `height_ratio`, the plate ellipse's tilt and `reference_tilt_deg`
+  reach no gram.
+- **The depth-map height path.** `depth_map.measure_heights` is wired at
+  vision.py:928; `depth_provider` is unset, so `NullDepth`.
+- **`camera_fov_deg`.** Read only inside the depth rung (portion.py:1712); part
+  of instance 4.
+- **`/calibrations/progress` and `/calibrations/measure`** (routers/scans.py:138,
+  156) have no caller anywhere in mobile/src.
+- **The correction-learning loops.** The client does call `PATCH /meals/{id}`
+  (MealDetailScreen.tsx:144), which feeds portion_learning, food_identity and
+  calibration learning, yet `portion_learning` and `food_aliases` both hold 0
+  rows. Wired end to end in code; nothing has ever arrived. UNPROVEN as a defect
+  -- there may simply have been no corrections -- and exactly what an end-to-end
+  test would decide.
+- **Scale learning from the card.** `scale_learning.record` fires only when a
+  card is found AND a vessel is named AND a plate ellipse exists
+  (vision.py:1743). With card recall at 5 of 28 it is starved: 7 observations, 1
+  calibration row, none learned.
+- **`grams_from_measured_area`** (food_seg.py:1237) is reachable only from tests,
+  as its own docstring says. It belongs on the allowlist, not in a fix.
+- **The macro reference-table fallback.** The live `food_facts` source check
+  constraint rejected resolver writes tonight (23514). Suspected; queued as a
+  separate task.
