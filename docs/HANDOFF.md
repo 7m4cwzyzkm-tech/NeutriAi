@@ -19,6 +19,10 @@ photos, 18 distinct meals; photos are the units.
     within 10% on carbs                 2 / 22                      4 / 22
     (per-item GRAMS, for reference)     20.6% / 35.9%  n=27         26.8% / 36.8%
 
+- **In Nutrition5k's statistic (MAE ÷ mean truth) the same predictions read
+  48.4% calibrated, 37.3% subscriber, against their 16.5% frontier -- quote those
+  when comparing, never 40.9% or 74.7%.** See "THE CALIBRATION" under The goal;
+  the target is now 15-18% on that statistic.
 - **None of the three calibrated energy hits is genuine.** 31 (+0.4%) and 33
   (-0.3%) are crocks: all three crock photos returned exactly 151.6 g against
   weighed 151 / 182 / 152 g, a constant that happened to land. 43 (+4.7%) is a
@@ -170,6 +174,73 @@ one detection per photo, nutrition facts shared across arms:
 "The whole measurement stack is worse than naming the food" is true of the
 SUBSCRIBER'S pre-blend geometry on log error and ranking, and false of the
 calibrated stack and of any per-portion error measure.
+
+## LAUNCH BLOCKER: THE NUTRITION CACHE KEY DROPS PREPARATION — 13 Sep 2026
+
+**Ranked with the USDA determinism blocker below, and worse:** that one was
+intermittent; this one is persistent, silent, and shared by every user. Found
+by the cache-key sweep (standing check). Recorded, not fixed.
+
+- `resolver.canonical` (resolver.py:24-31) removes `raw`, `cooked` and `fresh`
+  (with `with`, `and`, `of`, ...) to build the key of `food_facts` -- ONE table
+  for all users, upserted on `canonical_key` (resolver.py:128). Checked: `raw
+  rice`, `cooked rice` and `rice` all key `rice`; raw and cooked chicken breast
+  key `chicken breast`.
+- Whichever name reaches a key first is searched and stored; every later name
+  with that key is served the cached row and never searched.
+  `RESOLVER_VERSION` clears rows on a MATCHING-LOGIC change, not on a key
+  collision, and only `ai_estimate` rows are re-tried -- a `usda` row is
+  permanent.
+- **Checked before any fix spec: the SEARCH is not stripped.** `resolve` hands
+  the full name to `providers.race_providers(name)` (resolver.py:212 ->
+  providers.py:321 -> `usda(client, query)`), so USDA is asked for "cooked
+  rice". This is a wrong-CACHE bug, not a wrong-search bug: the first name gets
+  the right search and the collision serves its answer to the others. The fix is
+  at the key; the search needs none. (The fuzzy fallback, resolver.py:76-98,
+  compares `canonical(display_name)` to the key and inherits the same collapse.)
+- **The irony, for the class list.** portion.py's density matcher ranks
+  preparation keys above commodities -- `DENSITY_PREPARATION_KEYS`
+  (portion.py:1400, rank at :1467; "a preparation beats a commodity") -- and
+  `_lookup_name` (vision.py:386) adds the model's preparation to the name
+  precisely so it reaches the nutrition lookup. The nutrition cache key then
+  throws those words away. The code knows preparation changes the food, in two
+  places, and discards it in the third.
+
+**How large, per food.** kcal per 100 g, raw vs cooked, USDA SR Legacy /
+Foundation, searched 13 Sep:
+
+    rice, white, long-grain            365 vs 130     2.81x
+    pasta                              371 vs 157     2.36x
+    lentils                            352 vs 114     3.09x
+    quinoa                             368 vs 120     3.07x
+    brussels sprouts                    60 vs  36     1.65x
+    carrots                             41 vs  35     1.17x
+    green beans                         40 vs  35     1.14x
+    egg (raw vs hard-boiled)           143 vs 155     0.92x
+    broccoli                            31 vs  35     0.89x
+    potato (raw vs baked)               77 vs  93     0.83x
+    chicken (raw meat vs breast, roasted) 119 vs 165  0.72x   cooked is the heavier one
+    spinach                             23 vs  23     1.00x   no energy gap
+
+- **Dry staples 2.4-3.1x; meat about 1.4x the other way; vegetables mostly
+  0.8-1.2x.** Spinach carries no energy gap per 100 g, so "same for spinach"
+  does not hold on calories.
+- **Bench exposure is small.** 3 of 41 bench lookup names lose a word to the
+  key: `raw baby carrots` (19), `raw red grapes` (44, 45), `cooked greens` (29).
+  Every other bench preparation -- boiled, steamed, grilled, fried, baked,
+  mashed, sauteed -- is not a stopword and survives. One bench collision: 19's
+  `raw baby carrots` and 17's `baby carrots` share `baby carrots` (1.17x; both
+  were served the toddler-food row anyway).
+- **Live, 13 Sep (read-only): the 2.8x case is LATENT, not yet served** -- no
+  raw-grain row is cached under a collapsed key. What IS served: `rice` ->
+  Dirty rice (91 hits) to every "rice", "cooked rice" and "raw rice";
+  `brussels sprouts` -> "brussels sprouts, raw" (43 kcal) to cooked sprouts
+  (36); `greens` -> canned greens.
+- **Why it is a blocker while latent:** the first person to log `raw rice`,
+  `raw oats` or `raw lentils` -- a meal-prep weigher, exactly who a
+  weight-control app attracts -- sets the answer for every user's cooked bowl,
+  permanently, with nothing on screen to say so. On a rice-based meal that is
+  about +180% energy.
 
 ## LAUNCH BLOCKER: GRAMS DEPEND ON USDA UPTIME — 12 Sep 2026
 
@@ -484,6 +555,138 @@ what was refuted is as important as the list of what holds.
 ---
 
 ## The goal
+
+### THE CALIBRATION: NUTRITION5K SETS THE FRONTIER, AND IT IS NOT 10% — 13 Sep 2026
+
+Source: Thames et al., "Nutrition5k", CVPR 2021 (arXiv 2103.03375), read 13 Sep;
+the dataset's repo README and public bucket listed the same day. **Their metric
+is MAE, and MAE as a percent of the MEAN ground truth over the test set.** Our
+bench has reported the mean and median of per-meal percentages. They are
+different statistics; see the table below before comparing anything.
+
+Table 3, per dish on Nutri-Test (MAE / percent of mean):
+
+    method                                   calories          mass
+    baseline: always predict the train mean  150.8 / 60.2%     124.6 / 58.5%
+    2D direct prediction                      70.6 / 26.1%      40.4 / 18.8%
+    depth as a 4th input channel              47.6 / 18.8%      40.7 / 18.9%
+    volume scalar from depth                  41.3 / 16.5%      29.4 / 13.7%   <- best from a photo
+    2D portion-independent (per gram x TRUE mass)  24.1 / 9.5%  (mass given, not estimated)
+
+- Table 4, mass on the RGB-D subset: image-only 38.1 g / 29.5%, image+volume
+  29.4 g / 13.7%. Table 3's 18.8% for direct mass is on the full RGB set; the
+  paper does not reconcile the two.
+- Humans, 10 Nutri-Test images: 16 non-nutritionists 53%, 4 nutritionists 41%,
+  each an AVERAGE PERCENT ERROR per estimate -- a per-dish statistic, nearer
+  ours than MAE-of-mean. The model's figure on those 10 images is in Figure 7
+  only; "~20%" is not in the text and is not recorded here as a number.
+
+**1. 16.5% IS THE FRONTIER for calories from a photo, and the target is
+recalibrated to 15-18% at meal level, as MAE ÷ mean truth.** That is the best
+published photo-only result, from 5k weighed plates, metric depth and a camera
+at a known distance. A 10% goal sits below what that achieved under better
+conditions than ours, so it cannot steer work: every change measures as a miss.
+The statistic must be named with the number -- on per-meal mean |%| the same
+predictions read far higher.
+
+**2. KNOWING THE MASS REMOVES 64% OF THE ENERGY ERROR** (26.1% -> 9.5%, 2.7x).
+Portion is the larger share of the problem, measured. Stated carefully: 9.5% is
+the energy-density error that remains with the TRUE mass supplied --
+identification plus composition -- not "recognition" alone. The gap between the
+two rows is the one this project has been working in.
+
+**3. METRIC DEPTH IS THE LARGEST ACHIEVABLE LEVER: 26.1% -> 16.5%**, 9.6
+points, against 18.8% for depth fed as a channel.
+
+**4. AN EXPLICIT VOLUME SCALAR BEAT END-TO-END DEPTH (16.5% vs 18.8%) --
+validation of the ARCHITECTURE, not yet of our implementation.** Their scalar is
+metric per-pixel depth summed over segmented food pixels at a known 35.9 cm,
+concatenated to the CNN's features. Our ladder computes the same kind of
+quantity -- footprint x height x profile -> volume -> density -> grams -- but
+its height is a PRIOR (measured height off, depth map NullDepth) and the result
+is then pulled toward a serving guess. Same design, missing the one input that
+made theirs win.
+
+### Our bench in their metric — side by side (13 Sep)
+
+`docs/evidence/2026-09-13-meal-replay/score_n5k_metric.txt`, 25 meals, all
+detections unless stated:
+
+    energy                          CAL (plate)   UNCAL (subscriber)   same-bench mean baseline
+    MAE ÷ mean truth (Nutrition5k)     48.4%          37.3%               63.8%
+    mean per-meal |%| (ours)           74.7%          72.7%              186.3%
+    median per-meal |%|                40.9%          29.1%
+    MAE ÷ mean, phantoms removed       40.4%          31.7%
+    mass, MAE ÷ mean                   30.7%          33.5%               49.5%   (their best 13.7%)
+
+- **Never quote 40.9% or 74.7% against 16.5%.** Like for like, the calibrated
+  arm is 48.4% against 16.5%, about 3x the frontier; a subscriber 37.3%.
+- **"Worse than always guessing the mean" is not true on either like-for-like
+  reading.** This bench's own mean baseline is 63.8% (their statistic) and 186.3%
+  (ours); both arms beat it on both. 74.7% only looked worse than 60.2% because
+  it was set against a different statistic on a different dataset.
+- **The point underneath stands: the mean is the tail.** Removing the two phantom
+  meals takes calibrated energy 74.7% -> 43.0% per meal and 48.4% -> 40.4% MAE ÷
+  mean. Phantom food and wrong rows are the cheap wins, and neither needs
+  geometry.
+- n = 25 meals, 18 distinct; mean truth 193 kcal here against about 250 on
+  Nutri-Test (41.3 / 0.165).
+
+### Nutrition5k as a bench — assessed 13 Sep, nothing downloaded
+
+- **Licence:** Creative Commons Attribution 4.0 (README links
+  creativecommons.org/licenses/by/4.0) -- commercial use permitted, with
+  attribution.
+- **Labelled, per dish:** `total_calories, total_mass, total_fat, total_carb,
+  total_protein, num_ingrs`; **per ingredient:** `ingr_id, ingr_name, ingr_grams,
+  ingr_calories, ingr_fat, ingr_carb, ingr_protein`
+  (`metadata/dish_metadata_cafe1.csv` 2.2 MB, `dish_metadata_cafe2.csv` 0.1 MB;
+  `ingredients_metadata.csv` holds per-gram USDA values). Weighed to +/-1 g by a
+  scale under the plate, one ingredient at a time, with a scan after each
+  addition.
+- **Imagery per dish:** `imagery/realsense_overhead/<dish>/rgb.png`,
+  `depth_raw.png` (16-bit, 10,000 units = 1 m, capped at 0.4 m) and
+  `depth_color.png`, all 640x480 (read from the PNG headers); four side-angle
+  videos (Raspberry Pi, 1920x1080, alternating 30 and 60 degrees). 181.4 GB in
+  total.
+- **Counts, from the bucket's id files:** 5,006 dishes (the paper's Table 1 says
+  5,066); `dish_ids_cafe1` 4,768 and `dish_ids_cafe2` 238 -- the paper's text
+  says a single cafeteria, the data carries two. Splits: `rgb_train_ids` 4,059 /
+  `rgb_test_ids` 709; `depth_train_ids` 2,758 / **`depth_test_ids` 507 -- the
+  Nutri-Test behind the depth results.** Incremental scans of one plate stay in
+  one split, so inside the test split consecutive dishes are the same plate
+  growing -- not independent observations.
+- **Conditions:** a fixed rig; overhead Intel RealSense D435 at 35.9 cm;
+  5.957e-3 cm^2 per pixel, which at 640x480 is a 49.4 x 37.1 cm frame and a 69
+  degree horizontal field of view -- derivable from the paper alone. Cafeteria
+  food, western; lighting not stated.
+- **CAVEAT, CARRIED WITH EVERY NUMBER: the rig removes the scale ambiguity our
+  users have.** A known camera distance is the one input a phone photo lacks.
+  16.5% is a floor under favourable conditions, not a number our photos should
+  expect to match.
+
+**Could our pipeline score Nutri-Test without modification? No -- but the core
+needs none.**
+- **Works as is:** PIL decodes PNG (`downscale_jpeg`); `POST /scans` accepts
+  `camera_distance_mm` 359 (bounds 80-2000) and `camera_fov_deg` 69 (40-100),
+  which with no plate diameter lands on the `depth_model` rung (`mm2_per_frame`
+  rung 2) at exactly their scale; dish totals compare directly with the
+  product's meal totals -- the meal-level score above.
+- **Needs work:**
+  1. `bench_all.CASES` is a hand-written list: a loader from `dish_metadata_*` and
+     `depth_test_ids.txt`.
+  2. Score dish TOTALS. Per-item name pairing cannot work against ingredient rows
+     ("olive oil", "salt").
+  3. `POST /scans` writes a meal and items per scan -- 507 meals into the bench
+     diary. A throwaway account, or a path that does not persist.
+  4. Cluster incremental scans before any interval.
+  5. Cost: 507 vision calls, plus `second_look` and SAM2 per dish, plus resolver
+     lookups for new names. Paid -- a dry preflight first.
+  6. The depth rung's plane is the capture plane and food sits above it: a small
+     over-read to note, not a reason to fix first. `depth_raw.png` could feed the
+     depth-map height path, which is off (NullDepth) -- a separate project.
+
+---
 
 Weigh food from a photo accurately enough for weight control. Target **10% per-item
 error or better**. Current: **~48% per item**. Scope is "subscriptions live and taking
@@ -2105,12 +2308,15 @@ exists.
    vessel NAME** (`scale_learning.record`, vision.py:1748-1752, read back at
    vision.py:1676-1689 to size a scan; calibration.py:132 likewise). The label
    is not the plate: photo 18 was `side_plate` in 4 of 6 scans and
-   `dinner_plate` in the sweep. Live `vessel_observations`, all 7 rows one user,
-   all keyed `dinner_plate`: a tape at 254 mm, five card readings at exactly
-   158.33 mm and one at 126.66 mm. One key, three sizes, nothing in the row that
-   says which vessel was measured. Damage today unproven -- a tape is never
-   overridden by inference -- but the learned scale a subscriber would get pools
-   different plates under one label and splits one plate across two.
+   `dinner_plate` in the sweep, and in that one sweep the same 229 mm plate was
+   `side_plate` on seven photos and `dinner_plate` on seven, with the 222 mm foam
+   plate also `side_plate`. So one plate splits across two keys and different
+   plates pool under one. **Correction to the first telling:** live
+   `vessel_observations` (7 rows, all `dinner_plate`: tape 254 mm, card 158.33 x5,
+   126.66 x1) is NOT three plates -- joined through `scan_id`, all six card rows
+   are photo 14, the taped 254 mm plate, read with the axis bias. The pooling is
+   shown by the labels and the key, not yet by stored data. Folded into
+   MEASURED-HEIGHT-NOTES.md section A as a second, independent cause.
 3. **`scripts/_mask_cache.py` -- keyed on writer + photo FILENAME stem + long
    edge.** The namespace fixed the resolution collision; nothing records a digest
    of the image the masks came from, so a re-shot or re-encoded photograph under
@@ -2120,14 +2326,27 @@ exists.
 4. **The replay rig's `inputs/sweep_cache/<photo>.json` and `STORED`
    map -- keyed on photo filename**, and neither the rig nor paired_v2 records a
    digest of the stored bytes. If a storage object is replaced under the same
-   name, a cached detection is paired with bytes it never saw. The control
-   guards it (grams would move), but the key itself does not.
+   name, a cached detection is paired with bytes it never saw. **The control
+   catches a swapped photograph even though the key would not** -- the grams
+   move and the rig exits 1. That is the control covering for the key: the right
+   belt-and-braces, and not a reason to leave the key wrong.
+
+**Ranked (13 Sep): 1 is a LAUNCH BLOCKER** -- its own entry at the top of this
+file, beside the USDA determinism blocker. **2 is a PRODUCT DEFECT**, folded into
+the scale-learning blocker (MEASURED-HEIGHT-NOTES.md section A) as a second,
+independent cause. **3 and 4 are tooling: recorded, not fixed.** Both product
+defects go near the top of the roadmap reordering.
 
 **PAST MEMBER, already fixed:** refine's merge (vision.py:1500) looked targets
 up by `id(items[i])` against `model_copy()` objects -- different objects,
-different ids -- so every merge missed and merged grams were discarded. The
+different ids -- so every merge missed and every merged gram was discarded. The
 opposite face of the same class: identity changed while the content did not.
 Pinned by tests/test_refine.py:84.
+
+**Three members found in one day** -- the rig's Hough memo, the nutrition key,
+the vessel-name key -- plus this fixed one. Of every check in this file, this
+one has been the most productive per hour spent. It started from a control
+catching a 1.081x error in a test rig.
 
 **PASS:**
 - `segment_hosted._auto_memo` -- sha256 of the full encoded bytes, single slot

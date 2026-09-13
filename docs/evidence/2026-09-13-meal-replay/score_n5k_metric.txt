@@ -1,0 +1,30 @@
+PROVENANCE
+  file      docs/evidence/2026-09-13-meal-replay/score_n5k_metric.txt
+  produced  2026-09-13T14:44:06-07:00 by  backend\.venv\Scripts\python.exe docs\evidence\2026-09-13-meal-replay\score_n5k_metric.py
+  reads     score.py's tables and replay.json (no network, no model, no database)
+  MAE %     = mean |pred - true| / mean true, per dish (Nutrition5k, Thames et al. CVPR 2021, Table 3)
+  per-meal  = mean and median of |pred/true - 1| (this bench); baseline = predict this bench's mean truth for every meal
+
+
+CAL  (n=25 photos; Nutrition5k columns first, ours after)
+ all detections
+  energy                             MAE   93.4 kcal =  48.4% of mean (  193)  | per-meal mean  74.7%  median  40.9% (boot 20-62)  | baseline  63.8% of mean, per-meal mean 186.3%
+  carbs                              MAE    9.6 g    =  51.9% of mean (   19)  | per-meal mean  60.6%  median  31.3% (boot 22-57)  | baseline  56.1% of mean, per-meal mean  65.8%  [n=22 of 25 for %]
+  mass                               MAE   35.8 g    =  30.7% of mean (  117)  | per-meal mean  42.2%  median  24.9% (boot 18-51)  | baseline  49.5% of mean, per-meal mean  80.7%
+ phantom detections removed
+  energy                             MAE   77.9 kcal =  40.4% of mean (  193)  | per-meal mean  43.0%  median  31.2% (boot 20-48)  | baseline  63.8% of mean, per-meal mean 186.3%
+  carbs                              MAE    8.9 g    =  48.2% of mean (   19)  | per-meal mean  43.6%  median  26.2% (boot 21-50)  | baseline  56.1% of mean, per-meal mean  65.8%  [n=22 of 25 for %]
+  mass                               MAE   30.6 g    =  26.2% of mean (  117)  | per-meal mean  35.0%  median  23.1% (boot 17-36)  | baseline  49.5% of mean, per-meal mean  80.7%
+
+UNCAL  (n=25 photos; Nutrition5k columns first, ours after)
+ all detections
+  energy                             MAE   72.0 kcal =  37.3% of mean (  193)  | per-meal mean  72.7%  median  29.1% (boot 14-67)  | baseline  63.8% of mean, per-meal mean 186.3%
+  carbs                              MAE    8.3 g    =  44.8% of mean (   19)  | per-meal mean  51.6%  median  20.6% (boot 11-54)  | baseline  56.1% of mean, per-meal mean  65.8%  [n=22 of 25 for %]
+  mass                               MAE   39.1 g    =  33.5% of mean (  117)  | per-meal mean  41.7%  median  25.8% (boot 13-47)  | baseline  49.5% of mean, per-meal mean  80.7%
+ phantom detections removed
+  energy                             MAE   61.1 kcal =  31.7% of mean (  193)  | per-meal mean  41.6%  median  23.2% (boot 13-55)  | baseline  63.8% of mean, per-meal mean 186.3%
+  carbs                              MAE    7.5 g    =  40.8% of mean (   19)  | per-meal mean  33.0%  median  17.0% (boot 11-45)  | baseline  56.1% of mean, per-meal mean  65.8%  [n=22 of 25 for %]
+  mass                               MAE   36.1 g    =  30.9% of mean (  117)  | per-meal mean  36.0%  median  25.8% (boot 13-37)  | baseline  49.5% of mean, per-meal mean  80.7%
+
+Nutrition5k Table 3 (calories, their test set), for reference:
+  mean baseline 60.2% | 2D direct 26.1% | depth 4th channel 18.8% | volume scalar 16.5% | per-gram (mass given) 9.5%

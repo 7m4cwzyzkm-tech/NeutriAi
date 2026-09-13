@@ -60,6 +60,35 @@ plate 254 mm. Median [5th-95th percentile]:
 - **What Gil would have without the tape:** his six card readings publish
   **150.79 mm** (-41%), claimed error 3.5%, `usable=True`.
 
+### A SECOND, INDEPENDENT CAUSE: the learned width is keyed on the model's vessel NAME (13 Sep 2026)
+
+Found by HANDOFF's cache-key sweep. It compounds the axis convention; fixing the
+axis does not touch it.
+
+- **Write:** `scale_learning.record(user_id, vessel=_key(detected_vessel), ...)`
+  (vision.py:1748-1752); `refresh` and `calibration.learn_from_correction`
+  (calibration.py:132) look the row up by `(user_id, vessel)`. **Read:**
+  vision.py:1676-1689 picks the calibration whose `vessel` equals the model's
+  name for THIS photograph, and it becomes rung 1.
+- **The label is not the plate.** A physical vessel is identified by nothing but
+  the word the vision model chose for it, and the model does not choose
+  consistently. In the 12 Sep uncalibrated sweep the SAME 229 mm plate was
+  `side_plate` on 21-25, 28 and 34 and `dinner_plate` on 18-20, 29, 30, 35 and
+  36; photo 18 alone was `side_plate` in 4 of 6 earlier scans. The 222 mm foam
+  plate (40, 41) was also `side_plate`.
+- **So even with the width computed correctly,** one plate's observations split
+  across two keys, and different plates that draw the same word pool into one.
+  A scan then reads back whichever pooled number its label points at.
+- **What the live table does and does NOT show -- checked, not assumed.**
+  `vessel_observations` holds 7 rows, one user, all `dinner_plate`: a tape at
+  254 mm and card readings of 158.33 mm x5 and 126.66 mm x1. Joined through
+  `scan_id` to `food_scans.image_paths`, **all six card readings are photo 14**
+  -- the one taped 254 mm plate -- and they are the axis bias above (0.623 and
+  0.499 of 254). **The live rows are ONE plate read wrongly, not three plates
+  pooled.** The pooling is established by the model's labels on the bench and
+  by the key's construction; it has not yet happened in stored data, because
+  only one user and one plate have ever written to it.
+
 ### Which rungs consume it, and at what ceiling
 
 - vision.py:1677-1690 picks the calibration whose vessel matches the model's vessel

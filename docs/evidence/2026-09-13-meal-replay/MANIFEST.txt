@@ -7,6 +7,10 @@ WHAT IS HERE
                 Control reproduced 0.00 g on all 27 photographs, all 4 recorded arms.
   score.py      macro scoring (offline) of replay.json
   score.txt     score.py's output -- the numbers in HANDOFF "THE PRODUCT'S REAL SCORE"
+  score_n5k_metric.py / .txt
+                the same predictions in Nutrition5k's statistic (MAE as % of mean
+                truth) beside ours (per-meal mean/median |%|), with this bench's
+                always-predict-the-mean baseline. Offline; runs score.py silently.
   inputs/       the rig's inputs. NOT REGENERABLE. See below.
 
 INPUTS -- COPIED VERBATIM FROM A SESSION SCRATCHPAD
