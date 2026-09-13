@@ -81,6 +81,33 @@ core output, driven by a third party's availability.
   all.
 - Each scan item records which density its grams used, so a bench can see it.
 
+### The bleeding: USDA's intermittent 400 — diagnosed 12 Sep, not fixed
+
+The USDA task was first triaged as macros-only because its card said "grams
+unaffected". That was wrong (Gil's correction): this is a GRAM-DETERMINISM fix
+and is now at the top of the buildable queue, re-scoped on the task itself.
+
+- **Not the key.** Length 40, alphanumeric, no quotes, no padding, no CR, one
+  line in backend/.env. No 403s appear in tonight's logs; every failure is an
+  nginx HTML "400 Bad Request" page, not an API JSON error.
+- **Not the rate limit.** ~3,500 requests remained, and a limit returns 429.
+- **Intermittent, and query-dependent.** The same query flipped between 200 and
+  400 on consecutive tries.
+- **The cause: the `dataType` filter in the GET query string.** Controlled
+  probe, 30 requests per shape, alternating:
+
+      app's exact GET, dataType="Foundation,SR Legacy,Survey (FNDDS)"   12/30 failed
+      GET, dataType as three repeated params                            18/30 failed
+      GET without dataType                                               0/30 failed
+      POST, same fields in a JSON body                                   0/30 failed
+
+- **Fix for the task:** send the search as a POST with a JSON body, which keeps
+  the filter and failed 0 of 30. Then measure the real steady-state bypass rate
+  -- how many scored bench items still take an `ai_estimate` density once USDA
+  answers reliably -- which nobody has seen.
+- The provenance field and precedence rule above remain SPECIFIED, not built:
+  the 400 is the bleeding, provenance is the cure.
+
 ## THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING
 
 Found by the paired uncalibrated sweep (full record, and its clean re-run, near
