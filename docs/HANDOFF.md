@@ -1,5 +1,55 @@
 # NeutriAI — handoff brief
 
+## READ FIRST: THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING — 12 Sep 2026
+
+Found by the paired uncalibrated sweep (full record near the end of this file).
+
+`estimate_grams` pulls its geometric answer toward the vision model's
+typical-serving guess whenever the two disagree by more than 1.5x
+(portion.py:2451-2469). How hard it may pull is capped per rung by
+`BLEND_MAX_WEIGHT_BY_METHOD` (portion.py:922):
+
+    plate_reference 0.10   reference_object 0.10   depth_model 0.12   multi_image 0.15
+    vessel_reference 0.40  pixel_area 0.50          ai_prior 0.50
+
+**Why it is the ceiling.** On the items the calibrated pipeline already had
+within 25%, the uncalibrated path took error from 11.9% to 38.5% (+26.6
+points). As the geometry nears the 10% target, that accurate half becomes the
+whole bench. Every improvement to footprint, density or height is partly
+surrendered to the serving prior on any scan whose scale is ASSUMED -- and a
+subscriber's scale is always assumed today (31 of 41 items on
+`vessel_reference`, 5 on `ai_prior`). The surrender grows as the geometry
+improves.
+
+**Mechanical check, with no stratification (Gil's).** Log-error SD fell 0.650
+-> 0.457, a ratio of 0.703 (0.659 on the 21 `vessel_reference` items). A full
+0.40 pull toward a constant prior scales the SD by 0.60; an uncorrelated scale
+term would push the ratio above 1. So 0.70 confirms compression of about the
+blend's size. One refinement: the regression slope of uncalibrated on
+calibrated log error is 0.49 (0.54 vessel-only), BELOW the 0.60 floor. Either
+the pull is toward a prior that itself carries information about the true
+weight, or this draw's vessel names happened to correlate with the calibrated
+errors. The check cannot separate those two.
+
+**The design question -- stated, not answered. Do NOT change any blend weight.**
+The weight already follows the rung, and the rung encodes whether the SCALE was
+measured. But the pull is applied to the final GRAMS, so it discounts every
+component of the estimate -- scale, footprint, height, density -- in proportion
+to how uncertain the scale alone is. The question is whether the prior should
+correct only the term it has information about:
+
+- (a) the pull acts on the SCALE term -- a prior over the vessel's size or the
+  frame area, weighted by the scale's uncertainty -- and footprint, height and
+  density stand on their own evidence; or
+- (b) it stays on grams, but its weight is set by the estimate's TOTAL
+  uncertainty and falls as each non-scale term becomes measured, rather than
+  being fixed by the rung.
+
+"Turn it down" is not an answer: on today's geometry the pull is what rescues
+the wild half (78.2% -> 50.4%).
+
+---
+
 > Imported into the repo on 12 Sep 2026 from `~/Downloads/HANDOFF-claude-code.md`,
 > which sat outside the project and would not have survived the session.
 > Verbatim below the line except for this header.
@@ -1423,3 +1473,97 @@ size itself being in question. 10 is not in the sweep set.
   right one: the signed error moved +12 while the absolute stayed flat. The
   mechanism was not "the bench runs light" (CAL median -4.1%) but the prior
   pull compressing both tails. His rung-4 assumption: zero items.
+
+---
+
+## CAMERA DISTANCE — THE PRIORITY LEAD. Reported, not built. 12 Sep 2026
+
+The only scale source found tonight that needs no object in frame and no action
+from the user.
+
+### The path, end to end
+
+- **Client.** `ScanScreen.capture()` runs `measureCameraGeometry()` alongside
+  `takePictureAsync`, keeps the first shot's reading, and spreads it into the
+  POST /scans payload (ScanScreen.tsx:47-54, 71-75; client.ts:129-131).
+  Library photos send none, by design.
+- `measureCameraGeometry()` (mobile/src/native/depth.ts:96) calls
+  `NativeModules.NeutriDepth.measure()` with a 400 ms timeout and returns `{}`
+  when the module is absent.
+- **`NeutriDepth` does not exist.** depth.ts is the only file that names it.
+  There is no ios/ or android/ directory, no config plugin, and no AR or depth
+  library in package.json (the camera is `expo-camera`). Every real device
+  sends nothing.
+- **Server.** `ScanRequest.camera_distance_mm` (80-2000), `camera_fov_deg`
+  (40-100), `camera_aspect_ratio` (models/nutrition.py:26-28) -> routers/scans.py
+  stores distance and FOV on `food_scans` and passes both to `run_scan` ->
+  `GeometryHint(depth_mm=..., camera_fov_deg=...)` (vision.py:1716-1718) ->
+  `mm2_per_frame` rung 2 (portion.py:1707), below rung 1b plate and 2a card.
+  FOV defaults to 68 deg when absent.
+
+### What the data says
+
+- 107 of 1025 `food_scans` carry a distance, ALL bench: kebab photos 11-13 at
+  330 mm, rows 40-45 at 280 mm. None carries a FOV.
+- The depth rung appears in saved results on one photo, 12 (12 items).
+- In the sweep it fired on UNCAL_D for 40, 41, 42 and 45, matching the
+  calibrated grams within 0-11%. CAUTION: 280 mm is hand-stated ("shot from
+  10-12 inches, stated as 280 mm"), so that is two declared numbers agreeing,
+  not a sensor validated.
+
+### It fixes the scale AND the compression
+
+`BLEND_MAX_WEIGHT_BY_METHOD`: `depth_model` 0.12 against `vessel_reference`
+0.40. A real distance moves a subscriber's scan from a 0.40 prior pull to 0.12
+-- the same relief from the blend ceiling that a declared plate gives, with
+nothing asked. (Ceiling 0.84 vs 0.80; band 0.20 vs 0.22.)
+
+### What it would take — not started
+
+1. A development build (EAS), not Expo Go; native code is required.
+2. iOS `NeutriDepth` on ARKit. An ARSession and expo-camera's capture session
+   cannot both own the camera, so the photo comes from the AR frame
+   (`ARFrame.capturedImage`, ~1920x1440, above the 1568 the server uses) or the
+   session hands over at the shutter. A plane raycast needs a moment of
+   tracking; LiDAR devices give `sceneDepth` at once. depth.ts's 400 ms timeout
+   is too short for plane initialisation.
+3. Android: ARCore Depth API where supported; Camera2 `LENS_FOCUS_DISTANCE` is a
+   crude, often uncalibrated fallback.
+4. FOV from the device on every scan (ARCamera intrinsics; Camera2 sensor size
+   and focal length). Cheap, independent of AR, and never sent today; a 5 deg
+   FOV error is ~16% of area (portion.py:1702-1706).
+5. Tilt. Rung 2 assumes the camera looks straight down; a raycast distance on
+   a tilted shot runs along the ray, not the height. ARKit's camera transform
+   gives height and tilt directly -- the same table-plane homography the
+   corners work specifies.
+6. Validation against a bench with a TAPE-measured lens height per photo, so
+   the rung is scored against a measurement rather than a stated number.
+
+---
+
+## THE CARD'S PARALLAX DEBT — DIRECTION CONFIRMED, MAGNITUDE NOT. n=2. 12 Sep 2026
+
+On 43 and 44 both arms share one detection, the same masks and the same 0.10
+prior cap, so the card rung's grams over the declared plate's grams track the
+frame-area ratio. Linear scale = sqrt(area ratio) = D/(D-h).
+
+    photo  declared plate  card rung  grams ratio  linear  implied h: D 280 | D from card frame + 68 deg
+    43     -4.8%           +23.2%     1.294        1.138   33.9 mm | 38.2 mm (D 316)
+    44     +19.9%          +64.9%     1.375        1.173   41.2 mm | 44.1 mm (D 299)
+
+- **Direction: CONFIRMED on both.** Heavier, as portion.py:1636-1678 documents
+  for a card at the table plane sizing food raised above it.
+- **Magnitude: NOT parallax alone.** It needs the food's footprint 34-44 mm
+  above the card. Chips and grapes on a 3 g foam plate sit perhaps 5-20 mm up,
+  which at D 280-316 is 4-8% linear and 7-16% of area -- the ~10% the file
+  predicts. The remaining ~15-25% of area comes from the declared 222 mm plate
+  (the card implies 253-260 mm at zero parallax) or from the card measurement.
+  This data cannot separate them; a tape across the foam plate would settle the
+  first.
+
+**Product consequence.** A card lying ON the plate, in the food's plane, has no
+table-to-plate parallax: it removes the debt instead of correcting for it, and
+IMG_4198 shows the detector finds a card on a white plate easily (consensus
+6/6). Two limits: food with height still stands above the card by about half
+its height (~3% linear, ~7% area for a 20 mm heap at D 300), and "put the card
+on the plate" is still an ask, as the card already is.
