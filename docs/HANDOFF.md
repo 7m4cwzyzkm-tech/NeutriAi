@@ -101,10 +101,40 @@ and is now at the top of the buildable queue, re-scoped on the task itself.
       GET without dataType                                               0/30 failed
       POST, same fields in a JSON body                                   0/30 failed
 
-- **Fix for the task:** send the search as a POST with a JSON body, which keeps
-  the filter and failed 0 of 30. Then measure the real steady-state bypass rate
-  -- how many scored bench items still take an `ai_estimate` density once USDA
-  answers reliably -- which nobody has seen.
+- **Narrowed the same night: not URL length, PARENTHESES.** Gil proposed URL
+  length from the ordering above; tested, it does not hold. 30 GETs per
+  condition:
+
+      short query, no dataType (144-char URL)               0/30
+      app's GET with dataType (197 chars)                   17/30
+      long query, no dataType, same length (198 chars)      0/30
+      long query, no dataType (238 chars)                   0/30
+      dataType=Foundation / SR Legacy / Foundation,SR Legacy  0/30 each
+      dataType=Survey (FNDDS)   sent as Survey+%28FNDDS%29  18/30
+      query "rice (white, cooked)", no dataType             15/30
+      query "rice, white, cooked", no dataType               0/30
+
+  The trigger is `%28` / `%29` in the query string, rejected by part of USDA's
+  front-door node pool. **The `query` parameter is exposed too:** a food name
+  with parentheses reopens the 400 under GET. Do NOT fix this by dropping
+  "Survey (FNDDS)" from the dataType list -- that changes which foods are
+  searched, and so the density and the grams, and leaves food names exposed.
+- **Fix for the task:** send the search as a POST with a JSON body, which takes
+  every parameter out of the request line and failed 0 of 30.
+- **Acceptance pins the RESULT, not the request shape (Gil).** A POST that
+  re-ranks or reinterprets dataType returns a different food row, a different
+  density, different grams -- the caesar 350 vs 98 chain again. For at least 20
+  bench food names, the fdcId selected under POST must equal the one under a GET
+  that succeeded; every difference is reported with both matches and explained
+  before merging; that name -> fdcId comparison is the pinned test.
+- Then measure the real steady-state bypass rate -- how many scored bench items
+  still take an `ai_estimate` density once USDA answers reliably -- which nobody
+  has seen.
+
+**For the record (Gil):** the decision not to tune any constant this week was
+right for a reason nobody knew when it was made. The density input to every
+gram was flickering with a third party's node pool, so any constant fitted this
+week would have been fitted against that noise.
 - The provenance field and precedence rule above remain SPECIFIED, not built:
   the 400 is the bleeding, provenance is the cure.
 
