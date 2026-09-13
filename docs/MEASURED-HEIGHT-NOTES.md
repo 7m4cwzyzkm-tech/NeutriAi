@@ -201,6 +201,8 @@ tomorrow's shoot tests it.
 
 ### 1. USDA POST — precondition, in flight in the worktree
 
+Built and verified; UNCOMMITTED at session end. See section G.
+
 ### 2. Axis convention (section B), landed after USDA
 
 **It does NOT move the bench.** The parsed ellipse reaches exactly two consumers:
@@ -682,3 +684,161 @@ Notes:
 - The model under-reads the plate's width by ~0.10 of the long side. If it under-reads
   heights the same way, k falls below 1 from reading, not physics; `height_ratio_self`
   (height over the food's own width) is a vessel-free cross-check.
+
+---
+
+## G. USDA POST session (worktree adoring-bun-cb0df3), 12-13 Sep — what nothing else records
+
+Written at the end of the session that built section D.1. Fold into HANDOFF with the rest.
+
+### G.0 State at session end — READ FIRST
+
+- **The fix is BUILT, VERIFIED, and UNCOMMITTED** in worktree
+  `.claude/worktrees/adoring-bun-cb0df3` (branch `claude/adoring-bun-cb0df3`,
+  fast-forwarded to master 209a84e at session end so this notes commit sits on top of
+  the existing file). Uncommitted there:
+  - `backend/app/services/nutrition/providers.py`: `usda()` POSTs a JSON body.
+  - `backend/tests/test_usda_post.py` + `backend/tests/fixtures/usda_bench_fdc.json`
+    (290 KB; recorded foods only. Checked: no key; the one URL is the public endpoint
+    named in its `_about` string).
+  - `docs/HANDOFF.md`: a new section "The bleeding, stopped: USDA search is a POST",
+    inserted after "the 400 is the bleeding, provenance is the cure." **If that worktree
+    is discarded, that section is lost.** G.1 repeats its numbers so they survive.
+- No commit was made by this session other than this notes commit.
+
+### G.1 The numbers, duplicated from the uncommitted HANDOFF edit
+
+- **fdcId pin:** 43 names (40 recorded bench lookup names + 3 parenthesised). GET retried
+  until 200: 62 attempts, 19 were the nginx 400. POST selected a different fdcId for
+  **0 of 43**. The top-10 candidate ids were identical, in order, for all 43.
+- **Live rate, 101 searches** (43 names x2 + the 3 parenthesised x5; 21 parenthesised),
+  GET control interleaved: **POST 0/101 non-200; GET 43/101, 9/21 on parenthesised.**
+- **Steady-state bypass after the fix:** `resolver.resolve` on the 40 names -> **0 of 40**
+  carry an `ai_estimate` density; all 40 `usda`, density null, table decides.
+- Suite: 916 passed, 2 failed (`test_wiring` bench-photo tests, photos/ absent from the
+  worktree); both pass with photos/ junctioned in (49/49 with test_usda_post).
+
+### G.2 Shared state this session CHANGED — attribute it before comparing any bench
+
+- **`food_facts` was mutated by the step-4 run.** `resolve` overwrote **13**
+  `ai_estimate` rows with USDA rows (density -> null): sliced zucchini, grilled chicken
+  with sauce, braised beef, brussels sprouts, roasted potatoes, boiled green beans, rice,
+  shredded beef with potatoes, stew, roasted potato, baked pepperoni pizza slice, fried
+  tortilla chips, fried mexican rice.
+  - **The uncommitted HANDOFF section says "12 of the 40". It is 13** -- miscounted at
+    the time; correct it when committing.
+  - Before: 116 rows = 83 `ai_estimate` / 33 `usda`; 75 ai rows with a density (HANDOFF).
+  - At session end: **70 `ai_estimate` / 46 `usda`; 62 ai rows with a density.** Both
+    differences are exactly 13, so nothing else touched the table.
+  - **So any bench run from 13 Sep differs from the 12 Sep clean re-run in density source
+    for those foods** -- including both of the re-run's "2 of 27" bypass items. A gram
+    change on them is the cache, not a code change.
+  - HANDOFF's "75 of the 116" and "~71 other ai_estimate rows" are now 62.
+- **USDA quota:** roughly 320 requests spent (probe 105, rate run 202, resolve ~12;
+  estimated from the scripts, not read off the counter). ~3,500 remained before.
+- The pre-mutation `food_facts` snapshot exists ONLY in the session scratchpad (G.5).
+
+### G.3 Dead ends — do not re-walk
+
+- **There is no vision-response cache in app code.** Grepping app/ for cache / sha256 /
+  image_hash finds only the segmenter's mask cache. HANDOFF's "same cached vision
+  response" for caesar 350 vs 98 g lives in whatever harness ran that sweep; not found.
+- **The 12 Sep clean re-run and the outage sweep are not in Supabase.** `meals` since
+  11 Sep: 73 meals / 127 items, bench scans only at 11 Sep 02:13-03:03 UTC and 12 Sep
+  06:48-16:24 UTC. The re-run's 27 item names cannot be re-derived; "2 of 27" and
+  "4 of 28" cannot be recomputed item by item. The 40 names used came from those
+  persisted scans plus `food_facts` keys.
+- `meal_items` stores `name`, `food_fact_id`, `estimation_method` -- **no preparation**;
+  the name is already prep-folded ("baked bread roll"). `food_facts` has **no
+  `updated_at`** (select fails 42703). `canonical()` drops stopwords, so "cooked greens"
+  is keyed "greens".
+- **Running scripts from the worktree:** no `backend/.env`, no `.venv` there, and
+  `Settings(env_file=".env")` is cwd-relative. Recipe: cwd = main `backend/`, python =
+  main `backend/.venv/Scripts/python.exe`, `sys.path.insert(0, <worktree>/backend)`.
+  Pytest: from `<worktree>/backend`, `../../../../backend/.venv/Scripts/python.exe -m
+  pytest -q`. The 2 photo failures are that environment, nothing else.
+- **The main branch is `master`.** `git log main` fails.
+- **A few GETs prove nothing about the 400.** All 3 parenthesised names got 200 on their
+  first GET in the probe; the rate run then failed 9 of 21. Measure in 20+ alternating.
+- The `table` / `used` densities printed in step 4 were computed with `group=None`. For
+  names with no dish key (baby carrots, the zucchini names, steamed bun, cooked greens --
+  0.85 default) the live scan's food group answers instead, so those columns are not
+  the scan's density. The bypass count (explicit density present or not) is unaffected.
+
+### G.4 Half-checked — concluded partway, not verified
+
+- **`rice` -> "Dirty rice" still, live**, though `_match_score`'s docstring says that was
+  fixed. By the formula a "Rice, white, ..." candidate scores 5.0 against Dirty rice's
+  4.5, so the likely cause is that NO plain "Rice, ..." entry is in USDA's top 10 for the
+  bare word with these dataTypes -- a ranking-depth problem, not a scoring one.
+  **Inferred, not checked:** one POST with pageSize 50 settles it. Changing pageSize
+  moves bench foods; pin it the same way as G.1.
+- **"mexican rice" is cached as "mexican pizza"** (`usda` row, so it short-circuits and
+  never re-fetches). Macros only; not in HANDOFF's poor-match list.
+- **23514 `food_facts_source_check`:** cause identified (resolver stores
+  `source='reference_table'`; migration 0003 allows usda/edamam/nutritionix/ai_estimate/
+  user), recorded in the uncommitted HANDOFF edit, NOT reproduced live this session.
+- The fix makes poor USDA matches serve MORE foods (the 13 flipped rows now take USDA
+  macros: braised beef -> beef liver, steamed bun -> oysters, rice -> dirty rice).
+  Grams unaffected (USDA rows carry no density); calories are.
+
+### G.5 Scratch files — session temp, lost when the session ends
+
+In `%TEMP%/claude/...adoring-bun-cb0df3/534853e3-.../scratchpad/`:
+
+| File | What | Worth keeping? |
+|---|---|---|
+| `food_facts.json` | all 116 rows BEFORE the step-4 mutation | **yes -- the only pre-mutation record**; copy to `scratch/` if anyone will diff |
+| `meal_items.json` | 127 bench items since 11 Sep, joined to fact source/density | re-derivable from Supabase |
+| `probe_fdc.json` / `probe_fdc.py` | GET vs POST per name, full candidate lists | superseded by the fixture |
+| `rate.py` | 101-search POST/GET rate run | recipe in G.1 is enough |
+| `bypass.py` / `bypass.json` | step-4 resolve per name | numbers in G.1/G.2 |
+| `ff_dump.py`, `meals_dump.py` | read-only Supabase dumps | trivial |
+
+### G.6 Commits of 12 Sep, in order (author time, -0700 unless noted)
+
+    32f734c  (import)  Pin providers offline; fix structlog event= collision in iap; plate fence follows located plate
+    1be5b28  02:12  Emit the masks and the height branch instead of reconstructing them
+    e3a35b2  02:17  One dump per scan, not one per digest
+    bbc8f8e  03:02  Say whether the mask dump is armed, before the call is paid for
+    53fbe24  03:08  Bring the brief into the repo; record the topology inversion
+    02edab3  08:42  The brief was stale by one change, not wrong; photo 36 verified
+    477aba5  08:54  Mask-count hypothesis refuted; back out the heights the grams require
+    eef3db3  09:29  Draw production's own masks; measure the plate instead of asking for it
+    d402ae2  10:12  Always tee the API log; namespace the mask cache; freeze the heights
+    78aac50  11:00  sam3 probe: use production's transport instead of a second one
+    8902378  11:04  Archive sam3's three outputs for photo 35 before the URLs expire
+    68e2a1b  11:15  Archive the sam3 text-only survey outputs
+    6e1c038  11:46  Archive the four-concept caesar probe (one prediction)
+    1ec4fb3  11:48  Record the sam3 measurements, the prediction miss, and the density trap
+    cbe03da  12:16  Correct the density claim; record three lookup bugs, the rule and what is blocked
+    dc6e63c  12:51  Density lookup: match whole words, head-final, not the longest substring
+    2c6cd9c  12:54  Density table: six valued keys for bench foods that had none
+    b5b3fc9  12:55  Record the lookup fix, the density-test verdict, and the card rung audit
+    7c9891d  16:20  Record the reference_cv audit, material densities, and the card/rim question
+    28a8352  16:29  Pre-register the uncalibrated run; record reference_cv recall by gate
+    09e3f0e  17:44  Record the uncalibrated sweep, the card viewing-angle derivation, and both scored pre-registrations
+    8cb7c55  19:27  Put the blend ceiling first; record the camera-distance lead and the card parallax result
+    ef6e6a8  19:52  Record the both-ends defect class, the yardstick, and the serving-prior test
+    8f049a5  20:20  Top entry: measurement stack vs lookup table; clean paired re-run; portion arm pre-registered
+    5cd2064  20:51  Launch blocker: grams depend on USDA uptime; amend the portion-arm pre-registration
+    755e2e1  20:57  Diagnose the USDA 400 and promote it as a gram-determinism fix
+    5837444  21:07  Narrow the USDA 400 to parentheses in the query string; pin the fix on results
+    20e1bd9  21:35  Prepare the measured-height experiment; record the tilt defect and a starved feature
+    bb4bdf1  21:55  Measured-height notes: scale learning as a live blocker, the convention root, the disabling evidence
+    d09c94f  22:11  Plan for 13 Sep: axis fix scope, depth-provider assessment, calibration intake and ruler read-out
+    bb6d39e  22:22  Housekeeping: generated output to scratch/, stale depth survey kept as INVALID evidence
+    209a84e  22:33  Depth: require the licensed Small model; record format check, angles and fold-in protocol
+    (next)          this notes commit -- its own hash cannot be written into itself
+
+The USDA POST fix has no hash yet: it is the uncommitted work in G.0.
+
+### G.7 If a fresh agent hears one thing
+
+Commit the USDA POST fix sitting uncommitted in worktree adoring-bun-cb0df3
+(providers.py, test_usda_post.py and its fixture, the HANDOFF section) before touching
+anything else -- it is verified, it is D.1, and everything after it assumes it -- and
+then remember it stopped the bleeding, not the wound: any USDA miss still hands the
+grams an LLM density (62 `ai_estimate` rows carry one), and `food_facts` was rewritten
+for 13 foods tonight, so a bench gram that moved on those foods since 12 Sep is the
+cache, not your change.
