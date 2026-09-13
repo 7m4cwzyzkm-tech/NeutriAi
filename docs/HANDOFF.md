@@ -1,8 +1,37 @@
 # NeutriAI — handoff brief
 
-## READ FIRST: THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING — 12 Sep 2026
+## READ FIRST: THE MEASUREMENT STACK AGAINST A LOOKUP TABLE — 12 Sep 2026
 
-Found by the paired uncalibrated sweep (full record near the end of this file).
+The model's typical-serving guess ALONE -- name the food, return a serving --
+against everything the pipeline measures. Clean paired re-run, 27 weighed items,
+one detection per photo, nutrition facts shared across arms:
+
+    stage                              mean |e|  median |e|  signed   mean |ln|  r on log grams
+    serving guess alone (lookup)        56.9%     62.6%     +54.2%    0.425     +0.91
+    calibrated, pre-blend geometry      39.2%     23.7%      -4.4%    0.465     +0.65
+    calibrated, as shipped              35.9%     20.6%      -3.7%    0.413     +0.70
+    subscriber, pre-blend geometry      49.9%     41.8%      +7.7%    0.537     +0.52
+    subscriber, as shipped              36.8%     26.8%     +13.7%    0.334     +0.76
+
+- **The lookup RANKS foods by size better than the measurement does** (r 0.91
+  against 0.70). That is across-food signal only; it returns the same number
+  for 45 g and 180 g of one food.
+- **It does not SIZE portions.** It runs +54% heavy, and its median error is
+  62.6% against 20.6% calibrated and 26.8% for a subscriber. Its low log error
+  is almost all that one consistent bias.
+- **For a subscriber, the geometry alone is WORSE than the lookup** on log error
+  (0.537 against 0.425) and on correlation (0.52 against 0.91). Only the blend
+  toward the lookup brings the shipped answer under it (0.334). Today the
+  product's accuracy for a paying user is substantially the serving prior's.
+
+"The whole measurement stack is worse than naming the food" is true of the
+SUBSCRIBER'S pre-blend geometry on log error and ranking, and false of the
+calibrated stack and of any per-portion error measure.
+
+## THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING
+
+Found by the paired uncalibrated sweep (full record, and its clean re-run, near
+the end of this file).
 
 `estimate_grams` pulls its geometric answer toward the vision model's
 typical-serving guess whenever the two disagree by more than 1.5x
@@ -12,28 +41,31 @@ typical-serving guess whenever the two disagree by more than 1.5x
     plate_reference 0.10   reference_object 0.10   depth_model 0.12   multi_image 0.15
     vessel_reference 0.40  pixel_area 0.50          ai_prior 0.50
 
-**Why it is the ceiling.** On the items the calibrated pipeline already had
-within 25%, the uncalibrated path took error from 11.9% to 38.5% (+26.6
-points). As the geometry nears the 10% target, that accurate half becomes the
-whole bench. Every improvement to footprint, density or height is partly
-surrendered to the serving prior on any scan whose scale is ASSUMED -- and a
-subscriber's scale is always assumed today (31 of 41 items on
+**Why it is the ceiling.** Clean re-run numbers. On the items the calibrated
+pipeline already had within 25%, the uncalibrated path took error from 11.5% to
+34.6% (+23.1 points, CI +5.7 to +40.4, n=15); on the rest it went 66.4% ->
+39.5% (-26.9, n=12). As the geometry nears the 10% target, that accurate half
+becomes the whole bench. Every improvement to footprint, density or height is
+partly surrendered to the serving prior on any scan whose scale is ASSUMED --
+and a subscriber's scale is always assumed today (31 of 41 items on
 `vessel_reference`, 5 on `ai_prior`). The surrender grows as the geometry
-improves.
+improves. (The first sweep read +26.6 / -27.8; see the re-run for why it moved.)
 
-**Mechanical check, with no stratification (Gil's).** Log-error SD fell 0.650
--> 0.457, a ratio of 0.703 (0.659 on the 21 `vessel_reference` items). A full
-0.40 pull toward a constant prior scales the SD by 0.60; an uncorrelated scale
-term would push the ratio above 1. So 0.70 confirms compression of about the
-blend's size.
+**Mechanical check, with no stratification (Gil's).** Log-error SD fell 0.590
+-> 0.416, a ratio of 0.705 (first sweep: 0.650 -> 0.457, 0.703). A full 0.40
+pull toward a constant prior scales the SD by 0.60; an uncorrelated scale term
+would push the ratio above 1. So 0.70 confirms compression of about the blend's
+size.
 
-The raw slope of uncalibrated on calibrated log error is 0.49 (0.54 on vessel
-items), below that floor. **Resolved: the geometry term itself differs between
-the arms** (Gil's explanation 3). The vessel prior changes the area (200 / 229 /
-270 mm), so the raw slope is not a clean estimate of (1 - w). Controlling for
-each item's area factor, the slope on the 21 vessel items is **0.597** -- the
-0.60 floor. The vessel names did not line up with the errors (correlation of
-area factor with calibrated error: -0.16).
+The raw slope of uncalibrated on calibrated log error is 0.43, below that
+floor. **Mostly explained by Gil's explanation 3: the geometry term itself
+differs between the arms.** The vessel prior changes the area (200 / 229 / 270
+mm), and on this draw the area factor is correlated with the calibrated error
+(-0.34), so the raw slope is not a clean estimate of (1 - w). Controlling for
+each item's area factor, the slope on the 20 vessel items is **0.566** -- close
+to the 0.60 floor, still below it. The small remainder is consistent with a
+prior that ranks foods by size (r 0.91), which a constant-prior floor does not
+allow for. (First sweep: 0.597 controlled, correlation -0.16.)
 
 **Is the serving guess real signal? Tested directly; the answer splits.**
 
@@ -1647,10 +1679,24 @@ minAreaRect checked on a contact sheet; Hough rim, visually verified only on
 **This does not convict the 222.** The card over-reads the TAPE-MEASURED 229
 plate by the same ~10% it over-reads the 222 plate, and photo 44's +15% sits
 inside the 229 plate's own +6% to +21% spread. The simplest reading is one card
-instrument with a ~10% table-plane excess -- about twice the +5% the repo's
-single tape-vs-card note recorded -- not a wrong declaration. Until the tape,
-222 is unverified rather than refuted, and photo 44's true calibrated error lies
-somewhere between about +20% and +65%.
+instrument with a ~10% table-plane excess, not a wrong declaration.
+
+**CLOSED 12 Sep.** Gil withdrew the "the declaration is wrong" hypothesis; no
+tape is needed for this question. The 222 figure remains an undocumented
+nominal size and should be recorded as such, but the bench's ground truth is
+not the explanation for the card's excess.
+
+**Measured card correction candidate -- NOT APPLIED.** Against a tape-measured
+plate, a card at the table plane reads the plate rim +10% linear (median over 16
+photos, range +6% to +21%), i.e. about +21% in area. Two cautions before anyone
+applies it:
+
+- It is about TWICE, in area, what portion.py:1675-1677 predicts (~10% of area
+  for food ~28 mm above a table card), and twice the +5% linear of the file's
+  single tape-vs-card note. The prediction's direction held; its size did not.
+- It is measured on the plate RIM, which stands higher than the food on the
+  plate floor, so it overstates the correction the food needs. And the card
+  instrument varies: colour boxes and detector quads differed by ~5% on 44.
 
 ---
 
@@ -1719,3 +1765,138 @@ there a test that fails when the path is broken END TO END, not per stage?**
 - **The macro reference-table fallback.** The live `food_facts` source check
   constraint rejected resolver writes tonight (23514). Suspected; queued as a
   separate task.
+
+---
+
+## HOW SOFT IS THE BENCH? Weighed mass against the serving guess, 28 items. 12 Sep 2026
+
+    weighed / ai_prior_grams   median 0.65   IQR 0.58-0.86   range 0.43-1.47   geometric mean 0.68
+    within 0.80-1.25x   8 of 28      within 0.67-1.5x   14 of 28      within 0.5-2x   23 of 28
+    SD of ln(weighed / prior)   0.291      SD of ln(weighed) across items   0.586
+
+- **The portions do NOT sit at a typical serving; they sit ~35% below one.**
+  The serving guess runs about 47% heavy on almost every item (only 2 of 28
+  above it).
+- **But the spread around that bias is narrow**: 0.29 in log units against 0.59
+  for the across-food spread. The guess explains about 83% of the log-weight
+  variance on this bench (r = +0.91), because the bench is one ordinary portion
+  per food. Nothing on it asks whether a scan can tell 45 g from 180 g of the
+  same thing. In that sense the bench is a soft test of the product, and the
+  portion-sensitivity arm below is the first hard one.
+
+---
+
+## PORTION SENSITIVITY — THE TOP ACCEPTANCE TEST. Pre-registered before the photos. 12 Sep 2026
+
+One food at about 45, 90 and 180 g; the same 260 mm taped plate, card and
+framing. **n = 3 on one food is thin**: one residual degree of freedom, and a
+single misdetection, vessel-name change or height-branch flip between frames
+can move the slope on its own. It is still the first test of the thing the
+product is for.
+
+### Scoring
+
+- **Primary metric: sensitivity, the log-log slope** of estimated grams on
+  weighed grams across the three (OLS on ln). A scanner scores ~1.0, a lookup
+  table 0. Log-log so a consistent 30% bias does not read as extra sensitivity.
+- Also reported: the linear slope, and every point.
+- **Arms, all from one detection per frame** (the sweep harness: one model call,
+  scale step run per arm):
+  - CAL: declared 260 mm.
+  - UNCAL: no diameter, no calibration, no distance, card as found.
+  - UNCAL_NOCARD: UNCAL with the card reference withheld -- a subscriber with no
+    card.
+- **Each arm twice: post-blend (as shipped) and pre-blend** (blend weights
+  zeroed for the call, no code change), so the sensitivity the blend removes is
+  read directly.
+- Reported per frame: rung, vessel name, the serving guess, whether the measured
+  footprint was used, and the height branch (separate pieces 9.2 mm or one mass
+  21.0 mm).
+- Arm-to-arm slope differences are exact for this draw, because the arms share
+  each frame's detection. The absolute slopes carry frame-to-frame detection
+  noise.
+
+### Predicted slopes, with reasoning
+
+- **Pre-blend geometry, CAL: 0.8 (plausible range 0.6-1.2).** At 45-180 g one
+  item covers well under the 0.35 reference coverage, so the spread factor sits
+  at its 1.10 clamp and is constant (portion.py:2348-2349). Grams then follow
+  the measured area x a fixed height. Area grows ~mass^1 for pieces spread in
+  one layer and ~mass^0.67 for a heap. A height-branch flip from separate pieces
+  to one mass as the portion grows adds ln(2.28)/ln(4) ~ +0.6 and could push the
+  slope above 1.
+- **Post-blend CAL: ~0.9 x pre-blend, so ~0.72.** With the serving guess
+  constant across the three (same name) and ~150 g, only the small portion
+  disagrees by more than 1.5x; the 0.10 cap moves ln(45 g) by 0.1 x ln(150/45),
+  costing ~9% of the slope.
+- **Post-blend UNCAL on `vessel_reference`: 0.5-0.67 x pre-blend, so ~0.5.** The
+  vessel size factor is constant if the name is stable, so it does not change
+  the slope. The 0.40 cap pulls the 45 g and 90 g frames toward the guess:
+  worked through, 0.67x under a dinner_plate name, 0.50x under side_plate.
+- **UNCAL named "paper" (`ai_prior`): 0.0.** No geometry; every frame returns the
+  guess.
+- **UNCAL with the card found (`reference_object`, cap 0.10): ~ CAL post-blend.**
+  That is why UNCAL_NOCARD is its own arm.
+- **Largest risks:** the vessel name changing between frames (a +/-39% area step
+  on one point) and the food's name changing (the trail-mix pair moved the guess
+  50 -> 30 g on a name change alone).
+- **Harness:** the corrected paired harness below, which shares nutrition facts
+  across arms. The first sweep's harness does not.
+
+---
+
+## THE SWEEP, RE-RUN CLEAN — nutrition facts shared across arms. 12 Sep 2026
+
+### What was wrong with the first sweep's pairing
+
+- The harness cached the vision response but let `build_items` re-run
+  `resolver.resolve_many` for every arm, while USDA was returning HTTP 400 on
+  and off.
+- **The weight path depends on whether USDA answers.** When it fails, the
+  resolver falls back to `_ai_estimate`, a reasoning-model call that returns a
+  `density_g_ml`. vision.py:1102 passes that as `density=`, and `density_for`
+  puts an explicit density ahead of the table. 75 of the 116 `food_facts` rows
+  are `ai_estimate` rows carrying such a density; the 33 USDA rows carry none.
+- Photo 18 in the blend-off replay showed it: the one arm whose zucchini lookup
+  failed got 88 g; the arms that then hit a cached USDA row (no density, so the
+  vegetable group's 0.55) got a 51 g base.
+- Six arm-items moved between the first sweep and the clean re-run, most of them
+  in BOTH arms at once -- the fact changed between runs: zucchini 88 -> 52 g;
+  rice 151 -> 107 g and 94 -> 71 g; caesar salad 350 -> 98 g, which was the
+  first sweep's largest outlier (+185% -> -21%).
+- The headline paired change survived: +1.9 -> +3.0 points (CI -14.4 to
+  +20.5).
+
+### A class member: an LLM's density entering as a measured one
+
+vision.py:1097-1102 says "ONLY a real measured density is passed as explicit."
+The resolver's fallback supplies a reasoning-model guess through that same
+field, so a language model's density overrides the sourced table -- and whether
+it does depends on USDA's availability at the moment of the scan. Wired end to
+end, each stage correct on its own, broken in the connection.
+
+Also, for macros rather than grams: USDA matched "white rice" -> "beans and
+white rice", "grilled zucchini slices" -> "zucchini, pickled", "baked bread
+roll" -> "roll, egg bread". Belongs with the queued USDA task.
+
+### Photos 44 and 45: pre-blend geometry, w and post-blend grams
+
+Weighed 90 g; serving guess 150 g on both.
+
+    photo  arm                      pre-blend geometry   w      shipped   error
+    44     CAL (plate 222 mm)       107.9 g              0.00   107.9 g   +19.9%
+    44     UNCAL (card rung)        148.4 g              0.00   148.4 g   +64.9%
+    45     CAL (plate 222 mm)       106.5 g              0.00   106.5 g   +18.3%
+    45     UNCAL (ai_prior)         none                 --     150.0 g   +66.7%
+
+- **45's +66.7% equals the guess's +66.7% because it IS the guess.** Named
+  "paper" with no card found, the rung is `ai_prior` and no geometry exists to
+  blend.
+- **44's +64.9% is the card rung's own geometry**, not the blend. The blend did
+  not fire on either photo: the guess sits within 1.5x of every geometry.
+
+### Blend weights as observed
+
+w reached exactly its cap wherever geometry and guess disagreed by 2.5x or more:
+0.10 on `plate_reference` (17, 22, 35 and 36 calibrated) and 0.40 on
+`vessel_reference` (22, 24, 31-33, 35, 36 and 40 uncalibrated).
