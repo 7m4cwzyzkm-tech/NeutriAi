@@ -21,11 +21,23 @@ from . import providers, references
 
 log = structlog.get_logger()
 
-_STOPWORDS = {"fresh", "cooked", "raw", "homemade", "serving", "of", "a", "the", "with", "and"}
+# Words that change nothing about the food. "raw", "cooked" and "fresh" used to
+# be here, and they change the food more than almost anything else in a name:
+# raw white rice is 365 kcal per 100 g, cooked is 130. `food_facts` is ONE table
+# shared by every user, so with those words stripped `raw rice`, `cooked rice`
+# and `rice` shared a row, and whichever was looked up first answered for all
+# three -- permanently, since a usda row is never re-fetched. portion.py's
+# density matcher already ranks preparation keys first, and `_lookup_name` adds
+# the model's preparation to the name precisely so it reaches this lookup.
+_STOPWORDS = {"homemade", "serving", "of", "a", "the", "with", "and"}
 
 
 def canonical(name: str) -> str:
-    """Collapse spelling noise so 'Grilled  Chicken Breast' == 'grilled chicken breast'."""
+    """Collapse spelling noise so 'Grilled  Chicken Breast' == 'grilled chicken breast'.
+
+    Spelling noise only. A word that changes what the food IS -- a preparation
+    above all -- stays in the key, or two different foods share one cached row.
+    """
     n = re.sub(r"[^a-z0-9\s]", " ", name.lower())
     tokens = [t for t in n.split() if t and t not in _STOPWORDS]
     return " ".join(sorted(set(tokens))) if len(tokens) > 4 else " ".join(tokens)
@@ -47,7 +59,10 @@ def canonical(name: str) -> str:
 #
 #   1  original: first USDA search result, unranked
 #   2  candidates ranked by how well they match the query
-RESOLVER_VERSION = 2
+#   3  "raw", "cooked" and "fresh" kept in the key. Every row written under the
+#      collapsing key is stale: the stored query is unknowable for provider
+#      rows, so none of them can be proven to answer the name that now reads it.
+RESOLVER_VERSION = 3
 
 
 def _is_current(row: dict) -> bool:
