@@ -746,8 +746,12 @@ change as a code change.
 
 - **What produced it:** a read-only select of all 116 rows via `app.db.service()`
   (scratch script `ff_dump.py`), columns `canonical_key, display_name, source,
-  source_id, density_g_ml, raw, hits`. Committed byte-identical to the scratch file,
-  sha256 `8a397d01b7908864e21f1fd4033a1dfe810ba6c3a9bc262714dd7618a4ee565a`, 30,633 bytes.
+  source_id, density_g_ml, raw, hits`. **Line endings normalised, content unchanged:**
+  the scratch file was written on Windows with CRLF (sha256 `8a397d01...565a`, 30,633
+  bytes); `.gitattributes` (`* text=auto eol=lf`) stores it as LF. The committed blob is
+  sha256 `69b80ec17d9aacbe26a062ea1df0556ed8e05ab310b908042d004826f1a3ce8a`, 29,207
+  bytes, which equals the scratch file with every CR removed -- checked. A Windows
+  checkout may show CRLF again; hash `git show <commit>:<path>`, not the working file.
 - **When, relative to the resolve run:** file written **21:42:06 -0700, 12 Sep**. The
   resolve run (`bypass.py`) was written 21:48:28 and finished 21:48:48, so the snapshot
   is **~6.5 minutes before** it. In between ran only the GET/POST probe (21:42-21:44) and
