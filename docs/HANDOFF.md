@@ -1234,4 +1234,192 @@ calls.
 photo, the scale step run twice -- removes model and mask variance from the
 difference entirely, and the per-photo ratio becomes deterministic. That needs
 the run to force no calibration and block learned-calibration writes, on this
-account or a fresh one. NOT RUN; the design decision is Gil's.
+account or a fresh one. GO given 12 Sep; run as designed -- see the sweep
+section below.
+
+---
+
+## THE CARD'S VIEWING ANGLE, THE ASPECT CLIFF, AND THE CORNERS — 12 Sep 2026
+
+### Corrections accepted by Gil
+
+- **`ReferenceFind` DOES carry the corners** (reference_cv.py:86, set at :253);
+  there is no `short_px` field. They are dropped at vision.py:1727-1729, which
+  copies only `kind`, `frame_width_mm` and `tilt_deg` into `GeometryHint`. The
+  only reader of `.corners` is scripts/segment_lab.py:160.
+- **The aspect gate caused NONE of the 23 recall misses.** Aspect-based tilt
+  on the misses is 1-14 deg on 20 of them, 20-23 on two (15, 20) and 29 on one
+  (25, uncertain colour box). Recall is a detection problem, not an angle one.
+- **The edge-line corner fit is NOT a pending fix.** On IMG_4198, rim roundness
+  after rectification: shipped detector corners 0.9935 (281 mm), edge-line fit
+  0.986 (284 mm), approxPolyDP on a colour-mask hull 0.933 (311 mm). The 0.90
+  failure came from the colour-mask input. That photo is near top-down (raw
+  rim roundness 0.9988), so it cannot rank corner methods at all.
+
+### The cliff, derived and rendered
+
+    card short side foreshortened   aspect = 1.586 / cos t   rejected above 32.06 deg
+    card long side foreshortened    aspect = 1.586 x cos t   rejected above 34.92 deg
+    card diagonal to the tilt       aspect unchanged; corner gate fires above 50.4 deg
+
+Rendered in perspective (D 300 mm, 68 deg field, 3.18 mm corner radius) and
+run through the real `find_reference`: detected to 34 / 30 / 45 deg, first
+miss at 36 / 32 / 50 deg.
+
+### The gates see the CARD'S viewing angle, not the camera's tilt
+
+Supersedes the uniform-tilt model. For a camera D mm from the scene point on
+its axis, tilted theta, and a card offset Y mm along the tilt direction on the
+table (positive = far side):
+
+    cos(phi) = D cos(theta) / sqrt(D^2 + 2 D Y sin(theta) + Y^2)
+
+D 300, Y +120, theta 30 -> phi ~46 deg. D 300, Y -120, theta 45 -> phi ~23.5.
+Where the card lies in the frame moves the cliff by 15-20 deg of camera tilt.
+Checked by Gil at both limits and at the D 300 / Y 120 / 30 deg case.
+
+### tilt_deg
+
+A 2% aspect error reads as 11.4 deg; near-top-down photos read 3.9-16.5. Blind
+to a diagonal card (3-13 deg at every tilt). Its only consumer, the measured
+height path at portion.py:2296, is off: `USE_MEASURED_HEIGHT = False`.
+
+### Carrying the corners through — SPECIFIED, NOT BUILT
+
+Held until the uncalibrated sweep reports.
+
+- vision.py:1727 hand-off: pass `corners` and `image_size` into `GeometryHint`.
+- Two frames: the card is found at 1280 (`downscale_jpeg`); crops and masks
+  decode at 1568 (vision.py:801/841/894). Rescale, with identical EXIF handling.
+- portion.py:2288 `food_mm2 = frame_mm2 x area_ratio` assumes one scale across
+  the frame, false under tilt. Map the footprint through the homography
+  instead -- touches `estimate_grams`, the measured footprint path in
+  `food_seg`, and `scale_learning.observe_width_mm` (vision.py:1744).
+- Rung order is a decision. The card-plane parallax at portion.py:1666-1678
+  remains either way.
+- Reuse `reference_object` rather than a new method name, to avoid a schema
+  migration (0019 is the precedent for what a new name costs).
+
+### Plate measurements on the card photos
+
+- A V>=200 plate mask under-traces the rim: 852 px against 875 edge to edge on
+  IMG_4198, 826 against 927 on IMG_4197. That missing arc produced the "22 deg"
+  tilt; the camera was near top-down.
+- The "four photos of one plate" were two objects: the glass bowl read 274-275
+  mm, the plate 245-255.
+- Hough rim x card scale puts the beaded plate at 269-288 mm across four
+  photos, above the declared 10 1/4 in. Tape prediction, recorded before the
+  tape: 255-280 mm, point 267, outer edge to outer edge.
+
+### Tilt series — pre-registered, LOW priority, score on arrival
+
+- Card near the frame centre, sides aligned with the frame: detected at 0, 15
+  and 30 deg (30 is 2-5 deg from the across-tilt cliff and may miss); missed
+  at 45 at the aspect gate. `tilt_deg` ~0-15 (noise), then ~15, ~30.
+- Card toward the far side: misses from 30, possibly from 15.
+- Card diagonal: all four detected; `tilt_deg` wrong throughout.
+- Where the long side is foreshortened, `mm_per_px` reads ~15% high at 30.
+
+---
+
+## THE UNCALIBRATED SWEEP — run 12 Sep 2026, paired at the detection
+
+### How it was run
+
+A scratch harness (not in the repo) fetched each photo's stored bench copy,
+bought ONE `gpt-4o` detection per photo (plus `second_look` when it fired) and
+cached it, then called `vision.build_items` once per arm on a deep copy of that
+same response. `estimate_grams` and `_measured_heights` -- the only stages that
+read the scale -- run inside `build_items`, so both arms recompute them from
+the same response. SAM2 is memoised per image, so both arms share masks. Depth
+provider is `NullDepth`. Nothing persisted: no meals, items, assessments, scan
+rows or learned calibrations.
+
+    CAL      declared plate diameter (+ camera distance on rows 40-45)
+    UNCAL    no diameter, no saved calibration, no camera distance -- a subscriber
+    UNCAL_D  UNCAL keeping the 280 mm camera distance (rows 40-45)
+
+NOT run: `refine`, the post-estimate reasoning call. It may move grams within
+the estimator's band, and the uncalibrated rungs have WIDER bands (vessel 0.22,
+pixel 0.30 vs plate 0.14), so refine has more room on the uncalibrated arm.
+The comparison is at `build_items` output.
+
+Pairing: items paired by index within one shared detection; photos are the
+units for every interval (items within a photo averaged). Model and mask
+variance are out of the difference -- EXCEPT the vessel name, which is part of
+the one response: photo 18 was called side_plate in 4 of 6 earlier scans and
+dinner_plate in this one. The result is conditional on this draw's names.
+
+### Rung distribution a subscriber actually gets (question A)
+
+    items    vessel_reference 31   ai_prior 5   reference_object 5   pixel_area 0
+    photos   vessel_reference 19   ai_prior 5   reference_object 3
+
+**Rung 4 `pixel_area` fired on nothing.** The model always returned a plate
+ellipse; it named a vessel on every photo. Names this draw: side_plate (200 mm)
+on 21-25, 28, 34, 40, 41; dinner_plate (270) on 18, 19, 20, 29, 30, 35, 36, 14;
+cup (80) on the crocks 31-33; paper (no reference -> `ai_prior`, or the card
+where one was found) on 17, 26, 27, 42, 43, 44, 45.
+
+### Result (28 scored items, 25 photos)
+
+    CAL     mean |e| 45.1%  CI 25.2-64.9   signed +7.6%   median signed -4.1%
+    UNCAL   mean |e| 44.5%  CI 28.4-60.5   signed +21.4%  median signed +12.4%
+    paired change in mean |e|        +1.9 points  CI -14.8 to +18.6
+    paired change in signed error   +12.0 points  CI -7.5 to +31.6
+    paired change in mean |ln err|  -0.04          CI -0.2 to +0.1
+    grams ratio UNCAL/CAL           geometric mean 1.16, range 0.66-4.43
+    photos worse 11, better 14; meal total on 19: CAL -36.4%, UNCAL -6.5%
+
+**The headline does not move, and that is two errors cancelling, not a
+product that tolerates a missing plate.**
+
+    CAL within 25% of the scale   n=14   11.9% -> 38.5%   +26.6 pts  CI +8.7 to +44.6
+    CAL off by 25% or more        n=14   78.2% -> 50.4%   -27.8 pts  CI -43.7 to -12.0
+
+The mechanism is in the code, not inferred: `BLEND_MAX_WEIGHT_BY_METHOD`
+(portion.py:922) lets the model's serving prior pull `plate_reference` at most
+10% and `vessel_reference` up to 40%. Uncalibrated, nearly every item moves to a
+40% pull, which compresses both tails toward a typical serving -- the log-error
+SD FELL from 0.650 to 0.457. Where the calibrated geometry was right, that pull
+plus a guessed vessel size makes it wrong; where the geometry was wild, it
+rescues it. At today's accuracy the two balance. As geometry approaches the 10%
+target the accurate half is the whole bench, and the penalty is the +27.
+
+Caveat on that split: it selects on the CAL arm's error, which favours finding
+exactly this pattern. The code mechanism is the independent evidence for it.
+
+### Camera distance (UNCAL_D, rows 40-45)
+
+Where the depth rung fired (40, 41, 42, 45) a 280 mm distance reproduced the
+calibrated grams to within 0-11% (ratios 1.06, 1.00, 1.11, 1.05). n=4. If a
+phone-reported distance reached the scan, the uncalibrated path would track
+the calibrated one on these. 43/44 stay on the card rung (2a outranks depth).
+
+### Card head-to-head (question B) — n=2 scored, 1 unscored: evidence, not proof
+
+    photo  CAL (declared plate)   UNCAL card rung      UNCAL_D card rung
+    43     -4.8%                   +23.2%               +16.4%
+    44     +19.9%                  +64.9%               +55.9%
+    14     122/108/71 g            129/114/73 g         (unscored; card ~5% heavier)
+
+Withholding the plate DID let rung 2a fire, on all three. But on 43 and 44 the
+model called the plate "paper", so the alternative was never the 270 mm default
+-- it was `ai_prior` (photo 45, same 90 g grapes, no card found: +66.7%). The
+card read 28-45 points heavier than the declared 222 mm plate on the same
+detection, consistent with the card/rim gap above and with the declared plate
+size itself being in question. 10 is not in the sweep set.
+
+### Both pre-registrations scored
+
+- **Mine: missed on all three numbers.** Uncalibrated 64.7% (CI 47.1-82.4)
+  predicted, 44.5% observed. Paired gap +20.0 (CI +3.1 to +36.8) predicted,
+  +1.9 observed. Grams ratio 0.91 predicted, 1.16 observed -- wrong sign. The
+  area^0.9 rule held only where no blend or special path intervened (21, 23,
+  25, 28 at 0.76; 18, 20 at 1.39). It ignored the per-rung prior pull, which
+  dominated elsewhere (35 at 2.25, 36 at 2.94 against a rule of 1.35), and the
+  soup path (crocks 0.79 against 0.53).
+- **Gil's: 60-75% predicted, 44.5% observed, missed.** His caution was the
+  right one: the signed error moved +12 while the absolute stayed flat. The
+  mechanism was not "the bench runs light" (CAL median -4.1%) but the prior
+  pull compressing both tails. His rung-4 assumption: zero items.
