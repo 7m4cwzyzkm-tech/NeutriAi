@@ -1892,6 +1892,193 @@ it is in is not a comparison. The standing rule for review: every percentage
 about scale names its dimension -- linear, area or volume -- before it is
 compared with anything.
 
+### A second review failure mode: selecting the metric or sample that flatters the claim
+
+- "The apparatus is losing to a lookup table" picked log error and correlation,
+  where the lookup's +54% bias hides; median error (20.6% vs 62.6%) says the
+  opposite.
+- "Discrete pieces carry 49% to 348% spreads" took its lower bound from smashed
+  potatoes, a HEAP -- a range across classes presented as a range within one.
+  Measured within discrete pieces, same-day spreads run 1.17x to 3.63x.
+
+The standing rule: state the metric and the sample before the claim, and show
+the one that disagrees.
+
+### The height taxonomy — proposed and refuted, 12 Sep
+
+Proposed: vessel and slab accurate and stable, discrete pieces / heap /
+amorphous unstable. Checked on all 30 bench items (same-day run-to-run spread;
+clean calibrated error):
+
+    vessel 1.00x 0.4% | slab 1.16x 28.9% | pieces on their side 2.19x 65.1%
+    flat pieces 1.48x 41.0% | HEAP 1.17x 9.5% | amorphous 1.61x 20.6% | single solids 1.48x 37.2%
+
+Heaps are as stable as slabs and the most accurate non-soup class, which kills
+it -- though classes 1, 2 and 4 are in-sample (soup depth fitted on 31-33, the
+21 mm pile on 21, 22, 24, 25, 34). What survives: discrete pieces on their side
+are the least stable and least accurate class. "Width is height" fails for
+coins and chips (18, 42); 45 is a cluster. The IMG_4190/4197 grape volumes came
+through cancelling segmentation errors and read +26%/+21% on the card's scale,
+so "the failure was the scale, not the model" is withdrawn. The narrow pieces
+experiment is PARKED, not killed.
+
+---
+
+## MEASURED HEIGHT FROM AN ANGLED PHOTO — PREPARED, NOT BUILT. 12 Sep 2026
+
+Gil shoots tomorrow: a weighed pile, ruler-measured peak height, measured plate
+diameter, one top-down and one ~45 deg frame, card on the plate in both. Order:
+the USDA POST fix first, then this.
+
+### 1. The reading of portion.py:709-746, confirmed with two refinements
+
+Confirmed: area right to ~3% with height carrying the error; fed the true peak
+it lands within 5%; enabled it went 7.4% -> 11.8% and lowered every item; the
+suspect is what the model reports for `height_ratio` -- under-reported peak OR
+`PROFILE_FACTORS` too low, opposite fixes; the prescribed experiment is
+scandebug against a ruler. `MIN_TILT_DEG = 20`, `FULL_TRUST_TILT_DEG = 45`:
+below 20 a reported height is ignored; between, trust = (tilt - 20) / 25; at 45
+and above the measurement fully replaces the prior, and the coverage spread
+correction fades out by the same trust (portion.py:2296-2351). Grams on this
+path = footprint x [prior x (1 - t) + height_ratio x plate_diameter x t] x
+spread' x PROFILE_FACTORS[shape] x density (portion.py:2428-2430).
+
+Refinements:
+
+- **"ONE input" is not quite right: the tilt is a second input, and it is
+  broken.** On every bench photo the model returns a plate ellipse with w = h,
+  and `GeometryHint.tilt_deg` turns that into acos(0.75) = **41.4 deg** --
+  top-down photos included, portrait and landscape alike (26 of 26 with a
+  readable frame). The prompt (prompts.py:76-80) says "a round plate
+  photographed from directly above is a circle and w == h"; the parser
+  (portion.py:987-1000) assumes w and h are fractions of image width and
+  height and converts. With the flag on, a top-down photo gets trust 0.86.
+- **`height_ratio` is null on 39 of 41 bench items, not all.** Photo 35, shot
+  top-down, reported 0.10 and 0.05 -- which the prompt forbids and which the
+  broken tilt gate would pass.
+- It is possible the 7.4% -> 11.8% run fired on more than "the two angled
+  meals" through the tilt defect. The retired meals cannot confirm it.
+
+### 2. The procedure — scandebug cannot run it as written
+
+Checked in scripts/scan_debug.py:
+
+- Stage 6 builds its tilt hint without `aspect_ratio`, so `tilt_deg` returns
+  None and prints "unknown (not a round vessel)" -- it never shows the tilt
+  production computes.
+- Stage 6's mm conversion reads `detection["plate_diameter_mm"]`, a key the
+  model never returns, so it never prints a height in mm.
+- Stage 8's hint lacks aspect, plate ellipse, reference and raw bytes, so no
+  tilt, no measured footprint, and with the flag off the height path cannot
+  fire. It prints no height, trust, profile, branch or pre-blend grams.
+- Stage 9 calls `run_scan`, which writes a meal, items and an assessment to the
+  diary and fires streak and motivation effects.
+
+Specified instead: a scratch harness (the paired-sweep pattern), invoked as
+
+    backend/.venv/Scripts/python.exe <scratch>/height_check.py
+        --top <file> --angled <file> --plate-mm D --peak-mm H --mass-g M
+        [--bulk-density RHO] [--second-angle <file>]
+
+Nothing uploaded, nothing persisted. Per frame:
+
+1. Decode exactly as `downscale_jpeg`. Card via `find_reference` WITH corners.
+   PIXEL tilt, independent of the model: card aspect on the plate floor, and
+   the ray-traced rim ellipse's minor/major.
+2. One cached `detect_foods` call (+ `second_look` if it fires). Print per item:
+   `height_ratio`, `height_ratio_self`, shape, `typical_serving_g`, and
+   `height_ratio x D` in mm; plus `plate_ellipse` w/h and `container_shape`.
+3. The hint exactly as `_run_scan` builds it, with tape D and measured aspect.
+   Print `tilt_deg`, `camera_tilt_deg`, `reference_width_mm`, and trust =
+   clamp((tilt - 20) / 25).
+4. `build_items` from the same detection, facts shared, in a grid: flag off /
+   on x blend on / off, plus flag on with the tilt forced to the pixel tilt --
+   separating the tilt defect from the height report. The switches are
+   patched for the call only.
+5. Per item and run: grams, method, `measured_area_used`, the
+   `portion_height_branch` log event, and the notes -- which carry "Photographed
+   at about X degrees ... Y mm against a typical Z mm" and the spread factor.
+   Height, trust and profile are not on `PortionEstimate`; recover them from
+   the notes and from `PROFILE_FACTORS[_classify_shape(name, shape)]`, and the
+   density and its source from `density_for`.
+6. Print the two discriminators below.
+
+Cost: 2 vision calls (3 with a second angle) plus SAM2 per frame.
+
+### 3. The discriminator — pre-registered before the data
+
+Inputs: D tape diameter (mm), H ruler peak above the plate surface (mm), M
+weighed grams, r the model's `height_ratio` on the angled frame, theta the
+PIXEL tilt, A the true footprint (mm2) from the top-down frame's card-on-plate
+scale, P = PROFILE_FACTORS[shape], rho the food's bulk density.
+
+**Test 1, under-reporting -- uses no profile and no density:**
+
+    k = r x D / H
+    k ~ 1 (within the reading resolution)    the model reports the peak correctly
+    k < 1                                     the model under-reports
+
+**Test 2, profile -- uses no model output:**
+
+    m = M / (rho x A x H)          the pile's true mean-over-peak
+    m ~ P                          PROFILE_FACTORS is right for this shape
+    m > P                          PROFILE_FACTORS is too low
+
+A bench run cannot separate them because at full trust grams go as r x P. The
+ruler separates them, because Test 1 never touches P and Test 2 never touches r.
+
+**What each predicts for the grams, at full trust (theta >= 45):**
+
+    flag-on pre-blend grams / weighed  =  k x (P / m) x (rho_table / rho)
+    (A) alone: ~ k.       Fix: correct r by 1/k. Moves ONLY angled scans.
+    (B) alone: ~ P / m.   Fix: raise P for this shape. Moves EVERY scan of that
+                          shape, top-down included, and every height constant
+                          solved with P inside it (MEASURED_HEIGHTS_MM, the
+                          9.2/21.0 pair, HEIGHT_PRIORS_MM) -- a re-derivation,
+                          the pair trap, not a one-line change.
+
+**Where one measurement cannot separate things, and what would:**
+
+- Test 2 folds density error into m unless rho is measured independently. Use a
+  food with a sourced cup weight (cooked rice, 0.67) or have Gil fill and weigh
+  a loosely packed cup of the same food. Without it, Test 2 tests P x rho
+  jointly.
+- Test 1 on one angle cannot tell a CONSTANT under-report from the model
+  reporting the PROJECTED height (k ~ sin theta, 0.71 at 45 deg). A second
+  angled frame separates them: k(theta1) / k(theta2) = sin theta1 / sin theta2
+  under projection, 1 under a constant factor. Ask for ~30 deg or ~60 deg.
+- **Resolution:** bench geometry sits on a 0.05 grid (82% of values) and both
+  non-null `height_ratio`s were 0.10 and 0.05. If r is gridded, one step at
+  D = 260 mm is 13 mm -- a k reading of +/-13/H. At H = 20 mm that is +/-65% and
+  decides nothing; the pile should stand at least ~40 mm.
+
+**Predictions, recorded now:**
+
+- Top-down frame: r null; `camera_tilt_deg` ~41 deg if the model again reports
+  w ~ h (predicted yes).
+- Angled frame: k < 1, likely 0.6-0.8, on the 0.05 grid. The history (grams
+  lowered on every item) requires k x P / m < 1.
+- m for a hand-piled mound: 0.40-0.55 (cone 0.33, paraboloid 0.50, hemisphere
+  0.67), against P = 0.68 for "mound". So B predicts the opposite of what was
+  observed -- if anything P is too HIGH -- and the culprit is A, stronger than
+  the grams alone show.
+
+### 4. A different failure: a feature starved by the test protocol
+
+Every bench photo is top-down, so the measured-height path has never had an
+honest input: `height_ratio` is null on 39 of 41 items, and the two non-null
+values were invented from overhead. The path is wired end to end and not
+connected-and-dropped -- it is starved, because the only protocol that tests
+it cannot produce what it consumes. A per-stage test cannot see that, and
+neither can an end-to-end test run on the same photos. The standing check has
+to ask, for every feature: **does the bench contain an input that exercises
+it?**
+
+Added to the class list, with it: **the tilt.** The prompt and the parser were
+each written correctly against a different convention for plate_ellipse w/h.
+`test_tilt_is_measured_in_one_set_of_units` pins the parser's convention with
+synthetic inputs and passes; every real response yields 41.4 deg.
+
 ---
 
 ## HOW SOFT IS THE BENCH? Weighed mass against the serving guess, 28 items. 12 Sep 2026
