@@ -138,6 +138,74 @@ week would have been fitted against that noise.
 - The provenance field and precedence rule above remain SPECIFIED, not built:
   the 400 is the bleeding, provenance is the cure.
 
+### The bleeding, stopped: USDA search is a POST — 12 Sep 2026
+
+`providers.usda()` now POSTs `{query, pageSize 10, dataType [Foundation, SR
+Legacy, Survey (FNDDS)], requireAllWords false}`; the key stays in the URL.
+`_match_score` selection and key-redacted logging unchanged. No portion constant
+or threshold touched.
+
+- **Result pinned, not request shape.** 43 lookup names -- 40 recorded for bench
+  items (meal_items / food_facts), plus 3 parenthesised. Each GET retried until
+  200 (62 attempts, 19 were the nginx 400). **fdcId differed under POST for 0 of
+  43**, and the ten candidate ids came back identical and in the same order for
+  all 43, so there is no difference to explain. The three parenthesised names
+  got a 200 on their first GET in that pass; the rate run below shows they are
+  still exposed.
+- **The pin:** `tests/fixtures/usda_bench_fdc.json` (name -> GET fdcId + the
+  recorded POST response), replayed offline through `usda()` by
+  `tests/test_usda_post.py`. Also checks no `(` / `%28` reaches the URL.
+- **Live, 101 searches** (43 names twice + parenthesised names 5 more times, 21
+  parenthesised): POST through `usda()` **0/101 non-200**, 0 returned nothing.
+  Interleaved GET control, same names, old shape: **43/101 failed**, 9/21 on
+  parenthesised names. The 400 was live during the run; POST was immune to it.
+- **Real steady-state bypass, now measured:** `resolver.resolve` on the 40 bench
+  lookup names after the fix -> **0 of 40** carry an `ai_estimate` density; all
+  40 came back `usda` (density None), so the density table decided every one.
+  13 of the 40 had been cached `ai_estimate` rows with an LLM density (incl.
+  shredded beef with potatoes 0.85, baked pepperoni pizza slice 0.85, rice 0.95,
+  sliced zucchini 0.95); a USDA answer overwrote each. **That rewrote live
+  `food_facts`**: the table the clean paired numbers used is preserved at
+  `docs/evidence/2026-09-12-food_facts-before-resolve.json` (the 13 rows and
+  both counts in MEASURED-HEIGHT-NOTES.md G.2a). Diff against it before
+  reading any later bench change on those foods as a code change. Density column shown was
+  computed with no food group (the live scan passes one).
+  Caveat: these are the recorded lookup NAMES for the bench foods, not the exact
+  27 items of the clean re-run, whose names were never persisted.
+- **Not closed:** any USDA miss -- no energy, no result, an 8 s timeout -- still
+  hands the grams an LLM density. 62 `ai_estimate` rows still carry one (70
+  `ai_estimate` / 46 `usda` after the run, from 83 / 33).
+  Provenance + precedence (above) is still the cure.
+
+USDA follow-up, top first -- flagged, not chased:
+1. **`rice` resolves to Dirty rice** (fdcId 2709078).
+2. **`mexican rice` is cached as "mexican pizza"** (a `usda` row; never re-fetched).
+
+These are wrong FOODS, so not safely macros-only (Gil). Checked 13 Sep: on the
+scan path a wrong USDA match does not reach the grams today -- `density_for`
+keys on the lookup name (vision.py:977, :1082; portion.py:2067) and USDA rows
+carry no density. But the wrong name is stored as `meal_items.name`
+(vision.py:1226), so any path that re-reads it for grams (PATCH /meals,
+correction or portion learning -- unverified) feeds the wrong food to the
+density and shape lookups, and once provenance lets a provider density through,
+a wrong-food row carries its density straight into the grams. Details:
+MEASURED-HEIGHT-NOTES.md G.4a.
+
+Macros only, recorded, not fixed:
+- **Poor USDA matches are now served MORE often**, since the 13 rows above
+  swapped an LLM guess for a USDA match. Live selections: `rice` -> Dirty rice
+  (the `_match_score` docstring says this was fixed; for the bare word it is
+  not), `white rice` -> Beans and white rice, `braised beef` -> beef liver
+  (variety meats), `steamed bun` -> Oysters, steamed, `shredded beef` -> corned
+  beef, canned, `sliced/grilled/sauteed zucchini` -> Zucchini, pickled,
+  `baked bread roll` -> Roll, egg bread, `baby carrots` -> Baby Toddler carrots,
+  Stage 1, `boiled spaghetti with tomato sauce` -> Spaghetti sauce with meat.
+- **23514 `food_facts_source_check`:** `resolver.resolve` stores
+  `source='reference_table'`, and the constraint (migration 0003) allows only
+  usda, edamam, nutritionix, ai_estimate, user. `_store` logs and returns the
+  unsaved payload, so that rung is never cached. Needs a migration; it also
+  touches the provenance design, so left for that work.
+
 ## THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING
 
 Found by the paired uncalibrated sweep (full record, and its clean re-run, near
