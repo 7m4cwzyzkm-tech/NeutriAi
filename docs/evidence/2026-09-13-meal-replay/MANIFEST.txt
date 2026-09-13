@@ -1,0 +1,70 @@
+Meal-level macro score and replay rig, 13 Sep 2026
+
+WHAT IS HERE
+  replay.py     the rig: rebuilds the 12 Sep clean paired run with no paid call,
+                then perturbs one term alone. Header says what it needs.
+  replay.json   its output, written by replay.py from THIS directory on 13 Sep.
+                Control reproduced 0.00 g on all 27 photographs, all 4 recorded arms.
+  score.py      macro scoring (offline) of replay.json
+  score.txt     score.py's output -- the numbers in HANDOFF "THE PRODUCT'S REAL SCORE"
+  inputs/       the rig's inputs. NOT REGENERABLE. See below.
+
+INPUTS -- COPIED VERBATIM FROM A SESSION SCRATCHPAD
+  Origin: %TEMP%\claude\C--Users-VetaM-AppData-Roaming-Claude-scratch-workspaces-
+          834a7894-...-scratch-2026-09-12-22a854\83639611-d0e0-491d-849c-68f66ceadccf\scratchpad
+  That scratchpad belongs to the 12 Sep uncalibrated-sweep session and is deleted
+  with it. These files exist nowhere else. Without them the rig is dead: every
+  replay would re-buy a vision detection, and the detections would differ.
+
+  inputs/paired_v2.json        written 2026-09-12 20:16:45 -0700 by paired_v2.py
+                               (the clean paired re-run: shared facts, blend on/off)
+  inputs/sweep_cache/*.json    written 2026-09-12 17:28-17:39 -0700 by uncal_sweep.py
+                               (one bought gpt-4o detection + second_look per photo)
+  Not copied: paired_v2.py and uncal_sweep.py themselves. replay.py inlines everything
+  it used from them (STORED, hint_for, run_arm, blend_off), so it imports neither.
+  Hashes of those two, for the record:
+    a83c865dcc59bf569493e6f8194bfc79efcbe177c3f23aa2d9670eff0afce867  paired_v2.py
+    29887cd4d271a7993bd5eec32bdabab05ad8c632be3732a325f3181d81d22bdd  uncal_sweep.py
+
+  sha256 of the scratchpad originals. .gitattributes (* text=auto eol=lf) may store
+  these LF-normalised; hash `git show <commit>:<path>` and compare with the file
+  with CRs removed, as for 2026-09-12-food_facts-before-resolve.json.
+f157cd723ef297b2eff1c35e5238206e07ac62bd218e67c95b2f75b4d3f555a5  paired_v2.json
+836484a4ee778970d6777242401801361fd8af0f79cfecf150c2380c08bd79e9  sweep_cache/14-plate-mole-chicken-card.jpg.json
+9b377fbd98b7acbb58152a7b0240ffca9718678ff3958eb22b4b2e3b5b8cf5be  sweep_cache/17-carrots-plate.jpg.json
+3823ccaf76b4f8f300bcc7812aad4d394433468236247fce9e10ff30fb0434df  sweep_cache/18-zucchini-plate.jpg.json
+200a0448332448601bc0a56916bed89b3dbcd3aaa4e121893e4782a1f38395b0  sweep_cache/19-fish-veg-plate.jpg.json
+e709af207c5f4c524d8fdbab5011f45211a142abb1dd9db317cec3b307e7514f  sweep_cache/20-spaghetti-plate.jpg.json
+dcb001931c90818ef6787b4a277b931396b24252435e9fab4db88997cbe74c4b  sweep_cache/21-bbq-chicken-plate.jpg.json
+78c095490b12fa6cb4f9e443074b62eb13842b06833fa45c2fcd4a04494bdbe0  sweep_cache/22-roast-beef-plate.jpg.json
+6557a2b189729bef432d7878b96b0c7d883c2ec9b4d854a0a7c721707c7c9ad1  sweep_cache/23-brussels-sprouts-plate.jpg.json
+63f6ff60ec2f7ddccf0ce37696dc1924397cfc4d3255fbe03b602d6a88dcc68a  sweep_cache/24-macaroni-salad-plate.jpg.json
+96e3df7fa911b079e25e14e7db4bd350bcad1cbd3f39ef5d90df223c0e5bec12  sweep_cache/25-smashed-potatoes-plate.jpg.json
+c1a3d7da87a46e3adc7e728c335952014a0850fa5313565fbd83907fbc8c6076  sweep_cache/26-potroast-rice-alone.jpg.json
+91a922fb5f3ea569bf8201a3aea8be796cb05b8000c0ecb5777455cf01ef202a  sweep_cache/27-potroast-beef-alone.jpg.json
+edccaa9525d9658d23583f62558e1df8e12a527ca77cd62d18861c4f6a78be9d  sweep_cache/28-potroast-bread-alone.jpg.json
+bdb353b23306cb9eb0476ef7c33d33aa296f59311c9e4b3e4e6f541beba28d2c  sweep_cache/29-potroast-plate-4items.jpg.json
+3c403dc5711320bfe6b768db11a5f0ed9c7dd5f704d710a325eeceb2f4badfa9  sweep_cache/30-caesar-salad-plate.jpg.json
+ca94ebf6f901dd4239b1683270670fee59c2739684518cf7849a33b24f2dfc6f  sweep_cache/31-chicken-noodle-crock.jpg.json
+b67ed44b1c74195fb97bdd0751e267f35080c30be80658755f4b0bd975e70faf  sweep_cache/32-beef-posole-crock.jpg.json
+1980bf3a62addd13a39b83fca043d7da757148927b47d7c62cc434da54dfce3d  sweep_cache/33-cheese-broccoli-crock.jpg.json
+3985216fa6f4ba79cfdbe1a7c3e3c0ba98c313a05c38c10c165ca4590d9d8972  sweep_cache/34-pizza-slice-plate.jpg.json
+954e7d2f1515597859b697d2e2f3dbd6e4e32c998515d5724a8763c776184128  sweep_cache/35-slider-fries-plate.jpg.json
+5f2c3ef6803b98327d4a8159fb4c7bb1c2ef95e1b45a371b83f64ce6f0fe1466  sweep_cache/36-slider-fries-card.jpg.json
+6d43b24b552338d0906eef58462c99b2c4e688c4db55d23603b84d8bccfcae4b  sweep_cache/40-trailmix-spread.jpg.json
+b73b810a568253f5380158c4a7198d1a7a5254602763dcb3f0d5cb8186b9fa80  sweep_cache/41-trailmix-heaped.jpg.json
+c8eb1098fb868493e060e09b8fe1b92f5a556b76abb500968416cb206b2a86a9  sweep_cache/42-chips-spread.jpg.json
+67d8a20ca81c6b67d259aafdd41968ba7f648f46ca8e185c6706b0865f604231  sweep_cache/43-chips-heaped.jpg.json
+76b5999d009323b9a7dbb33064b6c9962f45012e32636c4eda04604b6c2b5629  sweep_cache/44-grapes-spread.jpg.json
+843e1d1f5f3860a1c676c6f0aec970085568fb4f8b91d4d0327f379efd1d024d  sweep_cache/45-grapes-cluster.jpg.json
+
+OTHER READS THE SCORE DEPENDS ON (13 Sep, read-only, not archived as files)
+  - served per-100 g rows: live food_facts, matched by display_name; values are
+    written into score.py SERVED
+  - two ai_estimate rows the 13-row resolve overwrote, recovered from meal_items:
+      baked pepperoni pizza slice   280.1 kcal / 105.3 g -> 266.0 kcal, 29.40 g carbs per 100 g
+      shredded beef with potatoes   436.15 kcal / 335.5 g -> 130.0 kcal, 8.20 g carbs per 100 g
+  - correct rows: USDA FoodData Central search (POST), fdcIds written into score.py TRUTH
+  - which weighed food each detection is: photographs 23, 25, 29 inspected by eye;
+    written into score.py HAND
+Paid calls for all of it: 0. USDA searches: ~20 (free API).

@@ -1,0 +1,279 @@
+PROVENANCE
+  file      docs/evidence/2026-09-13-meal-replay/score.txt
+  produced  2026-09-13T14:05:47-07:00 by  backend\.venv\Scripts\python.exe docs\evidence\2026-09-13-meal-replay\score.py
+  reads     replay.json (replay.py, run from this directory on 13 Sep: control 0.00 g on all 27 photos, 4 recorded arms)
+            inputs/paired_v2.json (12 Sep clean paired run, from a session scratchpad -- see MANIFEST.txt)
+  paid calls 0.  Output identical to the scratchpad run whose numbers are in HANDOFF 'THE PRODUCT'S REAL SCORE'.
+  CAL = declared plate diameter; UNCAL = subscriber (no diameter, no calibration, no distance).
+  Energy/carbs error = (served macros / true macros - 1); served = est grams x served row; true = weighed grams x TRUTH row.
+
+====================================================================================================
+CONTROL: replay reproduces the 12 Sep grams?
+  worst photo max |dgrams| over 4 recorded arms: 0.00 g (17-carrots-plate.jpg)
+  photos off by more than 0.5 g: none
+
+UNSCORED DETECTIONS under the bench's name matcher
+  23 [1] cauliflower, cooked, boiled, drained, wi CAL   39.0 g  -> photo says: None
+  23 [2] macaroni or pasta salad, made with mayon CAL   63.8 g  -> photo says: None
+  25 [1] mayonnaise                               CAL   39.6 g  -> photo says: None
+  29 [0] greens, canned, cooked                   CAL   46.5 g  -> photo says: steamed spinach
+  29 [1] roll, egg bread                          CAL   22.7 g  -> photo says: dinner roll
+  29 [3] beef, cured, corned beef, canned         CAL   82.7 g  -> photo says: pot roast
+  29 [4] potato, nfs                              CAL   14.7 g  -> photo says: pot roast
+  29      weighed but unpaired: ['pot roast', 'steamed spinach', 'dinner roll']
+  34 detections on 25 scored photos; 27 bench-scored; 7 unscored
+
+====================================================================================================
+ARM CAL
+  ph  n true kcal  served  kcal e  carb e | wt-only   match | excl kcal alt-truth   grams
+  17  1        20       5   -75.4   -75.8 |   -66.9   -25.7 |     -75.4     -75.4   -66.9
+  18  1        11      18   +62.4    +nan |   -30.4  +133.3 |     +62.4     +62.4   -30.4
+  20  1       258     206   -20.1   -69.5 |    -9.5   -11.8 |     -20.1     -18.5    -9.5
+  21  1       370     219   -40.9   +38.6 |   -17.5   -28.3 |     -40.9     -27.9   -17.5
+  22  1       171      22   -86.9    +nan |   -70.1   -56.3 |     -86.9     -85.3   -70.1
+  23  3        23     179  +664.0  +398.6 |  +664.0    +0.0 |     +23.1    +664.0  +181.2
+  24  1       197     159   -19.0   -19.0 |   -19.0    +0.0 |     -19.0     -19.0   -19.0
+  25  2       155     407  +162.8   -26.6 |  +169.5    -2.5 |     -10.9    +117.1   +24.9
+  26  1        89     175   +96.6   +39.2 |   +54.6   +27.1 |     +96.6     +68.0   +54.6
+  27  1       286     157   -45.2    +nan |    +5.8   -48.2 |     -45.2     -31.2    +5.8
+  28  1       117      46   -60.6   -88.4 |   +69.3   -76.7 |     -60.6     -64.2   +69.3
+  29  5       512     425   -16.9   -24.4 |   -20.0    +3.8 |     +29.9     -13.0   -23.3
+  30  1        95      75   -20.6   -20.6 |   -20.6    +0.0 |     -20.6     -59.2   -20.6
+  31  1        80      80    +0.4    +0.4 |    +0.4    +0.0 |      +0.4      +0.4    +0.4
+  32  1        78     127   +62.7   +81.5 |   -16.7   +95.3 |     +62.7     +45.8   -16.7
+  33  1       125     124    -0.3    -0.3 |    -0.3    +0.0 |      -0.3      -0.3    -0.3
+  34  1       330     227   -31.2   -24.8 |   -28.9    -3.3 |     -31.2     -31.0   -28.9
+  40  1       200     611  +205.7  +205.7 |  +205.7    +0.0 |    +205.7    +200.4  +205.7
+  41  1       200     271   +35.9   +35.9 |   +35.9    +0.0 |     +35.9     +33.6   +35.9
+  42  1       118      63   -46.8   -56.6 |   -51.6   +10.0 |     -46.8     -46.8   -51.6
+  43  1       118     124    +4.7   -14.6 |    -4.8   +10.0 |      +4.7      +4.7    -4.8
+  44  1        77      93   +19.9   +19.9 |   +19.9    +0.0 |     +19.9     +49.3   +19.9
+  45  1        77      91   +18.3   +18.3 |   +18.3    +0.0 |     +18.3     +47.3   +18.3
+  35  2       559     431   -22.9   -24.5 |   -22.7    -0.3 |     -22.9     -22.9   -26.9
+  36  2       559     291   -48.0   -49.9 |   -47.8    -0.3 |     -48.0     -48.0   -51.5
+
+ MEAL TOTALS (photos as units)
+  energy, all detections (what the user sees)  n=25  mean |e|  74.7% (CI 20.4-129.1)  median  40.9% (boot 20.1-62.4)  signed  +31.9%
+  carbs,  all detections [3 undefined]         n=22  mean |e|  60.6% (CI 22.3-98.9)  median  31.3% (boot 22.2-56.6)  signed  +15.6%
+  energy, bench-scored items only (old rule)   n=25  mean |e|  43.5% (CI 26.0-61.1)  median  31.2% (boot 20.1-48.0)  signed   +1.2%
+  carbs,  bench-scored items only [3 undefined] n=22  mean |e|  42.8% (CI 23.3-62.3)  median  26.2% (boot 19.9-49.9)  signed   -0.8%
+  energy, ALT truth rows                       n=25  mean |e|  73.4% (CI 19.9-127.0)  median  46.8% (boot 27.9-62.4)  signed  +30.0%
+  grams,  all detections                       n=25  mean |e|  42.2% (CI 21.5-62.8)  median  24.9% (boot 18.3-51.5)  signed   +7.1%
+  within 10% on energy: 3/25 = 12%  (Wilson 4-30%)
+  within 10% on carbs : 2/22 = 9%  (Wilson 3-28%)  [3 meal(s) under 2 g true carbs left out: 18 +1.8 g, 22 +1.6 g, 27 +9.9 g]
+  within 10% on BOTH (carb-defined meals): 2/22
+  within 10% on energy under ALT truth rows: 3/25
+  clustered by distinct weighed meal: n=18  mean |e| 83.5% (CI 8.5-158.5)
+
+ PER ITEM, energy
+  grams check (bench-scored, should be the recorded run): n=27 mean |e| 35.9%  median 20.6%
+  bench-scored items only (old rule)           n=27  mean |e|  44.9% (CI 28.3-61.5)  median  35.9% (boot 20.1-60.6)  signed   -3.5%
+  all detections, unscored = wrong (+-100%)    n=37  mean |e|  59.8% (CI 45.2-74.4)  median  60.6% (boot 31.2-86.9)  signed   +8.3%
+  photo-verified pairing, phantoms = 100%      n=33  mean |e|  47.9% (CI 32.8-62.9)  median  37.4% (boot 21.3-60.6)  signed   +4.2%
+  item-level mean |e| / meal-level mean |e|: 44.9 / 74.7
+
+ AVERAGING ON THE MULTI-DETECTION PLATES: kcal-weighted item |e| vs meal |e|
+  23  weighed foods 1  item |e|  664.0%  meal |e|  664.0%  ratio 1.00
+  25  weighed foods 1  item |e|  184.6%  meal |e|  162.8%  ratio 0.88
+  29  weighed foods 4  item |e|   27.3%  meal |e|   16.9%  ratio 0.62
+  35  weighed foods 2  item |e|   22.9%  meal |e|   22.9%  ratio 1.00
+  36  weighed foods 2  item |e|   48.0%  meal |e|   48.0%  ratio 1.00
+  22 of 25 scored photos hold ONE weighed food: meal error = item error there by construction
+
+====================================================================================================
+ARM UNCAL
+  ph  n true kcal  served  kcal e  carb e | wt-only   match | excl kcal alt-truth   grams
+  17  1        20      22    +8.9    +7.0 |   +46.6   -25.7 |      +8.9      +8.9   +46.6
+  18  1        11      25  +123.2    +nan |    -4.3  +133.3 |    +123.2    +123.2    -4.3
+  20  1       258     286   +11.0   -57.7 |   +25.8   -11.8 |     +11.0     +13.2   +25.8
+  21  1       370     167   -54.9    +5.8 |   -37.0   -28.3 |     -54.9     -45.0   -37.0
+  22  1       171      35   -79.8    +nan |   -53.7   -56.3 |     -79.8     -77.2   -53.7
+  23  3        23     191  +716.2  +416.4 |  +716.2    +0.0 |      -6.2    +716.2  +169.5
+  24  1       197     175   -10.9   -10.9 |   -10.9    +0.0 |     -10.9     -10.9   -10.9
+  25  2       155     311  +100.6   -43.9 |  +105.7    -2.5 |     -31.9     +65.7    -4.6
+  26  1        89     246  +176.4   +95.6 |  +117.4   +27.1 |    +176.4    +136.1  +117.4
+  27  1       286     325   +13.6    +nan |  +119.3   -48.2 |     +13.6     +42.5  +119.3
+  28  1       117      35   -69.9   -91.1 |   +29.0   -76.7 |     -69.9     -72.7   +29.0
+  29  5       512     608   +18.8   +11.8 |   +17.6    +1.1 |     +74.7     +24.4    +9.6
+  30  1        95     100    +5.9    +5.9 |    +5.9    +0.0 |      +5.9     -45.7    +5.9
+  31  1        80      64   -20.3   -20.3 |   -20.3    +0.0 |     -20.3     -20.3   -20.3
+  32  1        78     101   +29.1   +44.0 |   -33.9   +95.3 |     +29.1     +15.7   -33.9
+  33  1       125      99   -20.9   -20.9 |   -20.9    +0.0 |     -20.9     -20.9   -20.9
+  34  1       330     229   -30.5   -24.0 |   -28.2    -3.3 |     -30.5     -30.3   -28.2
+  40  1       200     400  +100.5  +100.5 |  +100.5    +0.0 |    +100.5     +97.0  +100.5
+  41  1       200     225   +12.7   +12.7 |   +12.7    +0.0 |     +12.7     +10.8   +12.7
+  42  1       118     145   +23.2    +0.5 |   +12.0   +10.0 |     +23.2     +23.2   +12.0
+  43  1       118     160   +35.5   +10.5 |   +23.2   +10.0 |     +35.5     +35.5   +23.2
+  44  1        77     127   +64.9   +64.9 |   +64.9    +0.0 |     +64.9    +105.3   +64.9
+  45  1        77     129   +66.7   +66.7 |   +66.7    +0.0 |     +66.7    +107.5   +66.7
+  35  2       559     619   +10.6   +11.4 |   +11.0    -0.3 |     +10.6     +10.6    +8.0
+  36  2       559     489   -12.6   -13.7 |   -12.4    -0.3 |     -12.6     -12.6   -16.4
+
+ MEAL TOTALS (photos as units)
+  energy, all detections (what the user sees)  n=25  mean |e|  72.7% (CI 14.7-130.7)  median  29.1% (boot 13.6-66.7)  signed  +48.7%
+  carbs,  all detections [3 undefined]         n=22  mean |e|  51.6% (CI 13.2-90.0)  median  20.6% (boot 11.4-54.4)  signed  +26.0%
+  energy, bench-scored items only (old rule)   n=25  mean |e|  43.8% (CI 26.3-61.3)  median  29.1% (boot 12.7-64.9)  signed  +16.8%
+  carbs,  bench-scored items only [3 undefined] n=22  mean |e|  33.6% (CI 19.5-47.6)  median  20.6% (boot 11.0-44.7)  signed   +7.3%
+  energy, ALT truth rows                       n=25  mean |e|  74.8% (CI 17.5-132.2)  median  35.5% (boot 20.3-72.7)  signed  +48.0%
+  grams,  all detections                       n=25  mean |e|  41.7% (CI 23.9-59.4)  median  25.8% (boot 12.7-46.6)  signed  +23.2%
+  within 10% on energy: 2/25 = 8%  (Wilson 2-25%)
+  within 10% on carbs : 4/22 = 18%  (Wilson 7-39%)  [3 meal(s) under 2 g true carbs left out: 18 +3.3 g, 22 +2.5 g, 27 +20.5 g]
+  within 10% on BOTH (carb-defined meals): 2/22
+  within 10% on energy under ALT truth rows: 1/25
+  clustered by distinct weighed meal: n=18  mean |e| 80.3% (CI -0.4-161.0)
+
+ PER ITEM, energy
+  grams check (bench-scored, should be the recorded run): n=27 mean |e| 36.8%  median 26.8%
+  bench-scored items only (old rule)           n=27  mean |e|  43.0% (CI 26.7-59.3)  median  29.1% (boot 17.7-54.9)  signed  +13.7%
+  all detections, unscored = wrong (+-100%)    n=37  mean |e|  58.4% (CI 43.8-73.0)  median  54.9% (boot 23.2-100.0)  signed  +20.8%
+  photo-verified pairing, phantoms = 100%      n=33  mean |e|  46.1% (CI 31.3-61.0)  median  30.5% (boot 19.1-54.9)  signed  +21.3%
+  item-level mean |e| / meal-level mean |e|: 43.0 / 72.7
+
+ AVERAGING ON THE MULTI-DETECTION PLATES: kcal-weighted item |e| vs meal |e|
+  23  weighed foods 1  item |e|  728.5%  meal |e|  716.2%  ratio 0.98
+  25  weighed foods 1  item |e|  164.4%  meal |e|  100.6%  ratio 0.61
+  29  weighed foods 4  item |e|   25.7%  meal |e|   18.8%  ratio 0.73
+  35  weighed foods 2  item |e|   18.8%  meal |e|   10.6%  ratio 0.57
+  36  weighed foods 2  item |e|   12.6%  meal |e|   12.6%  ratio 1.00
+  22 of 25 scored photos hold ONE weighed food: meal error = item error there by construction
+
+====================================================================================================
+SCALE: replay with only mm^2-per-frame changed (energy, served rows, all detections)
+  CAL: meal-energy elasticity to frame area, median 0.91, range 0.76-1.00  (1.0 = moves fully with the scale; +20% area -> +18.1% energy at the median)
+     insensitive (<0.05): []
+  UNCAL: meal-energy elasticity to frame area, median 0.60, range 0.00-1.01  (1.0 = moves fully with the scale; +20% area -> +11.6% energy at the median)
+     insensitive (<0.05): ['17', '26', '27', '42', '45']
+
+  CAL arm: the scale is already MEASURED (tape diameter + Hough rim area).
+  CAL as shipped (Hough area)                  n=25  mean |e|  74.7% (CI 20.4-129.1)  median  40.9% (boot 20.1-62.4)  signed  +31.9%
+  CAL with the model's own plate_area_ratio    n=25  mean |e|  71.3% (CI 24.6-118.0)  median  40.8% (boot 17.8-62.7)  signed  +40.0%
+  CAL, frame area x1.2                         n=25  mean |e|  87.6% (CI 22.1-153.0)  median  38.9% (boot 19.3-71.1)  signed  +55.5%
+  CAL, frame area /1.2                         n=25  mean |e|  67.1% (CI 23.2-111.0)  median  39.5% (boot 29.9-55.8)  signed  +12.0%
+  Hough/model plate area: median 1.207, SD of ln 0.158
+
+  CARD CHECK on the calibrated scale (independent ruler, n small):
+  43 frame area plate/Hough 111,209 mm2  card 136,189 mm2  plate/card 0.817  (card rung over-reads raised food ~10%, portion.py:1675)
+  44 frame area plate/Hough 93,868 mm2  card 122,078 mm2  plate/card 0.769  (card rung over-reads raised food ~10%, portion.py:1675)
+
+  UNCAL arm: replace only the subscriber's scale with the calibrated one (same rung, same blend cap)
+  UNCAL as shipped                             n=25  mean |e|  72.7% (CI 14.7-130.7)  median  29.1% (boot 13.6-66.7)  signed  +48.7%
+  UNCAL with calibrated scale substituted      n=25  mean |e|  76.5% (CI 5.7-147.3)  median  23.3% (boot 10.4-66.7)  signed  +55.1%
+   17 ai_prior          k=  -    meal kcal    +8.9% ->    +8.9%   scale term   +0.0%
+   18 vessel_reference  k=0.719  meal kcal  +123.2% ->   +67.7%   scale term  +33.1%
+   20 vessel_reference  k=0.719  meal kcal   +11.0% ->   -20.1%   scale term  +39.0%
+   21 vessel_reference  k=1.311  meal kcal   -54.9% ->   -40.9%   scale term  -23.7%
+   22 vessel_reference  k=1.311  meal kcal   -79.8% ->   -76.3%   scale term  -14.9%
+   23 vessel_reference  k=1.311  meal kcal  +716.2% ->  +868.1%   scale term  -15.7%
+   24 vessel_reference  k=1.311  meal kcal   -10.9% ->    -3.0%   scale term   -8.1%
+   25 vessel_reference  k=1.311  meal kcal  +100.6% ->  +162.8%   scale term  -23.7%
+   26 ai_prior          k=  -    meal kcal  +176.4% ->  +176.4%   scale term   +0.0%
+   27 ai_prior          k=  -    meal kcal   +13.6% ->   +13.6%   scale term   +0.0%
+   28 vessel_reference  k=1.311  meal kcal   -69.9% ->   -60.6%   scale term  -23.8%
+   29 vessel_reference  k=0.719  meal kcal   +18.8% ->    -3.4%   scale term  +23.0%
+   30 vessel_reference  k=0.719  meal kcal    +5.9% ->    -6.3%   scale term  +12.9%
+   31 vessel_reference  k=2.031  meal kcal   -20.3% ->    +3.6%   scale term  -23.1%
+   32 vessel_reference  k=2.031  meal kcal   +29.1% ->   +68.0%   scale term  -23.1%
+   33 vessel_reference  k=2.031  meal kcal   -20.9% ->    +3.0%   scale term  -23.1%
+   34 vessel_reference  k=1.311  meal kcal   -30.5% ->   -26.9%   scale term   -5.0%
+   40 vessel_reference  k=1.232  meal kcal  +100.5% ->  +127.3%   scale term  -11.8%
+   41 vessel_reference  k=1.232  meal kcal   +12.7% ->   +18.4%   scale term   -4.8%
+   42 ai_prior          k=  -    meal kcal   +23.2% ->   +23.2%   scale term   +0.0%
+   43 reference_object  k=0.817  meal kcal   +35.5% ->   +10.4%   scale term  +22.7%
+   44 reference_object  k=0.769  meal kcal   +64.9% ->   +26.8%   scale term  +30.1%
+   45 ai_prior          k=  -    meal kcal   +66.7% ->   +66.7%   scale term   +0.0%
+   35 vessel_reference  k=0.719  meal kcal   +10.6% ->    -7.2%   scale term  +19.2%
+   36 vessel_reference  k=0.719  meal kcal   -12.6% ->   -23.3%   scale term  +13.9%
+
+====================================================================================================
+DECOMPOSITION of ln(meal served kcal / true kcal)  =  match + weight   (weight = est grams at right rows vs truth)
+
+ CAL: mean |ln total| 0.590   mean |ln match| 0.230   mean |ln weight| 0.466
+   variance of ln total 0.6442: match 0.1830, weight 0.4467
+   worst 6 meals (photo: total | match | weight), % terms:
+     22:  -86.9% |  -56.3% |  -70.1%   larger: weight
+     23: +664.0% |   +0.0% | +664.0%   larger: weight
+     17:  -75.4% |  -25.7% |  -66.9%   larger: weight
+     40: +205.7% |   +0.0% | +205.7%   larger: weight
+     25: +162.8% |   -2.5% | +169.5%   larger: weight
+     28:  -60.6% |  -76.7% |  +69.3%   larger: MATCH
+   match term larger than weight term in 1 of the worst 6; in 7 of all 25
+
+ UNCAL: mean |ln total| 0.501   mean |ln match| 0.229   mean |ln weight| 0.418   of which scale 0.158, non-scale weight 0.392
+   variance of ln total 0.4943: match 0.1828, weight 0.3100, scale 0.0362, non-scale weight 0.3323
+   worst 6 meals (photo: total | match | weight | scale), % terms:
+     23: +716.2% |   +0.0% | +716.2% |  -15.7%   larger: weight
+     22:  -79.8% |  -56.3% |  -53.7% |  -14.9%   larger: MATCH
+     28:  -69.9% |  -76.7% |  +29.0% |  -23.8%   larger: MATCH
+     26: +176.4% |  +27.1% | +117.4% |   +0.0%   larger: weight
+     18: +123.2% | +133.3% |   -4.3% |  +33.1%   larger: MATCH
+     21:  -54.9% |  -28.3% |  -37.0% |  -23.7%   larger: weight
+   match term larger than weight term in 3 of the worst 6; in 4 of all 25
+
+====================================================================================================
+WRONG-MATCH COST per 100 g: served row vs right row
+  bench food                                           served                                kcal        carbs   right row
+  rice (lookup key; served on other scans)             dirty rice                       112/129   -13%  17.2/28.0   -38%   white rice
+  mexican rice (photo 14, unweighed)                   mexican pizza                    249/115  +117%  15.3/19.6   -22%   spanish rice, NS fat 2709087
+  white rice (26, 29)                                  beans and white rice             164/129   +27%  25.2/28.0   -10%   white rice
+  grilled zucchini slices (18)                         zucchini, pickled                  35/15  +133%    7.4/2.7  +177%   zucchini, boiled
+  steamed bun (28 = dinner roll)                       oysters, steamed                  65/279   -77%   3.4/50.1   -93%   roll, white, soft
+  piece of meat with sauce (22 = roast beef)           spaghetti sauce with meat         90/206   -56%     6.5/0.0   n/a   beef, roast
+  soup with meat (32 = beef posole)                    soup, bean, with meat              84/43   +95%   10.0/4.6  +118%   soup, pozole
+  cooked greens (29 = spinach)                         greens, canned, cooked             41/23   +78%    2.7/3.8   -28%   spinach, boiled
+  boiled spaghetti w/ tomato sauce (20)                spaghetti sauce with meat         90/102   -12%   6.5/19.4   -66%   pasta with sauce, meatless
+  barbecue chicken (21 = thigh)                        barbecue chicken                 167/233   -28%   12.2/7.3   +68%   thigh, grilled w/ sauce
+  baby carrots (17 = steamed carrots)                  baby toddler carrots, stage 1      26/35   -26%    6.0/8.2   -27%   carrots, boiled
+  shredded beef (29 = pot roast)                       corned beef, canned              250/251    -0%     0.0/0.0   n/a   beef, pot roast
+  shredded beef with potatoes (27 = pot roast, LLM row) LLM estimate                     130/251   -48%     8.2/0.0   n/a   beef, pot roast
+  baked bread roll (29)                                roll, egg bread                  287/279    +3%  47.8/50.1    -5%   roll, white, soft
+  mashed potatoes (25 = smashed)                       potatoes, mashed, ready-to-eat   106/114    -7%  13.3/17.6   -24%   potato, mashed, from fresh
+  tortilla chips (42, 43)                              tortilla chips, flavored         519/472   +10%  60.8/67.8   -10%   tortilla chips, plain
+  cheeseburger (35, 36 = slider)                       cheeseburger, nfs                296/297    -0%  18.7/17.9    +5%   cheeseburger slider
+
+====================================================================================================
+DECOMPOSITION WITH PHANTOMS SEPARATED: ln total = match + phantom + real-food weight (UNCAL: real weight = scale + rest)
+
+ CAL  (n=25)   term: mean |ln|  variance  meals where it is the largest term
+   total    0.590  0.6442
+   match    0.230  0.1830  7
+   phantom  0.114  0.1630  2
+   weight   0.356  0.2305  16
+   meals off by more than 50% on energy: 9
+     22: total  -86.9%  match  -56.3%  phantom   +0.0%  real weight  -70.1%   largest: weight
+     23: total +664.0%  match   +0.0%  phantom +520.7%  real weight  +23.1%   largest: phantom
+     17: total  -75.4%  match  -25.7%  phantom   +0.0%  real weight  -66.9%   largest: weight
+     40: total +205.7%  match   +0.0%  phantom   +0.0%  real weight +205.7%   largest: weight
+     25: total +162.8%  match   -2.5%  phantom +181.3%  real weight   -4.2%   largest: phantom
+     28: total  -60.6%  match  -76.7%  phantom   +0.0%  real weight  +69.3%   largest: match
+     26: total  +96.6%  match  +27.1%  phantom   +0.0%  real weight  +54.6%   largest: weight
+     32: total  +62.7%  match  +95.3%  phantom   +0.0%  real weight  -16.7%   largest: match
+     18: total  +62.4%  match +133.3%  phantom   +0.0%  real weight  -30.4%   largest: match
+  CAL energy, meals with no phantom detection  n=23  mean |e|  45.3% (CI 26.4-64.1)  median  35.9% (boot 20.1-48.0)  signed   -1.2%
+
+ UNCAL  (n=25)   term: mean |ln|  variance  meals where it is the largest term
+   total    0.501  0.4943
+   match    0.229  0.1828  5
+   phantom  0.128  0.2135  2
+   weight   0.320  0.1516  -
+   scale    0.158  0.0362  9
+   rest     0.267  0.1274  9
+   meals off by more than 50% on energy: 10
+     23: total +716.2%  match   +0.0%  phantom +769.7%  real weight   -6.2%  [scale  -15.7%, rest  +11.3%]   largest: phantom
+     22: total  -79.8%  match  -56.3%  phantom   +0.0%  real weight  -53.7%  [scale  -14.9%, rest  -45.7%]   largest: match
+     28: total  -69.9%  match  -76.7%  phantom   +0.0%  real weight  +29.0%  [scale  -23.8%, rest  +69.3%]   largest: match
+     26: total +176.4%  match  +27.1%  phantom   +0.0%  real weight +117.4%  [scale   +0.0%, rest +117.4%]   largest: rest
+     18: total +123.2%  match +133.3%  phantom   +0.0%  real weight   -4.3%  [scale  +33.1%, rest  -28.1%]   largest: match
+     21: total  -54.9%  match  -28.3%  phantom   +0.0%  real weight  -37.0%  [scale  -23.7%, rest  -17.5%]   largest: match
+     25: total +100.6%  match   -2.5%  phantom +180.9%  real weight  -26.8%  [scale  -23.7%, rest   -4.0%]   largest: phantom
+     40: total +100.5%  match   +0.0%  phantom   +0.0%  real weight +100.5%  [scale  -11.8%, rest +127.3%]   largest: rest
+     45: total  +66.7%  match   +0.0%  phantom   +0.0%  real weight  +66.7%  [scale   +0.0%, rest  +66.7%]   largest: rest
+     44: total  +64.9%  match   +0.0%  phantom   +0.0%  real weight  +64.9%  [scale  +30.1%, rest  +26.8%]   largest: scale
+  UNCAL energy, meals with no phantom detection n=23  mean |e|  43.5% (CI 24.9-62.2)  median  23.2% (boot 12.7-54.9)  signed  +17.4%
+
+MULTI-FOOD PLATES: are item errors on one plate independent? (log grams error per weighed food)
+  CAL   29: white rice +2%  pot roast -15%  steamed spinach -45%  dinner roll -46%
+  CAL   35: cheeseburger slider -11%  french fries -63%
+  CAL   36: cheeseburger slider -37%  french fries -83%
+  UNCAL 29: white rice +37%  pot roast +29%  steamed spinach -25%  dinner roll -17%
+  UNCAL 35: cheeseburger slider +20%  french fries -18%
+  UNCAL 36: cheeseburger slider -1%  french fries -51%

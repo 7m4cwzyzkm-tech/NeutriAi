@@ -1,5 +1,148 @@
 # NeutriAI — handoff brief
 
+## THE PRODUCT'S REAL SCORE: MEAL MACROS — 13 Sep 2026
+
+**The target is MACROS -- meal energy and carbs within 10% (Gil, 13 Sep). Weight
+is the means.** Every figure further down this file is per-item GRAMS, which the
+product does not ship. This is the first time the shipped number has been scored.
+
+The 12 Sep clean paired run, re-scored offline, zero paid calls. Truth = weighed
+grams x the correct USDA row for each food. Estimate = estimated grams x the row
+the product actually SERVED (the two LLM rows recovered from 11 Sep
+`meal_items`). All detections count, because the user sees all of them. 25
+photos, 18 distinct meals; photos are the units.
+
+                                        CAL (declared plate)        UNCAL (subscriber)
+    meal energy   median / mean         40.9% / 74.7% (CI 20-129)   29.1% / 72.7%
+    meal carbs    median / mean  n=22   31.3% / 60.6%               20.6% / 51.6%
+    within 10% on energy                3 / 25                      2 / 25
+    within 10% on carbs                 2 / 22                      4 / 22
+    (per-item GRAMS, for reference)     20.6% / 35.9%  n=27         26.8% / 36.8%
+
+- **None of the three calibrated energy hits is genuine.** 31 (+0.4%) and 33
+  (-0.3%) are crocks: all three crock photos returned exactly 151.6 g against
+  weighed 151 / 182 / 152 g, a constant that happened to land. 43 (+4.7%) is a
+  +10% wrong row cancelling a -4.8% weight error. Both carbs hits are the same
+  two crocks. Measured and right: none.
+- Carbs n=22: photos 18, 22 and 27 hold under 2 g of true carbohydrate, where a
+  percentage is undefined.
+- The old rule -- drop what the bench matcher cannot name -- reads 31.2% / 43.5%
+  on meal energy, better than the product, exactly as `sample_health` warns.
+- Per item on energy: 35.9% / 44.9% (median / mean) on the 27 bench-scored
+  items; 60.6% / 59.8% with the 7 unscored detections scored as wrong.
+- Truth rows are stated in `score.py`, each with a plausible alternative; the
+  alternatives move CAL median meal energy 40.9% -> 46.8%.
+- **Evidence:** `docs/evidence/2026-09-13-meal-replay/` -- `score.txt` (every
+  number above), `score.py`, `replay.json`, `replay.py`, `inputs/`, `MANIFEST.txt`.
+
+### THE REPLAY RIG — keep it alive
+
+`replay.py` rebuilt the 12 Sep run's four recorded arms to **0.00 g on all 27
+photos with no paid call** -- cached detection, recorded densities and SAM2
+footprints injected, height branch reconstructed by reproduction -- and then
+perturbs ONE term alone (frame scale, Hough vs model plate area, blend,
+density, footprint, height branch). A control that reproduces exactly is what
+makes each perturbation a measurement of that term. Its header says what it
+needs. **`inputs/paired_v2.json` and `inputs/sweep_cache/` came from a session
+scratchpad and exist nowhere else: if they are lost the rig is dead.** It reads
+live Supabase (stored photos, learned heights, aliases); drift there shows up
+as a failed control, which is the check working. It already has: moved into
+the repo, it missed photo 25 by 10.5 g because its Hough memo was keyed on
+`id(raw)` and CPython reused photo 23's id. Keyed on the bytes' digest since;
+the scratchpad run the scores came from reproduced all 27, so it was unaffected.
+
+### PHANTOM FOOD — a new error class
+
+Real food, correctly seen and correctly named, that is **not the user's
+portion.**
+
+    photo  what was counted                                          meal energy
+    23     cauliflower 39 g + macaroni salad 64 g, on the NEIGHBOURING   +664%  (23 kcal weighed, 179 served)
+           plate at the frame's top edge
+    25     a smear of mayonnaise on the plate, sized as a 40 g portion   +163%  (269 kcal of it)
+
+- **It is a FRAMING problem, not a measurement one.** The detector was right
+  about what it saw. Nothing asks whether a food is on the user's plate, or
+  whether a smear is a portion. No improvement to scale, footprint, height or
+  density touches it.
+- **For meal totals it outranks wrong rows on the worst cases:** photo 23 is
+  the largest meal error on the bench in both arms (+664% CAL, +716% UNCAL; on a
+  log scale CAL ties with photo 22's -86.9%), photo 25 is the fifth-largest CAL,
+  and the worst meals LED by a wrong row are +62%, +63% and -61%. On spread it is
+  comparable to wrong rows from two meals alone: variance of the log meal error
+  0.163 phantom vs 0.183 wrong row (CAL), 0.214 vs 0.183 (UNCAL). It is not
+  larger on the typical meal (mean |ln| 0.114 vs 0.230), because it touched 2 of
+  25. Remove those two and meal error equals per-item (35.9% / 45.3%).
+- **None of the 7 unscored detections was invented.** 3 are phantom (above); 4
+  are on photo 29 and are the matcher's misses: "cooked greens" is the spinach,
+  "shredded beef" + "potato" are the pot roast, "roll, egg bread" is the dinner
+  roll (the bug below).
+
+### WRONG ROWS — 77% median on kcal
+
+Served row against the correct row, per 100 g:
+
+    bench food -> served row                                   kcal                carbs
+    steamed bun (dinner roll)   -> Oysters, steamed            65 vs 279   -77%    -93%
+    grilled zucchini            -> Zucchini, pickled           35 vs 15   +133%   +177%
+    mexican rice (14)           -> Mexican pizza              249 vs 115  +117%    -22%
+    soup with meat (posole)     -> Soup, bean, with meat       84 vs 43    +95%   +118%
+    cooked greens (spinach)     -> Greens, canned, cooked      41 vs 23    +78%    -28%
+    meat with sauce (roast beef)-> Spaghetti sauce with meat   90 vs 206   -56%    6.5 vs 0 g
+    shredded beef w/ potatoes   -> LLM estimate               130 vs 251   -48%    8.2 vs 0 g
+    white rice                  -> Beans and white rice       164 vs 129   +27%    -10%
+    rice                        -> Dirty rice                 112 vs 129   -13%    -38%
+
+- **Median |kcal| error of a wrong-food row: 77% -- about 4x the median per-item
+  weight error (20.6%).** No amount of weighing fixes it.
+- About **10 of 34** detections were served a row more than 25% off the right
+  food's energy.
+- Decomposition of the log meal-energy error (CAL): wrong row mean |ln| 0.230,
+  real-food weight 0.356, phantom 0.114.
+
+### PREDICTIONS SCORED — Gil's three, all missed
+
+1. **"Meal energy error materially lower than per-item": missed, and this bench
+   cannot test it.** 22 of 25 photos hold ONE weighed food, so meal = item by
+   construction. On the three genuine multi-food plates the meal-to-item ratio
+   is 0.62 (29), 1.00 (35), 1.00 (36) calibrated: on 35 and 36 the burger and the
+   fries err the SAME way (-11% / -63%, -37% / -83% grams), so they did not
+   cancel. **The -2.3% for photo 29 does not exist in any bench output in the
+   repo**; this run gives grams -23.3% / energy -16.9% calibrated, +9.6% /
+   +18.8% uncalibrated.
+2. **"Scale will be the largest single contributor": refuted where it can be
+   isolated exactly** -- UNCAL with only the frame scale swapped for the
+   calibrated one (same rung, same blend cap):
+
+       term                 mean |ln|   variance   largest term in
+       scale                  0.158      0.036        9 of 25
+       non-scale weight       0.267      0.127        9
+       wrong row              0.229      0.183        5
+       phantom                0.128      0.214        2
+
+   Correcting the scale moves UNCAL median 29.1% -> 23.3% and the mean the wrong
+   way, 72.7% -> 76.5%. The structural half of the argument holds: calibrated
+   meal energy moves 0.91x with frame area, so a shared scale error passes
+   through almost undiluted; uncalibrated 0.60x, the blend absorbing 40% (and 0
+   on the five `ai_prior` photos). **The calibrated scale is already the Hough
+   plate area** (vision.py:995-1006, eef3db3) -- Ranked work #1 further down is
+   BUILT -- and swapping back to the model's own ratio (1.21x off at the median)
+   moves CAL median meal energy 40.9% -> 40.8%. Card check on 43 / 44: plate
+   over card 0.82 / 0.77, confounded by card parallax and the 222 mm plate --
+   inconclusive.
+3. **"Wrong-match items will dominate the tail": mostly missed.** Of the 9 CAL
+   meals off by more than 50%, the largest term is the wrong row in 3 (28, 32,
+   18), real-food weight in 4 (22, 17, 40, 26), phantom in 2 (23, 25). UNCAL,
+   10 meals: wrong row 4, phantom 2, non-scale weight 3, scale 1.
+
+### BENCH BUG: `scan_bench.match` keeps punctuation — recorded, not fixed
+
+The shared-word rule splits on whitespace only, so the served name "roll, egg
+bread" yields `"roll,"`, which never equals `"roll"` in "dinner roll". Photo
+29's roll went unscored. Served names are USDA descriptions, which are
+comma-separated, so every USDA-matched item is exposed to this. It is one of
+the reasons "7 unscored" was being read as "6 invented".
+
 ## READ FIRST: THE MEASUREMENT STACK AGAINST A LOOKUP TABLE — 12 Sep 2026
 
 The model's typical-serving guess ALONE -- name the food, return a serving --
@@ -345,6 +488,19 @@ what was refuted is as important as the list of what holds.
 Weigh food from a photo accurately enough for weight control. Target **10% per-item
 error or better**. Current: **~48% per item**. Scope is "subscriptions live and taking
 money"; the stated trade-off is *"Accuracy — it is the product."*
+
+**Restated by Gil, 13 Sep 2026: the target is MACROS -- meal energy and carbs
+within 10%. Weight is the means, not the end.** The shipped number, first scored
+13 Sep: 40.9% median meal energy calibrated (see the top of this file).
+
+**THE COMPOSITE LIMIT — a constraint on the goal, not a defect (13 Sep 2026).**
+The correct nutrition row for a COMPOSITE food is itself uncertain by more than
+10%. Photo 30's caesar salad scores -21% against the undressed USDA row and
+-59% with ~15 g of dressing added; the pot roast was weighed with its potato;
+the spaghetti sauce may or may not carry meat. **A 10% macro target cannot be
+VERIFIED on a composite without recipe-level truth** -- ingredients weighed, or
+the recipe recorded at capture. Single foods can be held to 10%; a composite can
+only be scored against its truth band until that exists.
 
 The app must work out scale **itself** — it may not ask the user for plate size.
 

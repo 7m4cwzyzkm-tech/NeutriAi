@@ -1,0 +1,2003 @@
+{
+ "17-carrots-plate.jpg": {
+  "entry": {
+   "file": "17-carrots-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "steamed carrots=58",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   85
+  ],
+  "facts": {
+   "baby carrots": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 19.2,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.04797
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 85.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": 0.04797
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 16.3,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.04797
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 85.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": 0.04797
+    }
+   ]
+  }
+ },
+ "18-zucchini-plate.jpg": {
+  "entry": {
+   "file": "18-zucchini-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "steamed zucchini=74",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   85
+  ],
+  "facts": {
+   "grilled zucchini slices": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "zucchini, pickled",
+     "grams": 51.5,
+     "method": "plate_reference",
+     "confidence": 0.713,
+     "measured_used": 0.11886
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "zucchini, pickled",
+     "grams": 70.8,
+     "method": "vessel_reference",
+     "confidence": 0.64,
+     "measured_used": 0.11886
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "zucchini, pickled",
+     "grams": 51.0,
+     "method": "plate_reference",
+     "confidence": 0.736,
+     "measured_used": 0.11886
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "zucchini, pickled",
+     "grams": 70.8,
+     "method": "vessel_reference",
+     "confidence": 0.64,
+     "measured_used": 0.11886
+    }
+   ]
+  }
+ },
+ "20-spaghetti-plate.jpg": {
+  "entry": {
+   "file": "20-spaghetti-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "spaghetti with sauce=253",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   300
+  ],
+  "facts": {
+   "boiled spaghetti with tomato sauce": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 229.0,
+     "method": "plate_reference",
+     "confidence": 0.706,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 318.3,
+     "method": "vessel_reference",
+     "confidence": 0.614,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 229.0,
+     "method": "plate_reference",
+     "confidence": 0.706,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 318.3,
+     "method": "vessel_reference",
+     "confidence": 0.614,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "21-bbq-chicken-plate.jpg": {
+  "entry": {
+   "file": "21-bbq-chicken-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "bbq chicken thigh=159",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "grilled barbecue chicken": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "barbecue chicken",
+     "grams": 131.2,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.06518
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "barbecue chicken",
+     "grams": 100.1,
+     "method": "vessel_reference",
+     "confidence": 0.662,
+     "measured_used": 0.06518
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "barbecue chicken",
+     "grams": 131.2,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.06518
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "barbecue chicken",
+     "grams": 100.1,
+     "method": "vessel_reference",
+     "confidence": 0.662,
+     "measured_used": 0.06518
+    }
+   ]
+  }
+ },
+ "22-roast-beef-plate.jpg": {
+  "entry": {
+   "file": "22-roast-beef-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "roast beef=83",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "piece of meat with sauce": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 24.8,
+     "method": "plate_reference",
+     "confidence": 0.301,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 38.4,
+     "method": "vessel_reference",
+     "confidence": 0.241,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 20.3,
+     "method": "plate_reference",
+     "confidence": 0.354,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "spaghetti sauce with meat",
+     "grams": 15.5,
+     "method": "vessel_reference",
+     "confidence": 0.283,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "23-brussels-sprouts-plate.jpg": {
+  "entry": {
+   "file": "23-brussels-sprouts-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "brussels sprouts=65",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   85,
+   75,
+   150
+  ],
+  "facts": {
+   "boiled brussels sprouts": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "boiled cauliflower": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "macaroni salad": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "brussels sprouts, cooked, boiled, drained, with salt",
+     "grams": 80.0,
+     "method": "plate_reference",
+     "confidence": 0.692,
+     "measured_used": null
+    },
+    {
+     "name": "cauliflower, cooked, boiled, drained, with salt",
+     "grams": 39.0,
+     "method": "plate_reference",
+     "confidence": 0.663,
+     "measured_used": null
+    },
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 63.8,
+     "method": "plate_reference",
+     "confidence": 0.615,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "brussels sprouts, cooked, boiled, drained, with salt",
+     "grams": 61.0,
+     "method": "vessel_reference",
+     "confidence": 0.554,
+     "measured_used": null
+    },
+    {
+     "name": "cauliflower, cooked, boiled, drained, with salt",
+     "grams": 42.1,
+     "method": "vessel_reference",
+     "confidence": 0.492,
+     "measured_used": null
+    },
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 72.1,
+     "method": "vessel_reference",
+     "confidence": 0.492,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "brussels sprouts, cooked, boiled, drained, with salt",
+     "grams": 80.0,
+     "method": "plate_reference",
+     "confidence": 0.692,
+     "measured_used": null
+    },
+    {
+     "name": "cauliflower, cooked, boiled, drained, with salt",
+     "grams": 37.6,
+     "method": "plate_reference",
+     "confidence": 0.724,
+     "measured_used": null
+    },
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 58.0,
+     "method": "plate_reference",
+     "confidence": 0.724,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "brussels sprouts, cooked, boiled, drained, with salt",
+     "grams": 61.0,
+     "method": "vessel_reference",
+     "confidence": 0.554,
+     "measured_used": null
+    },
+    {
+     "name": "cauliflower, cooked, boiled, drained, with salt",
+     "grams": 28.6,
+     "method": "vessel_reference",
+     "confidence": 0.579,
+     "measured_used": null
+    },
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 44.3,
+     "method": "vessel_reference",
+     "confidence": 0.579,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "24-macaroni-salad-plate.jpg": {
+  "entry": {
+   "file": "24-macaroni-salad-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "macaroni salad=89",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "macaroni salad": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 72.1,
+     "method": "plate_reference",
+     "confidence": 0.652,
+     "measured_used": 0.05368
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 79.3,
+     "method": "vessel_reference",
+     "confidence": 0.5,
+     "measured_used": 0.05368
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 67.9,
+     "method": "plate_reference",
+     "confidence": 0.736,
+     "measured_used": 0.05368
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "macaroni or pasta salad, made with mayonnaise",
+     "grams": 51.8,
+     "method": "vessel_reference",
+     "confidence": 0.589,
+     "measured_used": 0.05368
+    }
+   ]
+  }
+ },
+ "25-smashed-potatoes-plate.jpg": {
+  "entry": {
+   "file": "25-smashed-potatoes-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "smashed potatoes=136",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   150,
+   null
+  ],
+  "facts": {
+   "mashed potatoes": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "mayonnaise": {
+    "source": "ai_estimate",
+    "density_g_ml": 0.91
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "potatoes, mashed, ready-to-eat",
+     "grams": 130.3,
+     "method": "plate_reference",
+     "confidence": 0.431,
+     "measured_used": null
+    },
+    {
+     "name": "mayonnaise",
+     "grams": 39.6,
+     "method": "plate_reference",
+     "confidence": 0.405,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "potatoes, mashed, ready-to-eat",
+     "grams": 99.6,
+     "method": "vessel_reference",
+     "confidence": 0.344,
+     "measured_used": null
+    },
+    {
+     "name": "mayonnaise",
+     "grams": 30.2,
+     "method": "vessel_reference",
+     "confidence": 0.324,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "potatoes, mashed, ready-to-eat",
+     "grams": 130.3,
+     "method": "plate_reference",
+     "confidence": 0.431,
+     "measured_used": null
+    },
+    {
+     "name": "mayonnaise",
+     "grams": 39.6,
+     "method": "plate_reference",
+     "confidence": 0.405,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "potatoes, mashed, ready-to-eat",
+     "grams": 99.4,
+     "method": "vessel_reference",
+     "confidence": 0.344,
+     "measured_used": null
+    },
+    {
+     "name": "mayonnaise",
+     "grams": 30.2,
+     "method": "vessel_reference",
+     "confidence": 0.324,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "19-fish-veg-plate.jpg": {
+  "entry": {
+   "file": "19-fish-veg-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "whole plate=291",
+   "kind": "total"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   150,
+   50,
+   50,
+   50
+  ],
+  "facts": {
+   "grilled chicken breast": {
+    "source": "reference_table",
+    "density_g_ml": null
+   },
+   "raw baby carrots": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "steamed green beans": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "sauteed sliced zucchini": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "grilled chicken breast",
+     "grams": 141.6,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.06759
+    },
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 17.4,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.02111
+    },
+    {
+     "name": "green beans, raw",
+     "grams": 7.8,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.00667
+    },
+    {
+     "name": "zucchini, pickled",
+     "grams": 18.3,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.02238
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "grilled chicken breast",
+     "grams": 196.8,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.06759
+    },
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 28.7,
+     "method": "vessel_reference",
+     "confidence": 0.627,
+     "measured_used": 0.02111
+    },
+    {
+     "name": "green beans, raw",
+     "grams": 17.7,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": 0.00667
+    },
+    {
+     "name": "zucchini, pickled",
+     "grams": 28.8,
+     "method": "vessel_reference",
+     "confidence": 0.639,
+     "measured_used": 0.02238
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "grilled chicken breast",
+     "grams": 141.6,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.06759
+    },
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 15.4,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.02111
+    },
+    {
+     "name": "green beans, raw",
+     "grams": 6.4,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.00667
+    },
+    {
+     "name": "zucchini, pickled",
+     "grams": 16.4,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.02238
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "grilled chicken breast",
+     "grams": 196.8,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.06759
+    },
+    {
+     "name": "baby toddler carrots, stage 1",
+     "grams": 21.5,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.02111
+    },
+    {
+     "name": "green beans, raw",
+     "grams": 8.9,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.00667
+    },
+    {
+     "name": "zucchini, pickled",
+     "grams": 22.8,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.02238
+    }
+   ]
+  }
+ },
+ "26-potroast-rice-alone.jpg": {
+  "entry": {
+   "file": "26-potroast-rice-alone.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "white rice=69",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "white rice": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "beans and white rice",
+     "grams": 106.7,
+     "method": "plate_reference",
+     "confidence": 0.575,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "beans and white rice",
+     "grams": 150.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "beans and white rice",
+     "grams": 106.7,
+     "method": "plate_reference",
+     "confidence": 0.575,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "beans and white rice",
+     "grams": 150.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "27-potroast-beef-alone.jpg": {
+  "entry": {
+   "file": "27-potroast-beef-alone.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "pot roast=114",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   250
+  ],
+  "facts": {
+   "shredded beef with potatoes": {
+    "source": "ai_estimate",
+    "density_g_ml": 0.85
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "shredded beef with potatoes",
+     "grams": 120.6,
+     "method": "plate_reference",
+     "confidence": 0.404,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "shredded beef with potatoes",
+     "grams": 250.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "shredded beef with potatoes",
+     "grams": 113.7,
+     "method": "plate_reference",
+     "confidence": 0.455,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "shredded beef with potatoes",
+     "grams": 250.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "28-potroast-bread-alone.jpg": {
+  "entry": {
+   "file": "28-potroast-bread-alone.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "dinner roll=42",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   60
+  ],
+  "facts": {
+   "steamed bun": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "oysters, steamed",
+     "grams": 71.1,
+     "method": "plate_reference",
+     "confidence": 0.736,
+     "measured_used": 0.07351
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "oysters, steamed",
+     "grams": 54.2,
+     "method": "vessel_reference",
+     "confidence": 0.589,
+     "measured_used": 0.07351
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "oysters, steamed",
+     "grams": 71.1,
+     "method": "plate_reference",
+     "confidence": 0.736,
+     "measured_used": 0.07351
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "oysters, steamed",
+     "grams": 54.2,
+     "method": "vessel_reference",
+     "confidence": 0.589,
+     "measured_used": 0.07351
+    }
+   ]
+  }
+ },
+ "29-potroast-plate-4items.jpg": {
+  "entry": {
+   "file": "29-potroast-plate-4items.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "white rice=69, pot roast=114, steamed spinach=84, dinner roll=42",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   100,
+   60,
+   150,
+   120,
+   80
+  ],
+  "facts": {
+   "cooked greens": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "baked bread roll": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "white rice": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "shredded beef": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "potato": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "greens, canned, cooked",
+     "grams": 46.5,
+     "method": "plate_reference",
+     "confidence": 0.488,
+     "measured_used": null
+    },
+    {
+     "name": "roll, egg bread",
+     "grams": 22.7,
+     "method": "plate_reference",
+     "confidence": 0.435,
+     "measured_used": null
+    },
+    {
+     "name": "beans and white rice",
+     "grams": 70.5,
+     "method": "plate_reference",
+     "confidence": 0.551,
+     "measured_used": null
+    },
+    {
+     "name": "beef, cured, corned beef, canned",
+     "grams": 82.7,
+     "method": "plate_reference",
+     "confidence": 0.558,
+     "measured_used": null
+    },
+    {
+     "name": "potato, nfs",
+     "grams": 14.7,
+     "method": "plate_reference",
+     "confidence": 0.387,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "greens, canned, cooked",
+     "grams": 62.7,
+     "method": "vessel_reference",
+     "confidence": 0.471,
+     "measured_used": null
+    },
+    {
+     "name": "roll, egg bread",
+     "grams": 34.7,
+     "method": "vessel_reference",
+     "confidence": 0.4,
+     "measured_used": null
+    },
+    {
+     "name": "beans and white rice",
+     "grams": 94.8,
+     "method": "vessel_reference",
+     "confidence": 0.532,
+     "measured_used": null
+    },
+    {
+     "name": "beef, cured, corned beef, canned",
+     "grams": 115.0,
+     "method": "vessel_reference",
+     "confidence": 0.485,
+     "measured_used": null
+    },
+    {
+     "name": "potato, nfs",
+     "grams": 31.6,
+     "method": "vessel_reference",
+     "confidence": 0.337,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "greens, canned, cooked",
+     "grams": 43.3,
+     "method": "plate_reference",
+     "confidence": 0.558,
+     "measured_used": null
+    },
+    {
+     "name": "roll, egg bread",
+     "grams": 20.4,
+     "method": "plate_reference",
+     "confidence": 0.512,
+     "measured_used": null
+    },
+    {
+     "name": "beans and white rice",
+     "grams": 66.0,
+     "method": "plate_reference",
+     "confidence": 0.628,
+     "measured_used": null
+    },
+    {
+     "name": "beef, cured, corned beef, canned",
+     "grams": 82.7,
+     "method": "plate_reference",
+     "confidence": 0.558,
+     "measured_used": null
+    },
+    {
+     "name": "potato, nfs",
+     "grams": 12.2,
+     "method": "plate_reference",
+     "confidence": 0.455,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "greens, canned, cooked",
+     "grams": 60.2,
+     "method": "vessel_reference",
+     "confidence": 0.485,
+     "measured_used": null
+    },
+    {
+     "name": "roll, egg bread",
+     "grams": 28.3,
+     "method": "vessel_reference",
+     "confidence": 0.445,
+     "measured_used": null
+    },
+    {
+     "name": "beans and white rice",
+     "grams": 91.7,
+     "method": "vessel_reference",
+     "confidence": 0.546,
+     "measured_used": null
+    },
+    {
+     "name": "beef, cured, corned beef, canned",
+     "grams": 115.0,
+     "method": "vessel_reference",
+     "confidence": 0.485,
+     "measured_used": null
+    },
+    {
+     "name": "potato, nfs",
+     "grams": 17.0,
+     "method": "vessel_reference",
+     "confidence": 0.396,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "30-caesar-salad-plate.jpg": {
+  "entry": {
+   "file": "30-caesar-salad-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "caesar salad=123",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   200
+  ],
+  "facts": {
+   "caesar salad": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "caesar salad, with romaine, no dressing",
+     "grams": 97.7,
+     "method": "plate_reference",
+     "confidence": 0.685,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "caesar salad, with romaine, no dressing",
+     "grams": 130.2,
+     "method": "vessel_reference",
+     "confidence": 0.66,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "caesar salad, with romaine, no dressing",
+     "grams": 92.4,
+     "method": "plate_reference",
+     "confidence": 0.768,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "caesar salad, with romaine, no dressing",
+     "grams": 128.5,
+     "method": "vessel_reference",
+     "confidence": 0.668,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "31-chicken-noodle-crock.jpg": {
+  "entry": {
+   "file": "31-chicken-noodle-crock.jpg",
+   "plate": 114,
+   "distance": null,
+   "actual": "chicken noodle soup=151",
+   "kind": "per-item"
+  },
+  "vessel": "cup",
+  "priors": [
+   250
+  ],
+  "facts": {
+   "boiled chicken noodle soup": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "soup, chicken noodle",
+     "grams": 151.6,
+     "method": "plate_reference",
+     "confidence": 0.802,
+     "measured_used": 0.02466
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "soup, chicken noodle",
+     "grams": 120.3,
+     "method": "vessel_reference",
+     "confidence": 0.52,
+     "measured_used": 0.02466
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "soup, chicken noodle",
+     "grams": 150.0,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.02466
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "soup, chicken noodle",
+     "grams": 73.9,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": 0.02466
+    }
+   ]
+  }
+ },
+ "32-beef-posole-crock.jpg": {
+  "entry": {
+   "file": "32-beef-posole-crock.jpg",
+   "plate": 114,
+   "distance": null,
+   "actual": "beef posole=182",
+   "kind": "per-item"
+  },
+  "vessel": "cup",
+  "priors": [
+   250
+  ],
+  "facts": {
+   "soup with meat": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "soup, bean, with meat",
+     "grams": 151.6,
+     "method": "plate_reference",
+     "confidence": 0.802,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "soup, bean, with meat",
+     "grams": 120.3,
+     "method": "vessel_reference",
+     "confidence": 0.52,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "soup, bean, with meat",
+     "grams": 150.0,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "soup, bean, with meat",
+     "grams": 73.9,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "33-cheese-broccoli-crock.jpg": {
+  "entry": {
+   "file": "33-cheese-broccoli-crock.jpg",
+   "plate": 114,
+   "distance": null,
+   "actual": "cheese and broccoli soup=152",
+   "kind": "per-item"
+  },
+  "vessel": "cup",
+  "priors": [
+   250
+  ],
+  "facts": {
+   "broccoli cheese soup": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "soup, broccoli cheese",
+     "grams": 151.6,
+     "method": "plate_reference",
+     "confidence": 0.802,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "soup, broccoli cheese",
+     "grams": 120.3,
+     "method": "vessel_reference",
+     "confidence": 0.52,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "soup, broccoli cheese",
+     "grams": 150.0,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "soup, broccoli cheese",
+     "grams": 73.9,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "34-pizza-slice-plate.jpg": {
+  "entry": {
+   "file": "34-pizza-slice-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "pizza slice=120",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "baked pepperoni pizza slice": {
+    "source": "ai_estimate",
+    "density_g_ml": 0.85
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "baked pepperoni pizza slice",
+     "grams": 85.3,
+     "method": "plate_reference",
+     "confidence": 0.784,
+     "measured_used": 0.11666
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "baked pepperoni pizza slice",
+     "grams": 86.2,
+     "method": "vessel_reference",
+     "confidence": 0.575,
+     "measured_used": 0.11666
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "baked pepperoni pizza slice",
+     "grams": 83.6,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.11666
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "baked pepperoni pizza slice",
+     "grams": 63.8,
+     "method": "vessel_reference",
+     "confidence": 0.662,
+     "measured_used": 0.11666
+    }
+   ]
+  }
+ },
+ "40-trailmix-spread.jpg": {
+  "entry": {
+   "file": "40-trailmix-spread.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "trail mix=44",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   50
+  ],
+  "facts": {
+   "mixed nuts and dried fruits": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "trail mix with nuts and fruit",
+     "grams": 134.5,
+     "method": "plate_reference",
+     "confidence": 0.574,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "trail mix with nuts and fruit",
+     "grams": 88.2,
+     "method": "vessel_reference",
+     "confidence": 0.459,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "trail mix with nuts and fruit",
+     "grams": 150.2,
+     "method": "plate_reference",
+     "confidence": 0.676,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "trail mix with nuts and fruit",
+     "grams": 128.9,
+     "method": "vessel_reference",
+     "confidence": 0.54,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "41-trailmix-heaped.jpg": {
+  "entry": {
+   "file": "41-trailmix-heaped.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "trail mix=44",
+   "kind": "per-item"
+  },
+  "vessel": "side_plate",
+  "priors": [
+   30
+  ],
+  "facts": {
+   "trail mix": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "trail mix, nfs",
+     "grams": 59.8,
+     "method": "plate_reference",
+     "confidence": 0.747,
+     "measured_used": 0.05789
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "trail mix, nfs",
+     "grams": 49.6,
+     "method": "vessel_reference",
+     "confidence": 0.627,
+     "measured_used": 0.05789
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "trail mix, nfs",
+     "grams": 62.8,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.05789
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "trail mix, nfs",
+     "grams": 53.9,
+     "method": "vessel_reference",
+     "confidence": 0.662,
+     "measured_used": 0.05789
+    }
+   ]
+  }
+ },
+ "42-chips-spread.jpg": {
+  "entry": {
+   "file": "42-chips-spread.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "tortilla chips=25",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   28
+  ],
+  "facts": {
+   "tortilla chips": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 12.1,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.1234
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 28.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": 0.1234
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 11.1,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.1234
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 28.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": 0.1234
+    }
+   ]
+  }
+ },
+ "43-chips-heaped.jpg": {
+  "entry": {
+   "file": "43-chips-heaped.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "tortilla chips=25",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   28
+  ],
+  "facts": {
+   "tortilla chips": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 23.8,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.09064
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 30.8,
+     "method": "reference_object",
+     "confidence": 0.776,
+     "measured_used": 0.09064
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 23.8,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.09064
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "tortilla chips, flavored",
+     "grams": 30.8,
+     "method": "reference_object",
+     "confidence": 0.776,
+     "measured_used": 0.09064
+    }
+   ]
+  }
+ },
+ "44-grapes-spread.jpg": {
+  "entry": {
+   "file": "44-grapes-spread.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "grapes=90",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "raw red grapes": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 107.9,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 148.4,
+     "method": "reference_object",
+     "confidence": 0.776,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 107.9,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 148.4,
+     "method": "reference_object",
+     "confidence": 0.776,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "45-grapes-cluster.jpg": {
+  "entry": {
+   "file": "45-grapes-cluster.jpg",
+   "plate": 222,
+   "distance": 280,
+   "actual": "grapes=90",
+   "kind": "per-item"
+  },
+  "vessel": "paper",
+  "priors": [
+   150
+  ],
+  "facts": {
+   "raw red grapes": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 106.5,
+     "method": "plate_reference",
+     "confidence": 0.681,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 150.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 106.5,
+     "method": "plate_reference",
+     "confidence": 0.681,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "grapes, red, seedless, raw",
+     "grams": 150.0,
+     "method": "ai_prior",
+     "confidence": 0.468,
+     "measured_used": null
+    }
+   ]
+  }
+ },
+ "35-slider-fries-plate.jpg": {
+  "entry": {
+   "file": "35-slider-fries-plate.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "cheeseburger slider=145, french fries=65",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   250,
+   150
+  ],
+  "facts": {
+   "grilled cheeseburger": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "fried french fries": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 129.7,
+     "method": "plate_reference",
+     "confidence": 0.587,
+     "measured_used": null
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 23.8,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.04358
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 173.3,
+     "method": "vessel_reference",
+     "confidence": 0.558,
+     "measured_used": null
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 53.5,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": 0.04358
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 124.6,
+     "method": "plate_reference",
+     "confidence": 0.642,
+     "measured_used": null
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 19.4,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.04358
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 173.3,
+     "method": "vessel_reference",
+     "confidence": 0.558,
+     "measured_used": null
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 26.9,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.04358
+    }
+   ]
+  }
+ },
+ "36-slider-fries-card.jpg": {
+  "entry": {
+   "file": "36-slider-fries-card.jpg",
+   "plate": 229,
+   "distance": null,
+   "actual": "cheeseburger slider=145, french fries=65",
+   "kind": "per-item"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   250,
+   150
+  ],
+  "facts": {
+   "cheeseburger": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "fried french fries": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 91.1,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.08243
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 10.8,
+     "method": "plate_reference",
+     "confidence": 0.704,
+     "measured_used": 0.03464
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 143.9,
+     "method": "vessel_reference",
+     "confidence": 0.638,
+     "measured_used": 0.08243
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 31.7,
+     "method": "vessel_reference",
+     "confidence": 0.612,
+     "measured_used": 0.03464
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 81.5,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.08243
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 8.1,
+     "method": "plate_reference",
+     "confidence": 0.828,
+     "measured_used": 0.03464
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "cheeseburger, nfs",
+     "grams": 113.2,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.08243
+    },
+    {
+     "name": "potato, french fries, from fresh, fried",
+     "grams": 11.2,
+     "method": "vessel_reference",
+     "confidence": 0.72,
+     "measured_used": 0.03464
+    }
+   ]
+  }
+ },
+ "14-plate-mole-chicken-card.jpg": {
+  "entry": {
+   "file": "14-plate-mole-chicken-card.jpg",
+   "plate": 254,
+   "distance": null,
+   "actual": null,
+   "kind": "rung-only"
+  },
+  "vessel": "dinner_plate",
+  "priors": [
+   150,
+   100,
+   150
+  ],
+  "facts": {
+   "grilled chicken drumstick in sauce": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "refried beans": {
+    "source": "usda",
+    "density_g_ml": null
+   },
+   "mexican rice": {
+    "source": "usda",
+    "density_g_ml": null
+   }
+  },
+  "arms": {
+   "CAL": [
+    {
+     "name": "chicken drumstick, grilled with sauce, skin eaten",
+     "grams": 122.3,
+     "method": "plate_reference",
+     "confidence": 0.538,
+     "measured_used": null
+    },
+    {
+     "name": "refried beans",
+     "grams": 108.4,
+     "method": "plate_reference",
+     "confidence": 0.606,
+     "measured_used": null
+    },
+    {
+     "name": "mexican pizza",
+     "grams": 70.6,
+     "method": "plate_reference",
+     "confidence": 0.532,
+     "measured_used": null
+    }
+   ],
+   "UNCAL": [
+    {
+     "name": "chicken drumstick, grilled with sauce, skin eaten",
+     "grams": 128.7,
+     "method": "reference_object",
+     "confidence": 0.505,
+     "measured_used": null
+    },
+    {
+     "name": "refried beans",
+     "grams": 114.0,
+     "method": "reference_object",
+     "confidence": 0.568,
+     "measured_used": null
+    },
+    {
+     "name": "mexican pizza",
+     "grams": 73.4,
+     "method": "reference_object",
+     "confidence": 0.507,
+     "measured_used": null
+    }
+   ],
+   "CAL_GEO": [
+    {
+     "name": "chicken drumstick, grilled with sauce, skin eaten",
+     "grams": 122.3,
+     "method": "plate_reference",
+     "confidence": 0.538,
+     "measured_used": null
+    },
+    {
+     "name": "refried beans",
+     "grams": 108.4,
+     "method": "plate_reference",
+     "confidence": 0.606,
+     "measured_used": null
+    },
+    {
+     "name": "mexican pizza",
+     "grams": 66.1,
+     "method": "plate_reference",
+     "confidence": 0.606,
+     "measured_used": null
+    }
+   ],
+   "UNCAL_GEO": [
+    {
+     "name": "chicken drumstick, grilled with sauce, skin eaten",
+     "grams": 128.7,
+     "method": "reference_object",
+     "confidence": 0.505,
+     "measured_used": null
+    },
+    {
+     "name": "refried beans",
+     "grams": 114.0,
+     "method": "reference_object",
+     "confidence": 0.568,
+     "measured_used": null
+    },
+    {
+     "name": "mexican pizza",
+     "grams": 69.5,
+     "method": "reference_object",
+     "confidence": 0.568,
+     "measured_used": null
+    }
+   ]
+  }
+ }
+}
