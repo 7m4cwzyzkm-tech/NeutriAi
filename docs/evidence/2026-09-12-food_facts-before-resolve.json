@@ -1,0 +1,1427 @@
+[
+ {
+  "canonical_key": "chicken dark drumstick in sauce",
+  "display_name": "chicken drumstick in dark sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.8,
+   "resolver_version": 2
+  },
+  "hits": 27
+ },
+ {
+  "canonical_key": "steak cheese sandwich",
+  "display_name": "steak and cheese sandwich",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.15,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 17
+ },
+ {
+  "canonical_key": "baked spaghetti casserole",
+  "display_name": "baked spaghetti casserole",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 23
+ },
+ {
+  "canonical_key": "fried mexican rice",
+  "display_name": "fried mexican rice",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "meat sauce",
+  "display_name": "meat with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.6,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "refried beans",
+  "display_name": "refried beans",
+  "source": "usda",
+  "source_id": "2707396",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2707396,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 189
+ },
+ {
+  "canonical_key": "taco scrambled eggs salsa",
+  "display_name": "taco with scrambled eggs and salsa",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "taco scrambled eggs tomato",
+  "display_name": "taco with scrambled eggs and tomato",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "fettuccine alfredo",
+  "display_name": "fettuccine alfredo",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 35
+ },
+ {
+  "canonical_key": "boiled potatoes",
+  "display_name": "boiled potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 23
+ },
+ {
+  "canonical_key": "taco scrambled eggs vegetables",
+  "display_name": "taco with scrambled eggs and vegetables",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 11
+ },
+ {
+  "canonical_key": "grilled meat skewers",
+  "display_name": "grilled meat skewers",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 25
+ },
+ {
+  "canonical_key": "boiled rice",
+  "display_name": "boiled cooked rice",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.0,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 32
+ },
+ {
+  "canonical_key": "grilled meat skewer",
+  "display_name": "grilled meat skewer",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 53
+ },
+ {
+  "canonical_key": "roasted potatoes",
+  "display_name": "roasted potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.75,
+  "raw": {
+   "model_confidence": 0.9,
+   "resolver_version": 2
+  },
+  "hits": 51
+ },
+ {
+  "canonical_key": "baked spaghetti cheese",
+  "display_name": "baked spaghetti with cheese",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 4
+ },
+ {
+  "canonical_key": "spaghetti unknown sauce",
+  "display_name": "spaghetti with unknown sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.6,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "braised chicken dark drumstick in sauce",
+  "display_name": "braised chicken drumstick in dark sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "cherry tomatoes",
+  "display_name": "raw cherry tomatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 83
+ },
+ {
+  "canonical_key": "cheesesteak sandwich",
+  "display_name": "cheesesteak sandwich",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 7
+ },
+ {
+  "canonical_key": "boiled bean soup",
+  "display_name": "boiled bean soup",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.02,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 69
+ },
+ {
+  "canonical_key": "chicken drumstick in mole",
+  "display_name": "chicken drumstick in mole",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 58
+ },
+ {
+  "canonical_key": "ground meat",
+  "display_name": "ground meat",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "fried potato chips",
+  "display_name": "fried potato chips",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.4,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 35
+ },
+ {
+  "canonical_key": "steak sandwich cheese",
+  "display_name": "steak sandwich with cheese",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 8
+ },
+ {
+  "canonical_key": "baked meatloaf",
+  "display_name": "baked meatloaf",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "rice",
+  "display_name": "rice",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 90
+ },
+ {
+  "canonical_key": "chicken drumstick in sauce",
+  "display_name": "chicken drumstick in sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 28
+ },
+ {
+  "canonical_key": "chicken drumstick grilled in sauce",
+  "display_name": "chicken drumstick, grilled with sauce, skin eaten",
+  "source": "usda",
+  "source_id": "2706012",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706012,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 15
+ },
+ {
+  "canonical_key": "mexican rice",
+  "display_name": "mexican pizza",
+  "source": "usda",
+  "source_id": "2708507",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2708507,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 133
+ },
+ {
+  "canonical_key": "sub sandwich beef cheese",
+  "display_name": "sub sandwich with beef and cheese",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "boiled chickpea stew",
+  "display_name": "boiled chickpea stew",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "grilled chicken drumstick sauce",
+  "display_name": "chicken drumstick, grilled with sauce, skin eaten",
+  "source": "usda",
+  "source_id": "2706012",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706012,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 6
+ },
+ {
+  "canonical_key": "spaghetti cheese",
+  "display_name": "spaghetti with cheese",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.1,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "baby potatoes",
+  "display_name": "baby potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.08,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "baked pasta bake",
+  "display_name": "baked pasta bake",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.1,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "braised chicken drumstick in sauce",
+  "display_name": "braised chicken drumstick in sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "spaghetti chicken",
+  "display_name": "spaghetti with chicken",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "refried beans cheese",
+  "display_name": "refried beans with cheese",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "creamy mushroom dish",
+  "display_name": "creamy mushroom dish",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "grilled chicken drumstick",
+  "display_name": "grilled chicken drumstick",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.92,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "grilled braised beef",
+  "display_name": "grilled braised beef",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "creamy dish",
+  "display_name": "creamy dish",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "boiled baby potatoes",
+  "display_name": "boiled baby potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "boiled roasted potatoes",
+  "display_name": "boiled roasted potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.9,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "boiled small potatoes",
+  "display_name": "boiled small potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "creamy chicken mushrooms",
+  "display_name": "creamy chicken with mushrooms",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 5
+ },
+ {
+  "canonical_key": "beef in sauce",
+  "display_name": "beef in sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "creamy mushroom sauce",
+  "display_name": "creamy mushroom sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 9
+ },
+ {
+  "canonical_key": "creamy chicken dish",
+  "display_name": "creamy chicken dish",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 3
+ },
+ {
+  "canonical_key": "philly cheesesteak sandwich",
+  "display_name": "philly cheesesteak sandwich",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "grilled meat",
+  "display_name": "grilled meat",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.7,
+   "resolver_version": 2
+  },
+  "hits": 3
+ },
+ {
+  "canonical_key": "pasta cheese sauce",
+  "display_name": "pasta with cheese sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.1,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "chicken drumstick in sauce unknown",
+  "display_name": "chicken drumstick in unknown sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.7,
+   "resolver_version": 2
+  },
+  "hits": 14
+ },
+ {
+  "canonical_key": "beef rib",
+  "display_name": "beef rib",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "seasoned rice",
+  "display_name": "seasoned rice",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "noodles sauce",
+  "display_name": "noodles with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "creamy dish mushrooms",
+  "display_name": "creamy dish with mushrooms",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.02,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 3
+ },
+ {
+  "canonical_key": "creamy poblano peppers",
+  "display_name": "creamy poblano peppers",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "creamy chicken",
+  "display_name": "creamy chicken",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 18
+ },
+ {
+  "canonical_key": "pasta sauce",
+  "display_name": "pasta with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "noodle casserole",
+  "display_name": "noodle casserole",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 6
+ },
+ {
+  "canonical_key": "creamy pasta",
+  "display_name": "creamy pasta",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": null,
+  "raw": {
+   "model_confidence": null,
+   "resolver_version": 2
+  },
+  "hits": 6
+ },
+ {
+  "canonical_key": "brussels sprouts",
+  "display_name": "brussels sprouts",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 10
+ },
+ {
+  "canonical_key": "grilled chicken sauce",
+  "display_name": "grilled chicken with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 6
+ },
+ {
+  "canonical_key": "roasted potato",
+  "display_name": "roasted potato",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.75,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 14
+ },
+ {
+  "canonical_key": "butter",
+  "display_name": "butter",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.911,
+  "raw": {
+   "model_confidence": "high",
+   "resolver_version": 2
+  },
+  "hits": 3
+ },
+ {
+  "canonical_key": "baked bread roll",
+  "display_name": "roll, egg bread",
+  "source": "usda",
+  "source_id": "2707659",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2707659,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 26
+ },
+ {
+  "canonical_key": "braised meat",
+  "display_name": "braised meat",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 5
+ },
+ {
+  "canonical_key": "boiled green beans",
+  "display_name": "boiled green beans",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 5
+ },
+ {
+  "canonical_key": "macaroni salad",
+  "display_name": "macaroni or pasta salad, made with mayonnaise",
+  "source": "usda",
+  "source_id": "2708932",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2708932,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 48
+ },
+ {
+  "canonical_key": "baked pepperoni pizza slice",
+  "display_name": "baked pepperoni pizza slice",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.9,
+   "resolver_version": 2
+  },
+  "hits": 16
+ },
+ {
+  "canonical_key": "greens",
+  "display_name": "greens, canned, cooked",
+  "source": "usda",
+  "source_id": "2709598",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709598,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 26
+ },
+ {
+  "canonical_key": "cauliflower",
+  "display_name": "cauliflower",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.64,
+  "raw": {
+   "model_confidence": 0.98,
+   "resolver_version": 2
+  },
+  "hits": 10
+ },
+ {
+  "canonical_key": "mayonnaise",
+  "display_name": "mayonnaise",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.91,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 12
+ },
+ {
+  "canonical_key": "grilled cheeseburger",
+  "display_name": "cheeseburger, nfs",
+  "source": "usda",
+  "source_id": "2706888",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706888,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 27
+ },
+ {
+  "canonical_key": "soup meat",
+  "display_name": "soup, bean, with meat",
+  "source": "usda",
+  "source_id": "2707457",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2707457,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 13
+ },
+ {
+  "canonical_key": "steamed bun",
+  "display_name": "oysters, steamed",
+  "source": "usda",
+  "source_id": "2706353",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706353,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 20
+ },
+ {
+  "canonical_key": "caesar salad",
+  "display_name": "caesar salad, with romaine, no dressing",
+  "source": "usda",
+  "source_id": "2709591",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709591,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 20
+ },
+ {
+  "canonical_key": "boiled chicken noodle soup",
+  "display_name": "soup, chicken noodle",
+  "source": "usda",
+  "source_id": "2709149",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709149,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 20
+ },
+ {
+  "canonical_key": "braised beef",
+  "display_name": "braised beef",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 2
+ },
+ {
+  "canonical_key": "sauteed sliced zucchini",
+  "display_name": "zucchini, pickled",
+  "source": "usda",
+  "source_id": "2710104",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2710104,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 37
+ },
+ {
+  "canonical_key": "sliced zucchini",
+  "display_name": "sliced zucchini",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 16
+ },
+ {
+  "canonical_key": "grilled barbecue chicken",
+  "display_name": "barbecue chicken",
+  "source": "usda",
+  "source_id": "2706434",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706434,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 30
+ },
+ {
+  "canonical_key": "grilled zucchini slices",
+  "display_name": "zucchini, pickled",
+  "source": "usda",
+  "source_id": "2710104",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2710104,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 20
+ },
+ {
+  "canonical_key": "baby carrots",
+  "display_name": "baby toddler carrots, stage 1",
+  "source": "usda",
+  "source_id": "2710118",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2710118,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 78
+ },
+ {
+  "canonical_key": "steamed green beans",
+  "display_name": "green beans, raw",
+  "source": "usda",
+  "source_id": "2709769",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709769,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 15
+ },
+ {
+  "canonical_key": "mashed potatoes",
+  "display_name": "potatoes, mashed, ready-to-eat",
+  "source": "usda",
+  "source_id": "169768",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 169768,
+   "dataType": "SR Legacy",
+   "resolver_version": 2
+  },
+  "hits": 20
+ },
+ {
+  "canonical_key": "shredded beef",
+  "display_name": "beef, cured, corned beef, canned",
+  "source": "usda",
+  "source_id": "170602",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 170602,
+   "dataType": "SR Legacy",
+   "resolver_version": 2
+  },
+  "hits": 24
+ },
+ {
+  "canonical_key": "white rice",
+  "display_name": "beans and white rice",
+  "source": "usda",
+  "source_id": "2708990",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2708990,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 37
+ },
+ {
+  "canonical_key": "fried french fries",
+  "display_name": "potato, french fries, from fresh, fried",
+  "source": "usda",
+  "source_id": "2709458",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709458,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 34
+ },
+ {
+  "canonical_key": "boiled spaghetti tomato sauce",
+  "display_name": "spaghetti sauce with meat",
+  "source": "usda",
+  "source_id": "2706470",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706470,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 44
+ },
+ {
+  "canonical_key": "shredded beef potatoes",
+  "display_name": "shredded beef with potatoes",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 19
+ },
+ {
+  "canonical_key": "shredded beef potato",
+  "display_name": "shredded beef with potato",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "shredded beef sauce",
+  "display_name": "shredded beef with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.85,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "piece meat",
+  "display_name": "piece of meat",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.6,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "unknown sauce",
+  "display_name": "unknown sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.1,
+  "raw": {
+   "model_confidence": 0.2,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "grilled meat sauce",
+  "display_name": "grilled meat with sauce",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.7,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "grilled barbecue pork",
+  "display_name": "grilled barbecue pork",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.85,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "fried tortilla chips",
+  "display_name": "fried tortilla chips",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.25,
+  "raw": {
+   "model_confidence": 0.92,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "potato",
+  "display_name": "potato, nfs",
+  "source": "usda",
+  "source_id": "2709382",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709382,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 9
+ },
+ {
+  "canonical_key": "stew",
+  "display_name": "stew",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.02,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "red grapes",
+  "display_name": "grapes, red, seedless, raw",
+  "source": "usda",
+  "source_id": "2346412",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2346412,
+   "dataType": "Foundation",
+   "resolver_version": 2
+  },
+  "hits": 13
+ },
+ {
+  "canonical_key": "pasta salad",
+  "display_name": "pasta salad",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 0.95,
+  "raw": {
+   "model_confidence": 0.75,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "broccoli cheese soup",
+  "display_name": "soup, broccoli cheese",
+  "source": "usda",
+  "source_id": "2709659",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2709659,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 17
+ },
+ {
+  "canonical_key": "green beans",
+  "display_name": "green beans",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.05,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 1
+ },
+ {
+  "canonical_key": "yam",
+  "display_name": "yam",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.1,
+  "raw": {
+   "model_confidence": 0.95,
+   "resolver_version": 2
+  },
+  "hits": 0
+ },
+ {
+  "canonical_key": "boiled soup meat",
+  "display_name": "boiled soup with meat",
+  "source": "ai_estimate",
+  "source_id": null,
+  "density_g_ml": 1.0,
+  "raw": {
+   "model_confidence": 0.7,
+   "resolver_version": 2
+  },
+  "hits": 4
+ },
+ {
+  "canonical_key": "cheeseburger",
+  "display_name": "cheeseburger, nfs",
+  "source": "usda",
+  "source_id": "2706888",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706888,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 6
+ },
+ {
+  "canonical_key": "mixed nuts dried fruits",
+  "display_name": "trail mix with nuts and fruit",
+  "source": "usda",
+  "source_id": "2707576",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2707576,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 10
+ },
+ {
+  "canonical_key": "chicken drumstick",
+  "display_name": "chicken drumstick, rotisserie, skin eaten",
+  "source": "usda",
+  "source_id": "2706008",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706008,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 33
+ },
+ {
+  "canonical_key": "trail mix",
+  "display_name": "trail mix, nfs",
+  "source": "usda",
+  "source_id": "2707574",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2707574,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 7
+ },
+ {
+  "canonical_key": "piece meat sauce",
+  "display_name": "spaghetti sauce with meat",
+  "source": "usda",
+  "source_id": "2706470",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2706470,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 25
+ },
+ {
+  "canonical_key": "boiled brussels sprouts",
+  "display_name": "brussels sprouts, cooked, boiled, drained, with salt",
+  "source": "usda",
+  "source_id": "168513",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 168513,
+   "dataType": "SR Legacy",
+   "resolver_version": 2
+  },
+  "hits": 16
+ },
+ {
+  "canonical_key": "tortilla chips",
+  "display_name": "tortilla chips, flavored",
+  "source": "usda",
+  "source_id": "2708204",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 2708204,
+   "dataType": "Survey (FNDDS)",
+   "resolver_version": 2
+  },
+  "hits": 12
+ },
+ {
+  "canonical_key": "boiled cauliflower",
+  "display_name": "cauliflower, cooked, boiled, drained, with salt",
+  "source": "usda",
+  "source_id": "168520",
+  "density_g_ml": null,
+  "raw": {
+   "fdcId": 168520,
+   "dataType": "SR Legacy",
+   "resolver_version": 2
+  },
+  "hits": 16
+ }
+]

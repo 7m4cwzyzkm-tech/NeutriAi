@@ -736,7 +736,55 @@ Written at the end of the session that built section D.1. Fold into HANDOFF with
   - HANDOFF's "75 of the 116" and "~71 other ai_estimate rows" are now 62.
 - **USDA quota:** roughly 320 requests spent (probe 105, rate run 202, resolve ~12;
   estimated from the scripts, not read off the counter). ~3,500 remained before.
-- The pre-mutation `food_facts` snapshot exists ONLY in the session scratchpad (G.5).
+### G.2a EVIDENCE: `docs/evidence/2026-09-12-food_facts-before-resolve.json`
+
+**The only record of `food_facts` before the step-4 resolve run, and the only artifact of
+the night that cannot be regenerated.** Last night's clean paired numbers (calibrated
+35.9% mean / 20.6% median, subscriber 36.8% / 26.8%) were measured against the table
+BEFORE this run. Any later comparison must diff against this file, or it reads a data
+change as a code change.
+
+- **What produced it:** a read-only select of all 116 rows via `app.db.service()`
+  (scratch script `ff_dump.py`), columns `canonical_key, display_name, source,
+  source_id, density_g_ml, raw, hits`. Committed byte-identical to the scratch file,
+  sha256 `8a397d01b7908864e21f1fd4033a1dfe810ba6c3a9bc262714dd7618a4ee565a`, 30,633 bytes.
+- **When, relative to the resolve run:** file written **21:42:06 -0700, 12 Sep**. The
+  resolve run (`bypass.py`) was written 21:48:28 and finished 21:48:48, so the snapshot
+  is **~6.5 minutes before** it. In between ran only the GET/POST probe (21:42-21:44) and
+  the rate run (21:47-21:48), which call USDA and write nothing. The resolve script's own
+  pre-run read agreed with the snapshot on all 40 names.
+- **When, relative to the clean paired run:** 8f049a5 recorded that run at 20:20, so the
+  snapshot is ~82 minutes after it. Nothing is known to have written `food_facts` in
+  between, but that is not proven.
+- **What it does NOT contain:** no macro columns (kcal, protein, carbs, fat, fiber, sugar,
+  sodium), no `id`, `cuisine` or `serving_hints`. It restores the gram inputs (source and
+  explicit density), not the macros of the 13 rows.
+- **Counts either side:**
+
+      before (snapshot)   116 rows   83 ai_estimate / 33 usda   75 ai_estimate with a density
+      after  (13 Sep)     116 rows   70 ai_estimate / 46 usda   62 ai_estimate with a density
+
+  A diff of the snapshot against the live table after the run finds **exactly 13 rows**
+  changed on (source, density), none added or removed. `hits` also rose on cached rows
+  the run read, and was not compared.
+- **The 13 rows** (canonical_key: before -> after; after is USDA fdcId and description):
+
+      sliced zucchini             ai_estimate 0.95 -> usda null  2710104 zucchini, pickled
+      grilled chicken sauce       ai_estimate 1.05 -> usda null  2705945 chicken, ns as to part, grilled with sauce, skin eaten
+      braised beef                ai_estimate 1.05 -> usda null  168626  beef, variety meats and by-products, liver, cooked, braised
+      brussels sprouts            ai_estimate 0.85 -> usda null  2709772 brussels sprouts, raw
+      roasted potatoes            ai_estimate 0.75 -> usda null  170031  potatoes, roasted, salt added in processing, frozen, unprepared
+      boiled green beans          ai_estimate 0.95 -> usda null  169321  beans, snap, green, cooked, boiled, drained, with salt
+      rice                        ai_estimate 0.95 -> usda null  2709078 dirty rice
+      shredded beef potatoes      ai_estimate 0.85 -> usda null  2706503 beef stew with potatoes, puerto rican style
+      stew                        ai_estimate 1.02 -> usda null  2706678 stew, chicken
+      roasted potato              ai_estimate 0.75 -> usda null  2709402 potato, roasted, nfs
+      baked pepperoni pizza slice ai_estimate 0.85 -> usda null  2708642 pizza with pepperoni, stuffed crust
+      fried tortilla chips        ai_estimate 0.25 -> usda null  2708204 tortilla chips, flavored
+      fried mexican rice          ai_estimate 0.85 -> usda null  2708951 rice, fried, meatless
+
+  Each lost its explicit LLM density, so on a scan each now takes the density table
+  instead -- a gram change with no code change.
 
 ### G.3 Dead ends — do not re-walk
 
@@ -765,10 +813,44 @@ Written at the end of the session that built section D.1. Fold into HANDOFF with
   0.85 default) the live scan's food group answers instead, so those columns are not
   the scan's density. The bypass count (explicit density present or not) is unaffected.
 
+### G.4a USDA FOLLOW-UP LIST — top two are wrong-FOOD matches, flagged forward, not chased
+
+1. **`rice` resolves to Dirty rice** (fdcId 2709078, live, and now cached as a `usda` row).
+2. **`mexican rice` is cached as "mexican pizza"** (a `usda` row, so it short-circuits and
+   is never re-fetched).
+
+**Why these rank first (Gil):** they are the wrong FOOD, not a poor variant of the right
+one, so they are not safely macros-only.
+
+**What was checked before writing that down, 13 Sep:** on the live scan path, a wrong
+USDA match does NOT reach the grams TODAY. `names = [_lookup_name(d) ...]`
+(vision.py:977) are what `estimate_grams(name=name, density=fact["density_g_ml"])`
+receives (vision.py:1082, :1102), and `density_for(name, density, food_group)`
+(portion.py:2067) keys on the LOOKUP name. USDA rows carry `density_g_ml` null, so
+"rice" gets the table's rice density and the words "dirty rice" never reach it.
+
+**Where the wrong food DOES travel, and why it can still cost grams:**
+
+- `DetectedItem.name = fact["display_name"]` (vision.py:1226). The wrong food's name is
+  what the user sees and what `meal_items.name` stores (bench rows already show
+  "grapes, red, seedless, raw" and "cheeseburger, nfs" as item names).
+- **Unverified:** any later path that re-reads the stored item name and re-derives grams
+  or learns from it -- `PATCH /meals/{id}` (routers/scans.py:277 selects `name, grams,
+  estimation_method`), correction learning, portion learning keyed by name -- would feed
+  "mexican pizza" to `density_for` (pizza 0.55 against rice 0.67) and to the shape and
+  height lookups. Check those first.
+- **The provenance fix changes this.** If a provider density is ever allowed to reach
+  `density_for`, a wrong-food row carries the wrong food's density straight into the
+  grams. Fix these matches before or with that work.
+- Both are also wrong calories today (dirty rice has meat; pizza is not rice).
+
+Then, lower: braised beef -> beef liver, steamed bun -> oysters, shredded beef -> canned
+corned beef, zucchini names -> pickled, white rice -> beans and white rice.
+
 ### G.4 Half-checked — concluded partway, not verified
 
-- **`rice` -> "Dirty rice" still, live**, though `_match_score`'s docstring says that was
-  fixed. By the formula a "Rice, white, ..." candidate scores 5.0 against Dirty rice's
+- **`rice` -> "Dirty rice" still, live** (now G.4a item 1), though `_match_score`'s
+  docstring says that was fixed. By the formula a "Rice, white, ..." candidate scores 5.0 against Dirty rice's
   4.5, so the likely cause is that NO plain "Rice, ..." entry is in USDA's top 10 for the
   bare word with these dataTypes -- a ranking-depth problem, not a scoring one.
   **Inferred, not checked:** one POST with pageSize 50 settles it. Changing pageSize
@@ -788,7 +870,7 @@ In `%TEMP%/claude/...adoring-bun-cb0df3/534853e3-.../scratchpad/`:
 
 | File | What | Worth keeping? |
 |---|---|---|
-| `food_facts.json` | all 116 rows BEFORE the step-4 mutation | **yes -- the only pre-mutation record**; copy to `scratch/` if anyone will diff |
+| `food_facts.json` | all 116 rows BEFORE the step-4 mutation | **COMMITTED** as `docs/evidence/2026-09-12-food_facts-before-resolve.json` (G.2a) |
 | `meal_items.json` | 127 bench items since 11 Sep, joined to fact source/density | re-derivable from Supabase |
 | `probe_fdc.json` / `probe_fdc.py` | GET vs POST per name, full candidate lists | superseded by the fixture |
 | `rate.py` | 101-search POST/GET rate run | recipe in G.1 is enough |
