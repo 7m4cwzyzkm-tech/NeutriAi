@@ -47,11 +47,17 @@ class Settings(BaseSettings):
     # siblings are CC-BY-NC and cannot legally serve a paid app.
     depth_provider: Literal["", "replicate", "http"] = ""
     depth_api_key: str = ""
+    # REQUIRED whenever a provider is set, and only "Small" is accepted: omit it and
+    # depth stays off. A licence, not a default -- see depth_hosted.from_settings.
+    depth_model_size: str = ""
     depth_endpoint: str = ""             # "http" dialect: the full POST URL
     depth_model_version: str = ""        # "replicate" dialect: the version id
     depth_model_input: str = ""          # extra JSON merged into the model input
     depth_image_field: str = "image"     # what the model calls its image input
-    depth_output_field: str = ""         # "http" dialect: JSON key holding the map
+    # The key holding the map when the model answers with several outputs -- a
+    # Replicate output dict (chenxwh/depth-anything-v2: "grey_depth") or an "http"
+    # endpoint's JSON. Empty and the answer is dropped unread.
+    depth_output_field: str = ""
     depth_timeout_s: float = 25.0
 
     # ---- segmenter (SAM2: which pixels are which food, and where the plate is) ----

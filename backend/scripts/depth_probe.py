@@ -335,7 +335,8 @@ async def against_photo(photo: Path, plate_mm: float | None) -> int:
         note("no depth provider configured",
              f"DEPTH_PROVIDER={settings.depth_provider or '(unset)'}")
         say(f"\n  {DIM}Everything above was free. To measure heights, set\n"
-              f"  DEPTH_PROVIDER, DEPTH_API_KEY and DEPTH_MODEL_VERSION in .env --\n"
+              f"  DEPTH_PROVIDER, DEPTH_API_KEY, DEPTH_MODEL_VERSION, DEPTH_OUTPUT_FIELD\n"
+              f"  and DEPTH_MODEL_SIZE=Small (required -- the licence) in .env --\n"
               f"  .env.example lists every one of them with what it is for.{OFF}\n")
         return 0 if good else 1
     ok("provider configured", provider.name)

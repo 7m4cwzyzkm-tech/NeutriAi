@@ -299,6 +299,78 @@ def test_an_unconfigured_provider_measures_nothing_and_never_calls_out():
         assert p.depth(PHOTO) is None
 
 
+def _configure(monkeypatch, **kw):
+    """Settings for a configured Replicate provider, overriding conftest's pins."""
+    from app.config import settings
+    base = dict(depth_provider="replicate", depth_api_key="k-secret",
+                depth_model_version="v1", depth_model_size="Small",
+                depth_model_input="", depth_output_field="",
+                depth_image_field="image", depth_endpoint="", depth_timeout_s=2.0)
+    base.update(kw)
+    for key, value in base.items():
+        monkeypatch.setattr(settings, key, value, raising=False)
+
+
+def _never(request):  # pragma: no cover - must never run
+    raise AssertionError("a provider that should be off made a network call")
+
+
+@pytest.mark.parametrize("size", ["", "Large", "Base", "Giant", "vitl"])
+def test_depth_stays_off_unless_the_licensed_small_model_is_declared(monkeypatch, size):
+    """The model size is a LICENCE. Depth Anything V2 Small is Apache-2.0; Base,
+    Large and Giant are CC-BY-NC and cannot serve a paid app -- and the Replicate
+    model first used defaults to Large. Omitting the size must switch depth off,
+    never fall through to whatever the endpoint defaults to."""
+    _configure(monkeypatch, depth_model_size=size)
+    provider = H.from_settings(transport=httpx.MockTransport(_never))
+    assert provider.available() is False
+    assert provider.depth(PHOTO) is None
+
+
+def test_small_is_sent_on_every_prediction(monkeypatch):
+    """Declared once in config, sent explicitly on the wire, so the endpoint's own
+    default can never decide which weights run."""
+    seen = {}
+    def handler(request):
+        if request.url.host == "cdn.example":
+            return httpx.Response(200, content=_png(_grey()),
+                                  headers={"content-type": "image/png"})
+        seen["input"] = json.loads(request.content)["input"]
+        return _succeeded("https://cdn.example/d.png")
+    _configure(monkeypatch)
+    provider = H.from_settings(transport=httpx.MockTransport(handler))
+    assert provider.available() is True
+    assert provider.depth(PHOTO) is not None
+    assert seen["input"]["model_size"] == "Small"
+
+
+def test_a_size_smuggled_through_the_free_form_input_switches_depth_off(monkeypatch):
+    _configure(monkeypatch, depth_model_input=json.dumps({"model_size": "Large"}))
+    assert H.from_settings(transport=httpx.MockTransport(_never)).available() is False
+
+
+def test_the_grey_map_is_read_only_when_it_is_named(monkeypatch):
+    """chenxwh/depth-anything-v2 answers {"grey_depth": url, "color_depth": url}
+    (checked against the model's schema and one real Small prediction). Named,
+    the grey map is used; unnamed, the answer is dropped unread rather than
+    guessed at -- and the colour one is refused either way."""
+    def handler(request):
+        if request.url.host == "cdn.example":
+            if request.url.path.endswith("grey.png"):
+                return httpx.Response(200, content=_png(_grey()),
+                                      headers={"content-type": "image/png"})
+            return httpx.Response(200, content=_png(_colour_mapped(), mode="RGB"),
+                                  headers={"content-type": "image/png"})
+        return _succeeded({"grey_depth": "https://cdn.example/grey.png",
+                           "color_depth": "https://cdn.example/colour.png"})
+    _configure(monkeypatch, depth_output_field="grey_depth")
+    assert H.from_settings(transport=httpx.MockTransport(handler)).depth(PHOTO) is not None
+    _configure(monkeypatch, depth_output_field="color_depth")
+    assert H.from_settings(transport=httpx.MockTransport(handler)).depth(PHOTO) is None
+    _configure(monkeypatch, depth_output_field="")
+    assert H.from_settings(transport=httpx.MockTransport(handler)).depth(PHOTO) is None
+
+
 def test_the_default_is_no_depth_at_all():
     """Nothing is configured out of the box, and the app behaves exactly as it
     does today: no heights measured, every portion on its prior."""

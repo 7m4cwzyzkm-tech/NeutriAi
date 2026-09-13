@@ -63,6 +63,10 @@ UPLOAD_QUALITY = 90
 # two; the mildest colour map is off the scale.
 MAX_CHANNEL_SPREAD = 6.0 / 255.0
 
+# The only model size this app may run. Depth Anything V2 Small is Apache-2.0;
+# Base, Large and Giant are CC-BY-NC-4.0. Required in config -- see from_settings.
+LICENSED_MODEL_SIZE = "Small"
+
 REPLICATE_URL = "https://api.replicate.com/v1/predictions"
 # Verified against Replicate's own documentation rather than assumed: the
 # terminal states are these, and "successful" -- which reads more naturally and
@@ -394,6 +398,21 @@ def from_settings(transport=None) -> DepthProvider:
     if not dialect:
         return depth_map.NullDepth()
 
+    # THE MODEL SIZE IS REQUIRED, AND ONLY "Small" IS ACCEPTED.
+    #
+    # This is a licence, not a tuning knob. Depth Anything V2 Small is Apache-2.0;
+    # Base, Large and Giant are CC-BY-NC-4.0 and cannot serve an app that takes
+    # subscriptions. The Replicate model this was first pointed at
+    # (chenxwh/depth-anything-v2) DEFAULTS `model_size` to "Large", so a config
+    # that simply omits it would ship non-commercial weights and every quality
+    # number measured on it would set an expectation the shipping model cannot
+    # meet. So omitting it switches depth OFF rather than falling to a default.
+    size = (settings.depth_model_size or "").strip()
+    if size.lower() != LICENSED_MODEL_SIZE.lower():
+        log.warning("depth_model_size_not_licensed", declared=size or "(unset)",
+                    required=LICENSED_MODEL_SIZE)
+        return depth_map.NullDepth()
+
     extra = {}
     if settings.depth_model_input:
         try:
@@ -404,6 +423,19 @@ def from_settings(transport=None) -> DepthProvider:
                 log.warning("depth_model_input_not_an_object")
         except json.JSONDecodeError:
             log.warning("depth_model_input_not_json")
+
+    # A size smuggled in through the free-form input would override the declared
+    # one on the wire. Refused, not merged.
+    stated = extra.get("model_size")
+    if stated is not None and str(stated).strip().lower() != LICENSED_MODEL_SIZE.lower():
+        log.warning("depth_model_input_size_conflict", model_size=str(stated)[:20],
+                    required=LICENSED_MODEL_SIZE)
+        return depth_map.NullDepth()
+    if dialect == "replicate":
+        # Sent explicitly on every prediction, so the endpoint's own default never
+        # decides which weights run. An "http" endpoint is self-hosted and takes no
+        # input fields; there the setting is the operator's declaration.
+        extra["model_size"] = LICENSED_MODEL_SIZE
 
     provider = HostedDepth(
         dialect=dialect,

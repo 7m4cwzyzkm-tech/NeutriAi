@@ -447,6 +447,97 @@ scratch harnesses, `depthcheck.txt`, and `depthsurvey.txt` -- the last one repor
 the reader to run `dev api > survey-api-log.txt 2>&1`. The other session should drop
 them when it folds this in.
 
+**Extends the class list to DOCUMENTS (Gil).** food_seg.py:377 had already cited
+depthsurvey.txt as wrong, and the file sat in the root for four days still stating "9 of
+16 measurable": a correct note in the code and a stale artifact on disk, never compared.
+The standing check covers documents as well as code paths: **any file stating a measured
+result carries what produced it and when, and anything the code contradicts is stamped
+INVALID or moved.**
+
+---
+
+## F. Depth — licence rule, test scheduling, angles, format check. 12 Sep 2026
+
+### Hard rule: every depth quality number is measured on Small
+
+This product takes subscriptions, so Depth Anything V2 **Small** (Apache-2.0) is the only
+usable variant. Base, Large and Giant are CC-BY-NC-4.0. A figure obtained on Large would be
+unlicensable and would set an expectation the shipping model cannot meet: it is not
+recorded as a result.
+
+**Enforced in code:**
+
+- `DEPTH_MODEL_SIZE` is a required setting; anything but "Small" (unset included) switches
+  depth off (`depth_hosted.from_settings`).
+- On the replicate dialect `model_size: "Small"` is sent on every prediction, because
+  `chenxwh/depth-anything-v2` defaults to "Large".
+- A different `model_size` in `DEPTH_MODEL_INPUT` switches depth off.
+- Tests in test_depth_hosted.py pin each case.
+
+### Output format, from one paid Small prediction (legacy photo 13) — FORMAT ONLY
+
+- The prediction recorded `model_size: "Small"`. Outputs: `grey_depth` and `color_depth`.
+- `grey_depth`: **8-bit greyscale PNG** (mode L), 768x1024 -- the 1024-edge upload size --
+  256 levels. `decode_depth` accepts it and resamples to 1568x1176; the ~235k distinct
+  values after resampling are interpolation, not information.
+- `color_depth`: refused as colour-mapped (channel spread 0.47), as designed.
+- **`DEPTH_OUTPUT_FIELD=grey_depth` is required.** Unset, the answer is dropped unread and
+  billed; set to `color_depth`, it is refused.
+- **Timing:** predict time 0.64 s, but total 29.2 s (queue and cold start) -- past the
+  default `DEPTH_TIMEOUT_S=25`, which would have timed out this call and measured nothing.
+  Recorded; the default was not changed.
+- No quality claim is made from one photograph. The 8-bit depth resolution is a known limit
+  whose effect on height is unmeasured.
+
+### Tomorrow's depth test is NOT blocked on scale learning
+
+Gil's calibration plates are tape-measured and the sheet records them, so the 60 deg
+frames supply `plate_diameter_mm` directly. Nobody should defer the test waiting on the
+scale-learning fix. The prerequisite in section D stands for anything that would SHIP.
+
+### Angles: top-down, ~30, ~60, level with the tabletop
+
+- **Height discriminator k:** 30 vs 60 separates a constant under-report from projected
+  height by sin 30 / sin 60 = 0.58 -- wider than 30 vs 45 (0.71). Satisfied.
+- **Profile test m:** uses the top-down footprint and the ruler height. Unaffected.
+- **Depth at 60:** amplification 1/tan^2(60) + 2 = 2.3x. It is inside the refusal limit
+  (`MAX_TILT_DEG = 65`) by only 5 deg, so a handheld "60" that measures 66 is refused. A
+  tall pile at 60 also hides the far rim, and more than 35% of the rim annulus covered is
+  refused.
+- **The card at 30 and 60:** 60 is far past the card detector's aspect cliff (32-35 deg),
+  and 30 sits at it. Depth does not use the card, but **the harness must take the 30 and 60
+  frames' tilt from the rim ellipse, not the card.**
+- **The level frame** is tilt 90 deg: outside depth, ruler only.
+- **What I would rather have: ~55 instead of 60.** Amplification 2.5x, 10 deg of margin
+  under the refusal limit, less far-rim occlusion, and k separation sin 30 / sin 55 = 0.61,
+  still wide. Accept any frame whose rim ellipse measures 45-62 deg. Keep 30 for k; as a
+  depth reading it carries 5x amplification.
+
+### The fold-in protocol, and one correction to it
+
+**Protocol (Gil):** when the USDA worktree lands, ONE session takes ownership of
+HANDOFF.md, folds in both notes files, and DELETES each file as it is absorbed. A notes
+file still in docs/ means a merge did not finish. The same session drops HANDOFF.md:497
+and :561 and adds the documents extension above to the class list.
+
+**Correction: fold the WHOLE of MEASURED-HEIGHT-NOTES.md, not only section E, before
+deleting it.** It also holds:
+
+- A: the scale-learning live blocker, ranked above the blend ceiling;
+- B: the axis-convention root fix and its test;
+- C: the verdict that the evidence disabling `USE_MEASURED_HEIGHT` does not survive;
+- D: the dependency-ordered plan, the depth assessment, the intake format and the ruler
+  read-out;
+- F: this section.
+
+Deleting the file after absorbing E alone would lose all five.
+
+### Housekeeping item 4: already done
+
+Commit bb6d39e. `depthcheck.txt` was deleted and the self-check writes to `scratch/`;
+`depthsurvey.txt` is stamped INVALID at `docs/evidence/2026-09-12-depthsurvey-INVALID.txt`,
+kept rather than deleted, per Gil's instruction that the record is the value.
+
 ## 0. A premise corrected first
 
 On the current bench `height_ratio` is NULL on 39 of 41 items, not present on 39. The
