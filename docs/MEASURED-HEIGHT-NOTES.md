@@ -401,6 +401,52 @@ detector's corners) maps the food mask into mm^2 in the plate's own plane.
 **Grape series (45 / 90 / 180 g):** scored against the existing portion-sensitivity
 pre-registration, independently of all of the above.
 
+---
+
+## E. HOUSEKEEPING RULE — for HANDOFF's class list, 12 Sep 2026
+
+Four stray root artifacts in one night: `mask_overlays/` committed by accident, the
+scratch harnesses, `depthcheck.txt`, and `depthsurvey.txt` -- the last one reporting
+"9 of 16 measurable" for four days after the code had already refused its method.
+
+**The rule:**
+
+- **Generated output -> `scratch/`**, gitignored, never the repo root. Transcripts,
+  aborted runs, redirected logs, applied patches.
+- **A result worth keeping ->** its value goes in a notes file, not a loose txt.
+- **Superseded evidence -> `docs/evidence/<date>-<name>-INVALID.txt`,** with a header
+  saying what produced it and why it is wrong. Not deleted: the record of what was
+  believed is evidence too.
+
+**Applied tonight:**
+
+- `depthsurvey.txt` (untracked, gitignored -- so a plain move, no history to carry) ->
+  `docs/evidence/2026-09-12-depthsurvey-INVALID.txt`, original bytes preserved under a
+  header. It is the survey food_seg.py:377 already cites as wrong: box-ellipse tilts,
+  the 41.4 deg fingerprint.
+- `depthcheck.txt` deleted. Its one result (20.50 mm against 20.00 mm) is in section D.
+  `scripts/depth_probe.py` now writes transcripts to `scratch/`.
+- `.gitignore`: `scratch/` added, with the rule written above it; the old transcript
+  names stay ignored.
+- `dev.bat` `:api`: removed the stale advice to run `dev api > survey-api-log.txt`. The
+  same block already tees every run into `docs/evidence/api-*.txt`.
+
+**Root sweep, once:**
+
+| Item | What it was | Done |
+|---|---|---|
+| `survey-api-log.txt` | raw `dev api` log, 12 Sep; its four request ids and content are the committed `docs/evidence/2026-09-12-photo35-box-intermittency.txt` | -> `scratch/` |
+| `survey-bench-3run.txt` | aborted bench run, 11 Sep: connection refused, then interrupted after 4 photos; no result | -> `scratch/` |
+| `survey-tail.txt` | `benchall --only` subset, 3 photos x 3 runs, 11 Sep, 61.2% per item; before the density-lookup and USDA fixes, superseded by the clean paired run | -> `scratch/` |
+| `Claude outputs/task1-plate-priority.patch` | a session delivery, already applied (its text is food_seg.py:135) | -> `scratch/`; the empty folder removed |
+| `mask_overlays/`, `mask_dumps/` | generated, gitignored, and WRITTEN TO BY CODE (`_mask_cache`, `NUTRIAI_MASK_DUMP`) | left; moving them is a code change |
+| `scripts/rename_to_neutriai.py` | tracked one-shot nutriai -> neutriai rename, from the baseline commit, never applied; tied to the launch step that fixes bundle IDs | left: tool, not artifact. Unexplained in the docs |
+| `.claude/` | session settings | left |
+
+**Still pointing at the root, and not mine to edit:** HANDOFF.md:497 and :561 still tell
+the reader to run `dev api > survey-api-log.txt 2>&1`. The other session should drop
+them when it folds this in.
+
 ## 0. A premise corrected first
 
 On the current bench `height_ratio` is NULL on 39 of 41 items, not present on 39. The

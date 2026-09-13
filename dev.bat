@@ -83,9 +83,11 @@ REM  `dev benchall` talks to this process over HTTP, so everything the scan
 REM  path logs -- plate_box_vs_circle, plate_hint_bound, no_plate_for_box_rule
 REM  -- is written to THIS window and never reaches the bench's own output.
 REM  One run's box-versus-circle evidence survived only because this window
-REM  happened to still be open when it was wanted. To keep it instead:
-REM
-REM      dev api > survey-api-log.txt 2>&1
+REM  happened to still be open when it was wanted. It is kept automatically now
+REM  -- see "AND THE LOG IS NO LONGER OPTIONAL" below. Do NOT redirect it to a
+REM  file in the repo root: the old advice here ("dev api > survey-api-log.txt")
+REM  is how raw logs came to sit at the root. Generated output goes to scratch/;
+REM  a run worth keeping gets a dated copy in docs/evidence/.
 REM
 REM  AND THE MASKS, WHICH ARE NOT RECOVERABLE AFTERWARDS.
 REM

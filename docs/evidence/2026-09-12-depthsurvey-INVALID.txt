@@ -1,0 +1,55 @@
+================================================================================
+INVALID -- kept as evidence, not as a survey. Do not use its numbers.
+================================================================================
+What produced it: `dev depthcheck --survey` (backend/scripts/depth_probe.py,
+survey()), written to the repo root as depthsurvey.txt, file time 2026-09-08 06:47.
+It asked, with no depth calls, which bench photographs clear the depth rung's
+20 deg tilt floor.
+
+Why it is wrong: its "9 of 16 photographs can be depth-measured" rests on
+plate tilts read from BOX-DERIVED plate ellipses. A box ellipse's axis ratio is
+the model's bounding box, which on a 3:4 photograph is the image's aspect
+ratio, so seven photographs read arccos(3/4) = 41.4 deg to one decimal place
+(05, 06, 07, 08, 08b, 08c, 13, 14 -- 07 and 08b at 41.5). That is the 41.4 deg
+tilt fingerprint: a unit-square shape pushed through a 3:4 conversion. This is
+the very survey food_seg.py:377 and vision.py:909-911 cite ("eight of them at
+41.4 degrees"). The current code refuses box-derived plates
+(food_seg.plate_is_measured; depth_probe.py:203), so re-running today would not
+produce this file.
+
+Measured instead (2026-09-12, ray-traced plate rim ellipse from pixels):
+06 18 deg, 07 14, 08 13, 08b 16, 08c 20, 13 22, 14 20. At most one clears the
+20 deg floor with margin; 04 and 05 (bowls) were not re-measured.
+
+Invalidated: 2026-09-12. See docs/MEASURED-HEIGHT-NOTES.md, sections 2 and 4.
+Why it is kept: it is the record of how far the tilt bug reached, and that the
+number sat in the repo root, read as a result, after the code had already
+recorded it as wrong.
+================================================================================
+Original file follows, unchanged.
+--------------------------------------------------------------------------------
+
+Which photographs can be depth-measured?  plate tilt only -- no depth calls, nothing spent
+
+  01-cheesesteak-paper.jpg               refused     the frame cuts the plate -- no measurable ellipse
+  02-bread-rolls-container.jpg           refused     0.7 deg -- too square-on. A 1% error in the plate ellipse would be 6697% on the height
+  03-alfredo-container.jpg               refused     0.7 deg -- too square-on. A 1% error in the plate ellipse would be 6697% on the height
+  04-bean-soup-bowl-a.jpg                measurable  20.8 deg, a 1% ellipse error costs 9.0%
+  05-bean-soup-bowl-b.jpg                measurable  41.4 deg, a 1% ellipse error costs 3.3%
+  06-plate-meat-beans-rice.jpg           measurable  41.4 deg, a 1% ellipse error costs 3.3%
+  07-plate-4items-topdown.jpg            measurable  41.5 deg, a 1% ellipse error costs 3.3%
+  08-plate-mole-chicken-topdown.jpg      measurable  41.4 deg, a 1% ellipse error costs 3.3%
+  08b-plate-mole-chicken-close.jpg       measurable  41.5 deg, a 1% ellipse error costs 3.3%
+  08c-plate-mole-chicken-tape.jpg        measurable  41.4 deg, a 1% ellipse error costs 3.3%
+  09-tacos-paper-nocard.jpg              refused     the plate ellipse could not be measured
+  10-tacos-paper-card.jpg                refused     the plate ellipse could not be measured
+  11-kebab-paper-card.jpg                refused     the plate ellipse could not be measured
+  12-kebab-paper-nocard.jpg              refused     the plate ellipse could not be measured
+  13-kebab-plate.jpg                     measurable  41.4 deg, a 1% ellipse error costs 3.3%
+  14-plate-mole-chicken-card.jpg         measurable  41.4 deg, a 1% ellipse error costs 3.3%
+
+  9 of 16 photographs can be depth-measured.
+  Every one that does not keeps its prior height, exactly as today.
+  If that fraction is low, the fix is at capture time -- ask for a
+  slight angle -- not a larger depth model.
+

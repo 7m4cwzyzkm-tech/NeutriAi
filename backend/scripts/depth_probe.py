@@ -46,11 +46,18 @@ GRN, RED, YEL, DIM, HDR, OFF = (
 PHOTOS = Path(__file__).resolve().parents[2] / "photos"
 REPO = Path(__file__).resolve().parents[2]
 
-# Everything printed is also written here, without the colour codes.
+# Everything printed is also written to scratch/, without the colour codes.
 #
 # So the command is just `dev depthcheck --survey` -- no `> file 2>&1`, which
 # is one more thing to get right and, run twice by a stray paste, fails with
 # "the file is being used by another process" and looks like a bug in the tool.
+#
+# SCRATCH, NOT THE REPO ROOT. It used to land next to the repo, and a stale
+# `depthsurvey.txt` sat there for days reporting "9 of 16 measurable" from
+# box-ellipse tilts the code had already refused. A transcript is one run's
+# output: it goes to scratch/, and anything worth keeping is written into a notes
+# file or docs/evidence/ under its own dated name.
+TRANSCRIPT_DIR = REPO / "scratch"
 TRANSCRIPT: list[str] = []
 _ANSI = __import__("re").compile(r"\033\[[0-9;]*m")
 
@@ -66,13 +73,17 @@ def saved(name: str) -> None:
     if where is None:
         print(f"  {YEL}could not write a transcript{OFF}  {DIM}the folder is read-only{OFF}\n")
     else:
-        print(f"  {DIM}saved to {where.name}{OFF}\n")
+        print(f"  {DIM}saved to {where.relative_to(REPO).as_posix()}{OFF}\n")
 
 
 def write_transcript(name: str) -> Path | None:
-    """Save the run, under a name nothing else is holding open."""
-    for candidate in [REPO / name] + [REPO / f"{Path(name).stem}-{i}.txt"
-                                      for i in range(2, 10)]:
+    """Save the run into scratch/, under a name nothing else is holding open."""
+    try:
+        TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
+    for candidate in [TRANSCRIPT_DIR / name] + [TRANSCRIPT_DIR / f"{Path(name).stem}-{i}.txt"
+                                                for i in range(2, 10)]:
         try:
             candidate.write_text("\n".join(TRANSCRIPT) + "\n", encoding="utf-8")
             return candidate
