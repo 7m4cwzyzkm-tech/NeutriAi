@@ -2071,6 +2071,84 @@ there a test that fails when the path is broken END TO END, not per stage?**
 - **Deliberate switches.** Anything intentionally off is listed, with its
   reason, in one allowlist, so "off" is a decision on record rather than
   silence.
+- **Caches, memos and learned tables (added 13 Sep, Gil).** For every one: **is
+  its key derived from the CONTENT the cached value stands for?** A key built on
+  `id()`, object identity, anything Python may recycle, a filename, a label a
+  model chooses, or a lossy normalisation of the content fails. The failure is
+  silent by nature: a wrong hit returns a plausible value of the right type.
+  The admitting instance: the replay rig memoised the Hough plate area on
+  `id(raw)`, CPython reused photo 23's id for photo 25's bytes, and every gram
+  on 25 moved by exactly 1.081x. Nothing looked wrong. Only the rig's control
+  (reproduce the recorded grams first) caught it.
+
+### The cache sweep — 13 Sep 2026. Recorded, not fixed.
+
+Every `id(`, `lru_cache`, memo, cache, `_KNOWN`-style set, `hash(` and
+learned-table lookup in backend/app, backend/scripts, scripts/, mobile/src and
+docs/evidence. No `hash()`, `__hash__`, `WeakKeyDictionary` or other `id()` use
+exists.
+
+**FAIL -- key not derived from the content:**
+
+1. **`resolver.canonical` -- the nutrition cache's key drops "raw", "cooked"
+   and "fresh"** (resolver.py:24-31). Checked: `raw rice`, `cooked rice` and
+   `rice` all key to `rice`; `raw chicken breast` / `cooked chicken breast` ->
+   `chicken breast`; `raw spinach` / `cooked spinach` -> `spinach`. Raw and
+   cooked rice differ about 2.8x in kcal per 100 g, and whichever was fetched
+   first answers for both, persistently (`food_facts` upsert on
+   `canonical_key`). `RESOLVER_VERSION` invalidates rows on a LOGIC change, not
+   on a key collision. The fuzzy fallback (resolver.py:76-98) also returns a
+   row whose provider DESCRIPTION canonicalises to the key, i.e. a row stored
+   for another query. Macros today; an `ai_estimate` row carries its LLM density
+   to every name sharing the key, so grams once provenance lets one through.
+2. **Scale learning -- a physical vessel's learned width is keyed on the MODEL'S
+   vessel NAME** (`scale_learning.record`, vision.py:1748-1752, read back at
+   vision.py:1676-1689 to size a scan; calibration.py:132 likewise). The label
+   is not the plate: photo 18 was `side_plate` in 4 of 6 scans and
+   `dinner_plate` in the sweep. Live `vessel_observations`, all 7 rows one user,
+   all keyed `dinner_plate`: a tape at 254 mm, five card readings at exactly
+   158.33 mm and one at 126.66 mm. One key, three sizes, nothing in the row that
+   says which vessel was measured. Damage today unproven -- a tape is never
+   overridden by inference -- but the learned scale a subscriber would get pools
+   different plates under one label and splits one plate across two.
+3. **`scripts/_mask_cache.py` -- keyed on writer + photo FILENAME stem + long
+   edge.** The namespace fixed the resolution collision; nothing records a digest
+   of the image the masks came from, so a re-shot or re-encoded photograph under
+   the same filename is served the old masks. This is the same family as the
+   blocker it was built after: the cache encoded the local file, production
+   re-encodes through storage, same name, different bytes.
+4. **The replay rig's `inputs/sweep_cache/<photo>.json` and `STORED`
+   map -- keyed on photo filename**, and neither the rig nor paired_v2 records a
+   digest of the stored bytes. If a storage object is replaced under the same
+   name, a cached detection is paired with bytes it never saw. The control
+   guards it (grams would move), but the key itself does not.
+
+**PAST MEMBER, already fixed:** refine's merge (vision.py:1500) looked targets
+up by `id(items[i])` against `model_copy()` objects -- different objects,
+different ids -- so every merge missed and merged grams were discarded. The
+opposite face of the same class: identity changed while the content did not.
+Pinned by tests/test_refine.py:84.
+
+**PASS:**
+- `segment_hosted._auto_memo` -- sha256 of the full encoded bytes, single slot
+  per instance (the model version is fixed per instance). `food_seg`'s plate
+  holes reuse it by re-encoding, so the key is still the content.
+- `dump_masks` -- named by the bytes' digest plus a per-scan counter.
+- The replay rig's Hough memo -- sha256 of the bytes since 13 Sep.
+- `identity._KNOWN` (user id), `security._JwksCache` (key id) -- the key IS the
+  identity the value stands for; `forget()` runs on account deletion.
+- `learned_heights`, `aliases_for` -- no cache; read per call.
+- `height_fit.py` reads `seg._auto_memo` only after resetting it to None, so
+  the slot can hold only that call. `seg_check.py` reads it after its one call
+  per process with no digest check -- passes by construction, fragile if it
+  ever loops.
+- mobile `MealDetailScreen` `useMemo([items])` -- React keys on identity, and
+  `items` is replaced immutably (`prev.map(...{...it})`), never mutated.
+- `config.get_settings`, `db.service` -- `lru_cache(maxsize=1)` with no
+  arguments, process singletons; no content key to get wrong (the reload-does-not-
+  re-read-the-environment consequence is already recorded).
+- `tests/test_wiring._SOURCE_CACHE` -- keyed by path, one test process, with
+  explicit reset.
 
 ### What it would flag today, besides the four (each checked in code or data)
 
