@@ -28,6 +28,59 @@ one detection per photo, nutrition facts shared across arms:
 SUBSCRIBER'S pre-blend geometry on log error and ranking, and false of the
 calibrated stack and of any per-portion error measure.
 
+## LAUNCH BLOCKER: GRAMS DEPEND ON USDA UPTIME — 12 Sep 2026
+
+Ranked on its own, independent of accuracy. Found while re-running the
+uncalibrated sweep.
+
+vision.py:1097-1102 says "ONLY a real measured density is passed as explicit."
+The line passes `fact["density_g_ml"]` whatever its provenance, and
+`density_for` puts an explicit density at precedence rank 1, above the dish
+match.
+
+### How an LLM density reaches the grams
+
+- USDA is the only nutrition provider actually configured:
+  `nutrition_provider_order` lists usda, nutritionix, edamam, and neither
+  Nutritionix nor Edamam has keys.
+- `resolver.resolve` returns a cached USDA row directly. A cached `ai_estimate`
+  row does NOT short-circuit: the providers are retried on every scan. If USDA
+  fails or finds nothing, the resolver returns that cached row -- carrying a
+  reasoning-model `density_g_ml` -- or, with no row, falls to the reference
+  table (no density) or a fresh `_ai_estimate` (a density).
+- So a food's density source is decided at scan time, by whether USDA answered.
+
+### (a) Same photograph, different grams
+
+Photo 30's caesar salad came out 350 g in the first sweep, run during a USDA
+outage, and 98 g in the clean re-run -- from the same cached vision response.
+Zucchini 88 vs 52 g; rice 151 vs 107 g. That is nondeterminism in the product's
+core output, driven by a third party's availability.
+
+### (b) How often it bypasses the density table — measured
+
+- 75 of the 116 `food_facts` rows are `ai_estimate` rows carrying an LLM
+  density; the 33 USDA rows carry none. Those 75 are not used on every scan:
+  they are the foods ONE USDA FAILURE away from bypassing the table.
+- Bench, clean re-run, USDA answering: **2 of 27** scored items took an LLM
+  density -- shredded beef with potatoes 0.85 (table 1.05) and pepperoni pizza
+  0.85 (table 0.55). The other 25 used the table.
+- Bench, first sweep, USDA failing: **at least 4 of 28** (zucchini, both rice
+  items, caesar -- the items that moved), and up to 9 hit the failure path.
+  Provenance was not recorded, so the exact count is unknown.
+- Whenever it fires, everything done to the density table tonight -- the
+  whole-word matcher, the valued keys, the bulk-vs-material finding, holding
+  carrots and zucchini -- is outranked for that food by an LLM guess.
+
+### The fix — stated, not built
+
+- A provenance field on `food_facts`: measured, sourced table, provider, LLM
+  estimate.
+- A precedence rule: only a MEASURED density outranks the table. An LLM or
+  provider density ranks below the dish match, or does not reach the weight at
+  all.
+- Each scan item records which density its grams used, so a bench can see it.
+
 ## THE SERVING-PRIOR BLEND IS NOW THE ACCURACY CEILING
 
 Found by the paired uncalibrated sweep (full record, and its clean re-run, near
@@ -460,6 +513,9 @@ unions, compute `largest_piece_share` for each, and see whether it crosses `0.80
 
 ## Launch blockers, unrelated to accuracy
 
+- **Grams depend on USDA uptime** (added 12 Sep). An LLM-estimated density
+  outranks the density table whenever USDA fails; same photo, 350 g vs 98 g.
+  See "LAUNCH BLOCKER: GRAMS DEPEND ON USDA UPTIME" at the top of this file.
 - ~~Supabase migrations **0017 and 0018** unrun.~~ STALE, checked 12 Sep: the
   live tables already carry 0017's and 0018's columns
   (`scan_calibrations.vessel/samples/learned`, `food_scans.vessel`) and
@@ -1765,6 +1821,19 @@ there a test that fails when the path is broken END TO END, not per stage?**
 - **The macro reference-table fallback.** The live `food_facts` source check
   constraint rejected resolver writes tonight (23514). Suspected; queued as a
   separate task.
+- **An LLM's density entering as a measured one** (vision.py:1097-1102). Added
+  after the clean re-run; ranked as a launch blocker at the top of this file.
+
+### A review failure mode, not a code one: linear against area
+
+Twice tonight, by Gil's own count, a linear figure was compared with an area
+figure and read as a match it was not. The recorded instance: the card's excess,
++10% linear, set against portion.py's ~10% of AREA -- in area it is +21%, about
+double. A scale error doubles when squared into area and
+triples when cubed into volume, so a comparison that does not say which power
+it is in is not a comparison. The standing rule for review: every percentage
+about scale names its dimension -- linear, area or volume -- before it is
+compared with anything.
 
 ---
 
@@ -1816,32 +1885,59 @@ product is for.
   each frame's detection. The absolute slopes carry frame-to-frame detection
   noise.
 
-### Predicted slopes, with reasoning
+### AMENDED before the photos: a step is a confound, not sensitivity
 
-- **Pre-blend geometry, CAL: 0.8 (plausible range 0.6-1.2).** At 45-180 g one
-  item covers well under the 0.35 reference coverage, so the spread factor sits
-  at its 1.10 clamp and is constant (portion.py:2348-2349). Grams then follow
-  the measured area x a fixed height. Area grows ~mass^1 for pieces spread in
-  one layer and ~mass^0.67 for a heap. A height-branch flip from separate pieces
-  to one mass as the portion grows adds ln(2.28)/ln(4) ~ +0.6 and could push the
-  slope above 1.
-- **Post-blend CAL: ~0.9 x pre-blend, so ~0.72.** With the serving guess
-  constant across the three (same name) and ~150 g, only the small portion
-  disagrees by more than 1.5x; the 0.10 cap moves ln(45 g) by 0.1 x ln(150/45),
-  costing ~9% of the slope.
-- **Post-blend UNCAL on `vessel_reference`: 0.5-0.67 x pre-blend, so ~0.5.** The
-  vessel size factor is constant if the name is stable, so it does not change
-  the slope. The 0.40 cap pulls the 45 g and 90 g frames toward the guess:
-  worked through, 0.67x under a dinner_plate name, 0.50x under side_plate.
+The first version of this pre-registration folded "+0.6 if the height class
+switches 9.2 -> 21.0 mm" into the predicted slope. That was wrong (Gil's
+correction). A threshold crossing between frames is a STEP, not a slope, and a
+result near 1.0 obtained through one would be falsely reassuring -- the worst
+outcome this test can produce.
+
+- **Report per frame every discrete state that multiplies the grams:** the
+  height branch (separate pieces 9.2 mm / one mass 21.0 mm / no measured
+  footprint); whether the measured footprint was used or refused (the two paths
+  use different height tables); the rung; the vessel name; the food name; the
+  serving guess. READ FROM THE RUN, never assumed: the harness captures
+  vision.py's `portion_height_branch` log event (piece_share, applied, one_mass,
+  height_mm) and each item's `measured_area_used`.
+- **Report two slopes:** the raw slope over all three frames, and the slope over
+  the frames that share ONE state on every item above.
+- **If any state changes between frames, the raw slope is NOT evidence of
+  portion sensitivity and is not reported as such.** With two frames left,
+  report their log ratio and say it is two points.
+- Gil is shooting a single layer, grapes not touching, at all three weights,
+  which should hold the branch at separate pieces. Verify from the logs.
+
+### Predicted slopes, with reasoning (amended)
+
+For frames sharing one state. With one layer of non-touching grapes that state
+is expected to be separate pieces (9.2 mm), footprint measured.
+
+- **Pre-blend geometry, CAL: ~0.95 (plausible 0.75-1.1).** At 45-180 g one item
+  covers well under the 0.35 reference coverage, so the spread factor sits at
+  its 1.10 clamp and is constant (portion.py:2348-2349). With the height fixed,
+  grams follow the measured footprint, and one layer of separate grapes covers
+  area in proportion to its count, ~mass^1. Mask edges and small-item
+  resolution pull the small end, so slightly under 1.
+- **Post-blend CAL: ~0.91 x pre-blend, so ~0.87.** With the serving guess
+  constant across the frames and ~150 g, only the 45 g frame disagrees by more
+  than 1.5x; the 0.10 cap moves ln(45 g) by 0.1 x ln(150/45), about 9% of the
+  slope.
+- **Post-blend UNCAL on `vessel_reference`: 0.50-0.67 x pre-blend, so ~0.55.**
+  The vessel size factor is constant if the name is stable, so it leaves the
+  slope alone. The 0.40 cap pulls the small frames toward the guess: 0.67x
+  under a dinner_plate name, 0.50x under side_plate.
 - **UNCAL named "paper" (`ai_prior`): 0.0.** No geometry; every frame returns the
   guess.
 - **UNCAL with the card found (`reference_object`, cap 0.10): ~ CAL post-blend.**
   That is why UNCAL_NOCARD is its own arm.
-- **Largest risks:** the vessel name changing between frames (a +/-39% area step
-  on one point) and the food's name changing (the trail-mix pair moved the guess
-  50 -> 30 g on a name change alone).
+- **Largest risks, every one a step:** the vessel name changing (a +/-39% area
+  step), the food name changing (the trail-mix pair moved the guess 50 -> 30 g
+  on a name alone), the footprint refused on one frame, grapes touching on the
+  180 g frame.
 - **Harness:** the corrected paired harness below, which shares nutrition facts
-  across arms. The first sweep's harness does not.
+  across arms, extended to capture the per-frame states above. The first
+  sweep's harness does neither.
 
 ---
 
