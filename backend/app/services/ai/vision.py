@@ -466,6 +466,26 @@ def _calibration_fits(calibration: dict | None, detected_vessel: str | None) -> 
     return saved == _key(detected_vessel)
 
 
+def _calibration_scale(plate_diameter_mm: float | None, calibration: dict | None,
+                       origin: str | None, detected_vessel: str | None
+                       ) -> tuple[float | None, float | None, bool]:
+    """(plate_diameter_mm, reference_area_mm2, scale_inferred) for the hint.
+
+    `origin` is how the calibration was picked: "id" (the user chose it for this
+    scan), "default" (their default, applied because no size was sent), or
+    "vessel" (matched on the vessel name the model gave). A request diameter or a
+    chosen calibration is a declared scale; a default or a vessel match is an
+    inference, and `mm2_per_frame` ranks it below a card or a camera distance
+    measured in this photo.
+    """
+    fits = _calibration_fits(calibration, detected_vessel)
+    diameter = plate_diameter_mm or (_num(calibration.get("real_diameter_mm")) if fits else None)
+    area = _num(calibration.get("real_area_mm2")) if fits else None
+    inferred = bool(fits and not plate_diameter_mm and origin in ("default", "vessel")
+                    and (diameter or area))
+    return diameter, area, inferred
+
+
 def _text(value) -> str | None:
     """A short string from a model response, or None. Never raises."""
     if value is None:
@@ -1654,16 +1674,19 @@ async def _run_scan(
     )
 
     calibration = None
+    calibration_origin = None
     if calibration_id:
         calibration = maybe_one(
             sb.table("scan_calibrations").select("*").eq("id", calibration_id)
             .eq("user_id", user_id).limit(1).execute()
         )
+        calibration_origin = "id"
     elif not plate_diameter_mm:
         calibration = maybe_one(
             sb.table("scan_calibrations").select("*").eq("user_id", user_id)
             .eq("is_default", True).limit(1).execute()
         )
+        calibration_origin = "default"
 
     fetched = await fetch_images("meal-photos", image_paths)
     images = [p.b64 for p in fetched]
@@ -1723,7 +1746,10 @@ async def _run_scan(
         )
         if vessel_cal:
             calibration = vessel_cal
+            calibration_origin = "vessel"
 
+    cal_diameter, cal_area, cal_inferred = _calibration_scale(
+        plate_diameter_mm, calibration, calibration_origin, detected_vessel)
     hint = GeometryHint(
         plate_ellipse_area_ratio=(float(detection.get("plate_area_ratio") or 0) or None),
         # The vessel's apparent width and height. A round plate flattens into an
@@ -1731,11 +1757,7 @@ async def _run_scan(
         # only free measurement of camera angle we have, and the thing that says
         # whether this photo contains any height information at all.
         plate_ellipse_wh=_plate_ellipse(detection, measured_aspect or camera_aspect_ratio),
-        plate_diameter_mm=(
-            plate_diameter_mm
-            or (_num(calibration.get("real_diameter_mm"))
-                if _calibration_fits(calibration, detected_vessel) else None)
-        ),
+        plate_diameter_mm=cal_diameter,
         # A calibration only describes the vessel it was measured on.
         #
         # The default calibration is picked before the photo is analysed, so a
@@ -1744,10 +1766,10 @@ async def _run_scan(
         # and the result was reported as plate_reference, the highest-trust
         # rung in the table. A measurement of the wrong object is worse than no
         # measurement, because it is believed more.
-        reference_area_mm2=(
-            _num(calibration.get("real_area_mm2"))
-            if _calibration_fits(calibration, detected_vessel) else None
-        ),
+        reference_area_mm2=cal_area,
+        # Declared (request size, chosen calibration) or inferred (default, vessel
+        # name match). Inferred ranks below a card or a camera distance.
+        scale_inferred=cal_inferred,
         depth_mm=camera_distance_mm,
         camera_fov_deg=camera_fov_deg,
         aspect_ratio=(measured_aspect or camera_aspect_ratio),

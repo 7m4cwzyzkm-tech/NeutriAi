@@ -2689,3 +2689,40 @@ def test_the_two_measured_footprint_guards_face_opposite_ways():
                           bbox={"x": 0.1, "y": 0.1, "w": 0.35, "h": 0.35},
                           measured_area_ratio=0.08, detection_confidence=0.8)
     assert fine.measured_area_used == pytest.approx(0.08)
+
+
+# ---------------------------------------------------------------------------
+# A saved calibration nobody chose for this scan does not outrank a scale
+# measured in the photo. Measured cost before this: a 254 mm `dinner_plate`
+# calibration pre-empted a known 359 mm camera distance on 11 of 16
+# Nutrition5k dishes, energy 47.3% -> 57.5% MAE/mean.
+# ---------------------------------------------------------------------------
+def test_an_inferred_calibration_does_not_outrank_a_scale_measured_in_the_photo():
+    by_diameter = dict(plate_diameter_mm=254.0, plate_ellipse_area_ratio=0.4, scale_inferred=True)
+    by_area = dict(reference_area_mm2=50670.75, plate_ellipse_area_ratio=0.4, scale_inferred=True)
+    for cal in (by_diameter, by_area):
+        assert mm2_per_frame(GeometryHint(**cal, depth_mm=359.0, aspect_ratio=4 / 3))[1] == "depth_model"
+        assert mm2_per_frame(GeometryHint(**cal, reference_frame_width_mm=320.0,
+                                          aspect_ratio=0.75))[1] == "reference_object"
+        # ...and with nothing measured it still beats every prior.
+        assert mm2_per_frame(GeometryHint(**cal, vessel="dinner_plate"))[1] == "plate_reference"
+
+
+def test_a_declared_plate_size_still_outranks_every_measurement():
+    hint = GeometryHint(plate_diameter_mm=229.0, plate_ellipse_area_ratio=0.4, depth_mm=359.0,
+                        reference_frame_width_mm=320.0, aspect_ratio=0.75)
+    assert mm2_per_frame(hint)[1] == "plate_reference"
+    chosen = GeometryHint(reference_area_mm2=50670.75, plate_ellipse_area_ratio=0.4, depth_mm=359.0)
+    assert mm2_per_frame(chosen)[1] == "plate_reference"
+
+
+def test_only_a_calibration_nobody_chose_is_marked_inferred():
+    from app.services.ai.vision import _calibration_scale
+
+    cal = {"vessel": "dinner_plate", "real_diameter_mm": 254.0, "real_area_mm2": 50670.75}
+    assert _calibration_scale(None, cal, "vessel", "dinner_plate") == (254.0, 50670.75, True)
+    assert _calibration_scale(None, cal, "default", "dinner_plate")[2] is True
+    assert _calibration_scale(None, cal, "id", "dinner_plate")[2] is False
+    assert _calibration_scale(229.0, None, None, "dinner_plate") == (229.0, None, False)
+    # A calibration of a different vessel is still refused, as before.
+    assert _calibration_scale(None, cal, "vessel", "bowl") == (None, None, False)

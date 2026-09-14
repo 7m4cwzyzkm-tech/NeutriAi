@@ -966,6 +966,11 @@ class GeometryHint:
     reference_kind: str | None = None                # what was found in the pixels
     reference_frame_width_mm: float | None = None    # frame width it measures, in mm
     reference_tilt_deg: float | None = None          # camera tilt, from its own shape
+    # True when plate_diameter_mm / reference_area_mm2 came from a SAVED calibration
+    # that nobody chose for this scan -- the user's default, or one matched on the
+    # vessel name the model gave. Such a scale ranks below anything measured in
+    # this photo (a card, a camera distance). See mm2_per_frame.
+    scale_inferred: bool = False
 
     @property
     def tilt_deg(self) -> float | None:
@@ -1617,13 +1622,29 @@ def mm2_per_frame(hint: GeometryHint) -> tuple[float | None, str]:
     Returns ``(mm2, method)`` or ``(None, method)`` when we have no scale at all.
     """
     # Rung 1: an explicitly calibrated reference object.
-    if hint.reference_area_mm2 and hint.plate_ellipse_area_ratio:
-        return hint.reference_area_mm2 / max(hint.plate_ellipse_area_ratio, 1e-4), "plate_reference"
-
     # Rung 1b: a known plate diameter plus the plate's share of the frame.
-    if hint.plate_diameter_mm and hint.plate_ellipse_area_ratio:
+    calibrated = None
+    if hint.reference_area_mm2 and hint.plate_ellipse_area_ratio:
+        calibrated = (hint.reference_area_mm2 / max(hint.plate_ellipse_area_ratio, 1e-4),
+                      "plate_reference")
+    elif hint.plate_diameter_mm and hint.plate_ellipse_area_ratio:
         plate_area = math.pi * (hint.plate_diameter_mm / 2.0) ** 2
-        return plate_area / max(hint.plate_ellipse_area_ratio, 1e-4), "plate_reference"
+        calibrated = (plate_area / max(hint.plate_ellipse_area_ratio, 1e-4), "plate_reference")
+
+    # A DECLARED or CHOSEN plate size outranks everything: the request said how
+    # big the plate is, or the user picked the calibration for this scan.
+    #
+    # A calibration applied by INFERENCE does not. The default, or a saved row
+    # matched on the vessel name the model gave, is a guess that this is the
+    # plate that was measured -- and the model's names are roulette (one 229 mm
+    # plate was `side_plate` on seven bench photos and `dinner_plate` on seven).
+    # Measured on 16 Nutrition5k dishes with a known 359 mm camera distance: the
+    # bench account's saved 254 mm `dinner_plate` took 11 of them off the depth
+    # rung onto a plate that was not in the photo, energy 47.3% -> 57.5% MAE/mean.
+    # So an inferred calibration waits until the card and the distance have
+    # had their turn, and still beats every prior below.
+    if calibrated and not hint.scale_inferred:
+        return calibrated
 
     # Rung 2a: an object of known real size, found in the pixels.
     #
@@ -1737,6 +1758,10 @@ def mm2_per_frame(hint: GeometryHint) -> tuple[float | None, str]:
             h = long_side
             w = h * aspect
         return w * h, "depth_model"
+
+    # The inferred calibration, now that nothing measured in the photo spoke.
+    if calibrated:
+        return calibrated
 
     # Rung 3b: the vision model told us what the food is served on. A named
     # vessel of known typical size is a real reference -- weaker than a
