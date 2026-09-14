@@ -8,9 +8,19 @@ another investigation is written down in PARKED, not followed (standing check).
 ### BUNDLE A -- MAKE THE CARD RUNG WORK. Branch `bundle-a-card-rung`; nothing merges alone.
 
     1. chroma card detector      26/28, 0 FP in-sample, gain frozen at x3      buildable now
-    2. rung ordering             a label-matched saved calibration cannot     buildable now
-                                 outrank a scale measured in THIS photo
-                                 (camera distance, card)
+    2. rung ordering             A SCALE MEASURED FROM THIS PHOTOGRAPH         built, scored
+                                 OUTRANKS ANY SCALE CARRIED IN FROM OUTSIDE IT
+                                 (card found in these pixels, distance for
+                                 this capture)
+
+- **The ranking rule (Gil, 13 Sep), in terms of the number, not where it is stored:**
+  PROVENANCE -- measured (a tape) or inferred (a learned width, a model's reading) --
+  and APPLICABILITY -- confirmed for this frame (sent with the scan, a calibration picked
+  for it) or assumed (a default, a vessel-name match). Only measured AND confirmed keeps
+  rank 1 above a card or camera distance: a tape-measured diameter of a plate genuinely
+  in the photo. Everything else waits for the photograph's own measurements and still
+  beats every prior. The defect was never the tape; it was a label match deciding which
+  photo a tape reading applied to.
     3. floor-height correction   card-on-table over-read of food on a plate    needs Gil's ruler: ONE
                                  (+21.6% area, median of 20 photos)            plate floor height
 
@@ -60,16 +70,23 @@ another investigation is written down in PARKED, not followed (standing check).
    attribution, not measurement.
 2. **Wrong nutrition rows** -- 77% median kcal error on ~10 of 34 detections.
 
-- **Acceptance:** per-meal MEAN below 55% while the MEDIAN barely moves. A median that
-  moves materially means something other than the tail was fixed -- find out what.
-
-**PROPOSED AMENDMENT to that acceptance, with the number that forces it.** At n = 25 the
-median cannot discriminate: removing ONLY the three phantom items moves CAL median meal
-energy 40.9% -> 31.2% (score_n5k_metric, "phantom detections removed"), because meals 23
-and 25 both sit above the median and both fall below it -- two ranks. So a tail fix
-moves the median by itself. Replace "median barely moves" with a PAIRED check: every
-meal that contains no item the fix touches is identical in grams and energy, exactly.
-Keep the mean-below-55% criterion; report the median beside it, not as a gate.
+- **ACCEPTANCE (adopted 13 Sep; replaces "the median barely moves", which cannot
+  discriminate at n = 25 -- the three phantom items alone move the CAL median 40.9% ->
+  31.2%, because meals 23 and 25 both cross it). Each is PASS / FAIL:**
+  1. Per-meal energy MEAN below 55% (CAL arm, the 25 scored meals).
+  2. **Paired invariant:** every meal containing no item the fix touches is BIT-IDENTICAL
+     in every item's grams and energy, before and after. Any difference fails.
+  3. **Phantom-food piece only -- it is a CLASSIFIER and errs both ways:** every EXCLUDED
+     item is listed and checked by eye on its photograph, and the count of LEGITIMATE
+     items wrongly excluded is reported. **Hard ceiling: zero legitimate exclusions on the
+     25 bench meals.** One breaches it and fails the piece, whatever the mean did. A fix
+     that improves the mean by deleting real side dishes makes the product worse while
+     the score improves.
+  The median is reported beside these, never as a gate.
+- **OPEN DEFINITION, for Gil before the classifier is built:** is photo 25's mayonnaise part
+  of the user's portion? The bench weighed only "smashed potatoes = 136 g". If the smear
+  was in that weight it is a legitimate item and excluding it breaches the ceiling; if
+  not, it is phantom. The rule is not built until this is answered.
 
 **PHANTOM FOOD -- SPECIFICATION, not built.** Two failures with different mechanisms, so
 two signals, each already present in the vision response:
