@@ -471,18 +471,35 @@ def _calibration_scale(plate_diameter_mm: float | None, calibration: dict | None
                        ) -> tuple[float | None, float | None, bool]:
     """(plate_diameter_mm, reference_area_mm2, scale_inferred) for the hint.
 
-    `origin` is how the calibration was picked: "id" (the user chose it for this
-    scan), "default" (their default, applied because no size was sent), or
-    "vessel" (matched on the vessel name the model gave). A request diameter or a
-    chosen calibration is a declared scale; a default or a vessel match is an
-    inference, and `mm2_per_frame` ranks it below a card or a camera distance
-    measured in this photo.
+    THE RULE (Gil, 13 Sep): A SCALE MEASURED FROM THIS PHOTOGRAPH OUTRANKS ANY
+    SCALE CARRIED IN FROM OUTSIDE IT. It is decided by two properties of the
+    number, never by where it is stored:
+
+      PROVENANCE     MEASURED (a tape) or INFERRED (scale learning's `learned`
+                     width, a model's reading)
+      APPLICABILITY  CONFIRMED for this frame (sent with this scan, or a
+                     calibration the user picked for this scan) or ASSUMED (the
+                     user's default, a match on the vessel name the model gave)
+
+    Only MEASURED AND CONFIRMED keeps its rank above a card or a camera distance
+    found for this capture -- the tape-measured diameter of a plate genuinely in
+    the photo. Everything else is scale_inferred and waits for them. The defect
+    this replaced was never the tape; it was a label match deciding which photo a
+    tape reading applied to.
+
+    `origin`: "id" (picked for this scan), "default", or "vessel".
     """
     fits = _calibration_fits(calibration, detected_vessel)
-    diameter = plate_diameter_mm or (_num(calibration.get("real_diameter_mm")) if fits else None)
+    measured = bool(calibration) and not calibration.get("learned")
     area = _num(calibration.get("real_area_mm2")) if fits else None
-    inferred = bool(fits and not plate_diameter_mm and origin in ("default", "vessel")
-                    and (diameter or area))
+    if plate_diameter_mm:
+        # Sent with this scan: confirmed for this frame, and a size the user
+        # states. A calibration's area still takes rung 1 over it only when that
+        # area is itself a measurement; a learned area does not outrank a tape.
+        return plate_diameter_mm, (area if measured else None), False
+    diameter = _num(calibration.get("real_diameter_mm")) if fits else None
+    confirmed = origin == "id"
+    inferred = bool((diameter or area) and not (measured and confirmed))
     return diameter, area, inferred
 
 

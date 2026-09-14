@@ -966,10 +966,11 @@ class GeometryHint:
     reference_kind: str | None = None                # what was found in the pixels
     reference_frame_width_mm: float | None = None    # frame width it measures, in mm
     reference_tilt_deg: float | None = None          # camera tilt, from its own shape
-    # True when plate_diameter_mm / reference_area_mm2 came from a SAVED calibration
-    # that nobody chose for this scan -- the user's default, or one matched on the
-    # vessel name the model gave. Such a scale ranks below anything measured in
-    # this photo (a card, a camera distance). See mm2_per_frame.
+    # True unless plate_diameter_mm / reference_area_mm2 is both MEASURED (a tape,
+    # not a learned width) and CONFIRMED for this frame (sent with this scan, or a
+    # calibration the user picked for it). Anything else was carried in from
+    # outside the photograph and ranks below a card or camera distance measured
+    # from it. Set by vision._calibration_scale; see mm2_per_frame.
     scale_inferred: bool = False
 
     @property
@@ -1631,12 +1632,14 @@ def mm2_per_frame(hint: GeometryHint) -> tuple[float | None, str]:
         plate_area = math.pi * (hint.plate_diameter_mm / 2.0) ** 2
         calibrated = (plate_area / max(hint.plate_ellipse_area_ratio, 1e-4), "plate_reference")
 
-    # A DECLARED or CHOSEN plate size outranks everything: the request said how
-    # big the plate is, or the user picked the calibration for this scan.
+    # A SCALE MEASURED FROM THIS PHOTOGRAPH OUTRANKS ANY SCALE CARRIED IN FROM
+    # OUTSIDE IT. Only a plate size that is both MEASURED (a tape) and CONFIRMED
+    # for this frame (sent with the scan, or a calibration picked for it) keeps
+    # rank 1 outright.
     #
-    # A calibration applied by INFERENCE does not. The default, or a saved row
-    # matched on the vessel name the model gave, is a guess that this is the
-    # plate that was measured -- and the model's names are roulette (one 229 mm
+    # Anything else waits. A default, a saved row matched on the vessel name the
+    # model gave, or a learned width is a claim about a plate that may not be in
+    # this photo -- and the model's names are roulette (one 229 mm
     # plate was `side_plate` on seven bench photos and `dinner_plate` on seven).
     # Measured on 16 Nutrition5k dishes with a known 359 mm camera distance: the
     # bench account's saved 254 mm `dinner_plate` took 11 of them off the depth

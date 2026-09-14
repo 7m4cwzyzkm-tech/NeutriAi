@@ -2726,3 +2726,22 @@ def test_only_a_calibration_nobody_chose_is_marked_inferred():
     assert _calibration_scale(229.0, None, None, "dinner_plate") == (229.0, None, False)
     # A calibration of a different vessel is still refused, as before.
     assert _calibration_scale(None, cal, "vessel", "bowl") == (None, None, False)
+
+
+def test_rank_follows_provenance_and_applicability_not_storage():
+    """Measured AND confirmed keeps rank; inferred OR assumed waits for the photo."""
+    from app.services.ai.vision import _calibration_scale
+
+    tape = {"vessel": "dinner_plate", "real_diameter_mm": 254.0, "real_area_mm2": 50670.75, "learned": False}
+    learned = {**tape, "learned": True}
+    # measured + confirmed (picked for this scan): keeps rank
+    assert _calibration_scale(None, tape, "id", "dinner_plate")[2] is False
+    # inferred (learned) even when picked for this scan: waits
+    assert _calibration_scale(None, learned, "id", "dinner_plate")[2] is True
+    # measured but assumed (default, vessel match): waits
+    assert _calibration_scale(None, tape, "default", "dinner_plate")[2] is True
+    assert _calibration_scale(None, tape, "vessel", "dinner_plate")[2] is True
+    # a tape diameter sent with the scan keeps rank, and a learned area does not
+    # take rung 1 over it -- a measured area still does, as before
+    assert _calibration_scale(229.0, learned, "id", "dinner_plate") == (229.0, None, False)
+    assert _calibration_scale(229.0, tape, "id", "dinner_plate") == (229.0, 50670.75, False)
