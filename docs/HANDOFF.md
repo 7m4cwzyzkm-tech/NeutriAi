@@ -30,6 +30,29 @@ another investigation is written down in PARKED, not followed (standing check).
 - **Acceptance 2 (pieces 1 + 3):** the uncalibrated bench arm, before and after, direction
   predicted first.
 
+**Scored on the branch, 13 Sep:**
+
+    commit                        replay rig (27 photos, fixed --pieces-from)          Nutrition5k, 16 cached
+    86ca158 base (rig control)    CAL = recorded on 27; UNCAL 37.3 / 72.7 / 29.1       --
+    7e2b559 piece 1 chroma        CAL = recorded on 27; UNCAL = chroma arm on 27:      --
+                                  43.4 / 89.4 / 40.3 -- as predicted; identical to
+                                  HEAD, so piece 2 moved nothing on the bench
+    ac99f3a piece 2 ordering      CAL = recorded on 27; UNCAL = chroma arm on 27:      BENCH == CLEAN on 16/16
+      (HEAD, pieces 1+2)          43.4 / 89.4 / 40.3  (MAE/mean, per-meal mean,        (46.9 / 57.9 / 31.9);
+                                  median) -- exactly as predicted                      old order 57.7 / 65.7 / 42.7,
+                                                                                       pre-empting all 11 dinner_plate
+
+- **Piece 2 PASSES its acceptance:** the pre-emption is gone and the bench-calibration arm
+  equals the clean arm dish for dish. The old-order arm in the same run reproduces the
+  original cost (57.7% vs 57.5% measured before; median 42.7% exactly); the clean arm reads
+  46.9% rather than 47.3% because this run blocked the LLM nutrition fallback -- shared by
+  all three arms, so the comparison is exact.
+- **Piece 1 alone is still harmful, as measured before** (UNCAL 37.3% -> 43.4%); piece 3 is
+  what has to recover it. Waiting on Gil's floor-height reading.
+- **Rig defect found and fixed on the way:** the height-branch search used all four recorded
+  arms, so piece 1's legitimate UNCAL change moved CAL on 17, 19, 34 and 36 (a2fc9b7,
+  `--pieces-from`). The fixed rig reproduces the base commit exactly.
+
 ### BUNDLE B -- KILL THE TAIL. Per-meal mean 74.7% against median 40.9%.
 
 1. **Phantom food** -- correctly seen, not the user's portion (23 +664%, a neighbouring
