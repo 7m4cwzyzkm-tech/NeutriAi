@@ -1596,3 +1596,21 @@ def test_healthz_reports_whether_the_mask_dump_is_armed(monkeypatch):
 
     monkeypatch.setenv(MASK_DUMP_ENV, r"C:\dumps")
     assert asyncio.run(healthz())["mask_dump"] == r"C:\dumps"
+
+
+def test_every_bench_row_says_what_its_weight_includes():
+    """A weight that does not say what was on the scale cannot settle whether a
+    detected sauce or garnish is part of the portion -- photo 25's mayonnaise
+    against "smashed potatoes=136". So every row carries the field, and an old
+    row says UNKNOWN rather than being guessed either way."""
+    from scripts.bench_all import CASES, UNKNOWN, WEIGHED_WITH
+
+    missing = sorted({c[0] for c in CASES} - set(WEIGHED_WITH))
+    assert not missing, f"bench rows with no WEIGHED_WITH entry: {missing}"
+    for name, value in WEIGHED_WITH.items():
+        if value == UNKNOWN:
+            continue
+        assert isinstance(value, list), f"{name}: must be UNKNOWN or a list"
+        for entry in value:
+            assert set(entry) == {"what", "on_scale"}, f"{name}: {entry}"
+            assert entry["on_scale"] in ("yes", "no"), f"{name}: {entry}"

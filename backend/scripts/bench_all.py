@@ -227,6 +227,52 @@ CASES = [
 ]
 
 
+# WHAT EACH WEIGHT INCLUDES -- a required field for every row above.
+#
+# "smashed potatoes=136" on a plate with a visible smear of mayonnaise cannot say
+# whether the mayonnaise was on the scale. For any plate with a sauce, dressing,
+# oil or garnish, "is this detected item part of the portion?" is unanswerable
+# from the weight alone -- so the bench cannot tell a phantom item from a real
+# one, and cannot measure the failure the whole category is worst at: hidden fat.
+#
+# Each value is either:
+#   UNKNOWN          not recorded when the plate was weighed (every row before 13 Sep)
+#   [ ... ]          what else was on the plate, each {"what": str, "on_scale": "yes"|"no"};
+#                    [] means nothing else was on the plate.
+# Mirrors the calibration sheet's `also_on_plate` (MEASURED-HEIGHT-NOTES). Never
+# guess a value for an old row: UNKNOWN is the honest record.
+# test_wiring fails if a row in CASES has no entry here.
+UNKNOWN = "UNKNOWN"
+WEIGHED_WITH: dict[str, object] = {
+    "17-carrots-plate.jpg": UNKNOWN,
+    "18-zucchini-plate.jpg": UNKNOWN,
+    "19-fish-veg-plate.jpg": UNKNOWN,
+    "20-spaghetti-plate.jpg": UNKNOWN,
+    "21-bbq-chicken-plate.jpg": UNKNOWN,
+    "22-roast-beef-plate.jpg": UNKNOWN,
+    "23-brussels-sprouts-plate.jpg": UNKNOWN,
+    "24-macaroni-salad-plate.jpg": UNKNOWN,
+    "25-smashed-potatoes-plate.jpg": UNKNOWN,
+    "26-potroast-rice-alone.jpg": UNKNOWN,
+    "27-potroast-beef-alone.jpg": UNKNOWN,
+    "28-potroast-bread-alone.jpg": UNKNOWN,
+    "29-potroast-plate-4items.jpg": UNKNOWN,
+    "30-caesar-salad-plate.jpg": UNKNOWN,
+    "31-chicken-noodle-crock.jpg": UNKNOWN,
+    "32-beef-posole-crock.jpg": UNKNOWN,
+    "33-cheese-broccoli-crock.jpg": UNKNOWN,
+    "34-pizza-slice-plate.jpg": UNKNOWN,
+    "35-slider-fries-plate.jpg": UNKNOWN,
+    "36-slider-fries-card.jpg": UNKNOWN,
+    "40-trailmix-spread.jpg": UNKNOWN,
+    "41-trailmix-heaped.jpg": UNKNOWN,
+    "42-chips-spread.jpg": UNKNOWN,
+    "43-chips-heaped.jpg": UNKNOWN,
+    "44-grapes-spread.jpg": UNKNOWN,
+    "45-grapes-cluster.jpg": UNKNOWN,
+}
+
+
 # Which photos contain something that says how big a pixel is.
 #
 # False means the photo has no plate, no reference object and no recorded camera
@@ -816,7 +862,10 @@ def main() -> int:
         # exists to be compared is indistinguishable in the output.
         scale_label = (f"plate {plate:.0f} mm" if plate
                        else ("camera distance" if distance else "no reference"))
-        print(f"{HDR}{filename}{OFF}  {DIM}{kind}  ({scale_label}){OFF}")
+        weighed_with = WEIGHED_WITH.get(filename, "MISSING")
+        with_label = ("weight includes: UNKNOWN" if weighed_with == UNKNOWN
+                      else f"also on plate: {weighed_with}")
+        print(f"{HDR}{filename}{OFF}  {DIM}{kind}  ({scale_label})  {with_label}{OFF}")
         # Repeated, because a single scan of a photo is one sample from a noisy
         # process, not a measurement of it. The median across runs, not the
         # mean: one scan that misidentifies a food should not drag the number

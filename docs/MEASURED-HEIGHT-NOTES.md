@@ -368,6 +368,7 @@ recompressed to 1500x2000 against 4284x5712 originals. One manifest,
         "shape_word": "mound",
         "plate_id": "P1",
         "mass_g": 0, "mass_method": "plate tared, food added",
+        "also_on_plate": [{"what": "mayonnaise smear", "on_scale": "yes|no"}],
         "bulk": {"cup_id": "C1", "loose_food_g": 0, "packing": "spooned, not pressed, levelled"},
         "ruler_peak_mm_typed": 0,
         "pile_moved_between_frames": false,
@@ -381,6 +382,11 @@ recompressed to 1500x2000 against 4284x5712 originals. One manifest,
       }]
     }
 
+- **`also_on_plate`** is every other thing on the plate -- sauce, dressing, oil, butter,
+  garnish, another food -- each with whether it was on the scale when `mass_g` was read.
+  `[]` means nothing else was on the plate. Same field as `WEIGHED_WITH` in
+  scripts/bench_all.py. Without it a sauce the model detects cannot be scored as part of
+  the portion or as phantom food.
 - **`shape_word`** is the code's `_classify_shape` vocabulary (flat, mound, loose,
   cluster, liquid, wrapped, topped_flat, chunky), not the refuted five-class taxonomy.
   ~8 foods maps onto 8 words. For `liquid` in a bowl, the ruler reads fill depth.
