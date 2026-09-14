@@ -1096,8 +1096,9 @@ cache, not your change.
   `card_source`). The shipped detector (chroma, then grey) still finds them. The
   pre-registration scores the frozen chroma channel ALONE, so if the calibration session
   resembles these frames, reject criterion 1 can fire on a channel the product never uses
-  alone. Why chroma misses there is NOT checked. **Before scoring the holdout, decide and
-  write down whether it scores chroma alone (as registered) or the shipped detector.**
+  alone. **DECIDED 13 Sep, before the photos: the pre-registration now scores the SHIPPED
+  path as primary, chroma alone as a secondary line (HANDOFF, amended).** Why chroma misses
+  there is PARKED, not investigated.
 - **Nutrition5k probe selection:** `depth_test_ids` (507) chained into 198 built-up plates (a
   later scan within 900 s containing the earlier one's ingredients); one final dish per plate;
   mass >= 40 g and kcal >= 30; 16 at even kcal quantiles; 31 dishes carrying a "deprecated"
@@ -1153,6 +1154,12 @@ MEASUREMENTS").** What was tried, in order, and why each failed:
     arrangement; never measure from a chat copy.
 
 ### H.4 Scratch files -- lost when this session ends
+
+**COMMITTED 13 Sep (after the tables below were written):** the 16 paid Nutrition5k
+detections, the probe script, result and log, piece 2's acceptance harness and result, the
+per-piece scorer, and the detector net-effect script and result are in
+`docs/evidence/2026-09-13-n5k-probe-and-bundle-a-scoring/`, with a MANIFEST carrying both
+hashes. The rows marked COMMIT below are done; thumbnails and crops were excluded.
 
 Session scratchpad A (`...scratch-2026-09-13-7961eb\112f021e...\scratchpad`):
 

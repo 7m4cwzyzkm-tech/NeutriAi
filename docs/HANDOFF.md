@@ -134,6 +134,8 @@ two signals, each already present in the vision response:
 - `USE_MEASURED_HEIGHT` and the ruler calibration set -- height is untested.
 - Nutrition5k at 507 dishes.
 - Card corners carried through to a homography (dropped at vision.py:1727-1729).
+- Why chroma x3 alone misses the green card on 6 of 7 IMG_4190-4198 frames while grey finds
+  them (the reason the chroma pre-registration now scores the shipped path).
 - Learned-plate pooling under the model's vessel name (MEASURED-HEIGHT-NOTES A, second cause).
 - **Bench data integrity** (found, not verified or corrected; see also "THE BENCH'S WEIGHTS
   DO NOT SAY WHAT THEY INCLUDE", whose forward fix is already in): scored 40, 41, 42, 45 are
@@ -2098,9 +2100,24 @@ quad IoU >= 0.5 with the 12 Sep audit box (the grey detector's verified quad for
 
 ### PRE-REGISTRATION — chroma x3 on the calibration session. Written 13 Sep, before the photos exist.
 
-**Frozen:** gain 3.0, `find_reference` gates and constants as at 532a573, frame = EXIF
-rotation then 1280 px, exactly `card_chroma.py`. Nothing is re-tuned after the photos
-are seen; any change after scoring is a new experiment on a new holdout.
+**AMENDED 13 Sep, before any calibration photo exists: the PRIMARY score is the SHIPPED
+PATH.** As first written, this pre-registration scored the chroma channel ALONE. The
+product does not run chroma alone: `find_reference` (7e2b559, branch
+`bundle-a-card-rung`) looks for edges in chroma first and in grey if chroma finds nothing.
+The reason this was caught: on IMG_4190-4198 (green card on the blue-and-white
+tablecloth, daylight) chroma x3 alone missed the card on 6 of 7 frames -- 4190, 4192,
+4193, 4196, 4197, 4198 -- and the grey fallback found all six. Scored as written, the
+holdout would have tested something the product does not do, on exactly the kind of
+surface it will see.
+- **Primary (reject criteria apply here):** the shipped `find_reference` at 7e2b559 --
+  chroma x3, then grey -- as the product runs it.
+- **Secondary (reported beside it, no gate):** chroma x3 alone, exactly `card_chroma.py`,
+  so the two can be compared. Grey alone is still reported, as below.
+- **Why chroma alone misses the IMG_419x cards is PARKED**, not investigated.
+
+**Frozen:** gain 3.0, `find_reference` gates and constants as at 7e2b559, frame = EXIF
+rotation then 1280 px. Nothing is re-tuned after the photos are seen; any change after
+scoring is a new experiment on a new holdout.
 
 **The holdout:** Gil's calibration session, 8 foods x 4 frames, card lying on the plate
 floor in every frame, a different surface, light and day from anything that set the gain.
@@ -2121,7 +2138,8 @@ chroma BEATS grey -- that advantage lives on low-contrast surfaces (the wood). G
 scored beside it on every frame.
 
 **Predictions:**
-- **Recall, topdown:** chroma x3 8/8, at least 7/8. Grey at least 6/8.
+- **Recall, topdown:** shipped path 8/8, at least 7/8 (primary). Chroma x3 alone and grey
+  alone reported beside it; no prediction is gated on either.
 - **Recall, angled_45:** 0-3/8 for both; set by the angle, not the edge.
 - **False positives** (a quad not on the card, any role, all 32): chroma x3 at most 1.
   The risk is a green or orange food beside a white plate, not the plate.
@@ -2130,7 +2148,8 @@ scored beside it on every frame.
   12 Sep's boxes were off by 11-15% on two photos). Long side against that truth:
   median |error| at most 1.5%, every hit within 3%.
 
-**REJECT x3 if any of these holds:**
+**REJECT the shipped detector (chroma x3 then grey) if any of these holds, on the primary
+score:**
 1. topdown recall at most 5/8;
 2. 2 or more false positives across the 32;
 3. topdown scale median |error| above 2%, or any single hit beyond 5%;
