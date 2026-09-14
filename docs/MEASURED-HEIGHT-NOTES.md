@@ -1,5 +1,15 @@
 # Measured height, the tilt gate, and the plate w/h convention
 
+> **STATE OF THE BRANCH, 13 Sep 2026 -- READ BEFORE ANY MERGE.**
+> `bundle-a-card-rung` carries Bundle A pieces 1 and 2 and **MUST NOT BE MERGED TO MASTER.**
+> Piece 1 (chroma card detector) scored alone is HARMFUL: subscriber meal energy 37.3% ->
+> 43.4% MAE/mean. Piece 2 (rung ordering) moves nothing on the bench. Merging now makes
+> master worse. It merges only after piece 3 (floor-height correction) is built and the
+> whole bundle scores. Master already carries the bundle's documentation and the replay-rig
+> fix (cherry-picked); the three code commits (7e2b559, ac99f3a, e4a34e8) exist only on the
+> branch. The branch's HANDOFF is behind master's: merge master INTO the branch before
+> building piece 3. Details: section H.
+
 12 Sep 2026. Written here, not in HANDOFF.md, because another session is committing
 to HANDOFF. To be folded in by that session. Nothing in the code was changed.
 
@@ -1026,3 +1036,191 @@ then remember it stopped the bleeding, not the wound: any USDA miss still hands 
 grams an LLM density (62 `ai_estimate` rows carry one), and `food_facts` was rewritten
 for 13 foods tonight, so a bench gram that moved on those foods since 12 Sep is the
 cache, not your change.
+
+---
+
+## H. 13 Sep 2026 session -- meal-level score, two fixes, Bundle A, and what nothing else records
+
+### H.0 State at session end -- READ FIRST
+
+- **Branch `bundle-a-card-rung` must not merge** (banner at the top of this file). Pieces 1
+  (7e2b559) and 2 (ac99f3a, amended e4a34e8) are built and scored; piece 3 waits on Gil.
+- **master is clean** (`git status` empty at 406904b). Checked out: master.
+- **Bundle B:** phantom-food rule SPECIFIED, not built -- waits on the photo 25 mayonnaise
+  answer. Wrong-rows fix not yet specified. Acceptance adopted (HANDOFF, pass/fail).
+- **Rule in force (HANDOFF standing check):** an investigation that spawns another is
+  parked, not followed. Nothing outside Bundles A and B until both score.
+
+### H.1 Waiting on Gil -- nothing below proceeds without these
+
+1. **The white plate of bench photos 17-36:** outer diameter, rim height, rim-to-floor
+   depth (floor height = rim height - depth). Bundle A piece 3 needs the floor height. The
+   bench declares 229 mm for these photos, and nothing has re-taped it since.
+2. **The crock of 31-33:** inside diameter at the rim, inside depth. Crocks are outside
+   Bundle A's correction; the card over-reads them 1.4x-5x in area.
+3. **Photo 25: was the mayonnaise in the weighed 136 g?** Decides whether excluding it is a
+   phantom fix or breaches the zero-legitimate-exclusion ceiling. The phantom rule is not
+   built until this is answered.
+4. **The eight-food calibration set with the ruler** (intake: section D; plate heights and
+   flat-tape FOV: "TWO RULER MEASUREMENTS"; `also_on_plate` per food). It is also the holdout
+   pre-registered for chroma x3 (HANDOFF).
+5. **Confirmation that 17-36 really are one plate.** Every rim, over-read and floor-height
+   figure pooled across them assumes it.
+- Also open, PARKED: which photos carry the measured 12 in, confirmed at GROUP level against
+  the surface x card grid (H.2); and the IMG_4197 conflict (EXIF 12 Sep 14:28:14, pasted as
+  "measured at 12 in", inside the set stated as not measured).
+
+### H.2 Numbers from today that are not in HANDOFF
+
+- **Preparation cache-key fix (43c9b2d), measured before and after:** all 36 unique bench
+  lookup names resolved live through the real resolver with writes blocked. 0 served rows
+  changed; 364 replay arm-items identical. Meal score with LIVE served rows, identical before
+  and after: CAL energy 45.58% MAE/mean, 72.90% per-meal mean, 35.91% median; UNCAL 41.45 /
+  75.53 / 29.12. These differ from the 12 Sep figures (48.4 / 74.7 / 40.9) because
+  `food_facts` changed between the runs, not because of code.
+- **Three `food_facts` rows restamped resolver_version 3 with unchanged values:** mexican
+  rice, refried beans, chicken drumstick, ~15:17-15:20 -0700. No script of this session wrote
+  them. Most likely the `dev api` server on :8000, running with `--reload`, picked up the new
+  resolver and served a request. No API log was found to confirm it.
+- **A live-API hazard that happened:** during the axis fix, `--reload` loaded vision.py with
+  `_plate_ellipse(detection, aspect)` before `_run_scan`'s call site was updated. Any scan in
+  that window raised. The server reloads whatever branch is checked out.
+- **Axis fix (303f6b5), scale learning:** on photo 14 (tape 254 mm) the card-derived width it
+  would record goes 158.33 mm (-38%) -> 211.10 mm (-17%); 43 and 44 (landscape) unchanged at
+  213 and 242 mm. The remaining -17% is the model's ~0.10 under-read, deliberately not folded in.
+- **Grey-plus-chroma union on the bench:** 26/28, zero false positives -- identical to chroma
+  alone; grey found no card that chroma missed. Where both fire, the quads agree at IoU 0.96-0.98.
+- **HALF-CHECK THAT MATTERS FOR THE HOLDOUT:** on IMG_4190-4198 (green card on the
+  blue-and-white tablecloth, daylight) chroma x3 ALONE missed the card on 6 of 7 frames
+  (4190, 4192, 4193, 4196, 4197, 4198); grey found all 6 (classification.json, field
+  `card_source`). The shipped detector (chroma, then grey) still finds them. The
+  pre-registration scores the frozen chroma channel ALONE, so if the calibration session
+  resembles these frames, reject criterion 1 can fire on a channel the product never uses
+  alone. Why chroma misses there is NOT checked. **Before scoring the holdout, decide and
+  write down whether it scores chroma alone (as registered) or the shipped detector.**
+- **Nutrition5k probe selection:** `depth_test_ids` (507) chained into 198 built-up plates (a
+  later scan within 900 s containing the earlier one's ingredients); one final dish per plate;
+  mass >= 40 g and kcal >= 30; 16 at even kcal quantiles; 31 dishes carrying a "deprecated"
+  ingredient label excluded. FOV 69.05 deg from the paper's 5.957e-3 cm^2/px at 640x480 and
+  35.9 cm. Worst dishes: pasta with cream 78 g vs 545 g weighed; plain rice 222 vs 75; sausage
+  136 vs 73.
+- **Qualification pass (FOV parked):** on full-resolution originals, only IMG_4118 (23) and
+  IMG_4136 (30) passed edges plus two-axis card tilt. The red-card originals IMG_4004, 4021,
+  4028 and 4091 read 22, 15, 21 and 7 deg of card tilt. The 640x480 copies (40-42, 45, 46)
+  returned 72-74 deg: their corners are too coarse to use, not evidence of a crop.
+- **Mechanical surface x card grid (classify.py), card cells:** IMG_4190-4198 session 7;
+  tablecloth / green 7 (40-46); tablecloth / red 4 (IMG_4004, IMG_4028 = legacy 14,
+  IMG_4091 = 15); paper / red 2 (IMG_4021 = legacy 11); white plate / red 1 (legacy 10,
+  MISCLASSIFIED -- its card lies on the cloth); wood / green 18 (17-32, 34, 36). Also
+  misclassified, checked by eye: 03 and 05 are on granite, not the tablecloth. These are
+  the classifier's errors, not the bench's labels.
+- **NIH figure:** "250-345 kcal per meal of hidden fat" is Gil's; its source is not in the
+  repo. bench_all.py's own citation is ~30 g fat per meal.
+
+### H.3 Dead ends -- do not re-walk
+
+**The FOV archaeology is PARKED, replaced by one flat-tape photo (section D, "TWO RULER
+MEASUREMENTS").** What was tried, in order, and why each failed:
+
+1. **Card + 304.8 mm on IMG_4190-4198.** Void at the root: that set never had a measured
+   distance. It read 65.9-69.2 deg against EXIF's 71.6 because the premise was wrong.
+2. **Card aspect as tilt.** The threshold edge biased every side by a constant ~9 px, with the
+   sign flipping between cloth and white plate (aspect 1.600-1.629 and 1.562; true 1.586).
+3. **Rim ellipse as tilt.** The rim's 150-270 deg arc has a 2.5-3.7 grey-level step on EVERY
+   frame, the plate-only control included, so the ellipse fitted half a circle. The 5-13 deg
+   readings were artefacts; and acos near 1 turns a 1% axis error into 8 deg regardless.
+4. **Gradient-peak edges.** Zero points on the card's bottom and left sides on all six cloth
+   frames: those sides are a 20-40 px shadow ramp (1.5-3 mm), not a step. Measured with
+   averaged profiles and seen on crops.
+5. **Vanishing points (route 1).** Never run: the shadow sides bias one line in each pair, and
+   4198, the frame with clean edges, is near top-down, where vanishing points go to infinity.
+6. **EXIF.** No FocalPlaneXResolution tag, so only the 35 mm equivalent: 71.6 deg if diagonal,
+   73.7 deg if horizontal, 3.9% apart, convention unstated. It cannot arbitrate.
+7. **Provenance.** Which photos carry the 12 in was stated three ways -- "tablecloth", "red
+   card", "green card on tablecloth" -- true descriptions of OVERLAPPING groups, never file
+   names. Group-level confirmation against the grid is parked.
+
+- **Kept from it (Gil's correction):** off-centre is not an error. For a level camera over a
+  flat plane mm/px is constant; offset matters only multiplied by tilt.
+- **Other dead ends:**
+  - `git worktree` runs need `backend/.env` copied into the worktree, because Settings reads
+    .env relative to the cwd. The copies were removed with the worktrees.
+  - The replay rig's control FAILS by design when code changes a recorded arm. Score such runs
+    against a reference arm with `--pieces-from`, never against the rig's exit code.
+  - **A test gate that greps pytest `--co` output for "error" stops on a healthy suite**:
+    test names contain "error". Gate on the summary line only.
+  - The chat copy of IMG_4197 was a 583x791 recompression. Identify a photo by its
+    arrangement; never measure from a chat copy.
+
+### H.4 Scratch files -- lost when this session ends
+
+Session scratchpad A (`...scratch-2026-09-13-7961eb\112f021e...\scratchpad`):
+
+| File | What | Recommendation |
+|---|---|---|
+| `n5k/detections/*.json` (16), `n5k/selection.json` | the PAID gpt-4o detections + second_look for the Nutrition5k probe; piece 2's acceptance replays them | **COMMIT** to `docs/evidence/2026-09-13-n5k-probe/` next session: re-buying costs money and draws different detections |
+| `n5k_probe.py`, `n5k_probe.json` | the paid probe and its per-dish result | commit with the detections |
+| `n5k/rgb/*.png` (16), `n5k/*.csv`, `depth_test_ids.txt` | Nutrition5k data, CC BY 4.0, re-downloadable | leave; the dish ids are in selection.json |
+| `measure_resolve.py`, `resolve_*.json`, `score_live.py` | the cache-key before/after measurement | numbers are in H.2; leave |
+| `replay_before/after1/after2.json`, `compare_replay.py` | the two fixes' zero-movement proof | numbers are in HANDOFF; leave |
+| `usda_truth.py/json`, `served_facts.*`, `sb_macros.py`, `dump.py` | truth-row searches and served-row reads | their values are written into score.py; leave |
+
+Session scratchpad B (`...C--Users-VetaM-Downloads-nutriai-nutriai\112f021e...\scratchpad`):
+
+| File | What | Recommendation |
+|---|---|---|
+| `n5k_rung_acceptance.py`, `n5k_rung_piece2.json` | piece 2's acceptance harness and result | **COMMIT** with the n5k detections: it is Bundle A's first acceptance and must re-run after piece 3 |
+| `score_piece.py`, `chroma_net.py`, `chroma_net.json` | per-piece bench scorer; the detector-swap net effect | **COMMIT** to the meal-replay evidence folder: the whole-bundle score needs score_piece.py |
+| `replay_fixed_{base,piece1,head}.json/.log` | the fixed rig's control and piece scores | numbers are in HANDOFF; leave |
+| `classify.py`, `classify/classification.json`, `measured-12in-candidates.*` | the surface x card grid for the parked provenance question | commit the JSON only when that item is unparked |
+| `qualify.py/.json`, `routes.py`, `edges.py`, `tilt_check.py`, `fov_floor.py` | the FOV archaeology | leave: PARKED; H.3 records why each failed |
+| `IMG_4197_for_Gil.png`, `identify_4190_4197.png`, `verify_03_05_10_46.png`, `shadow_crops.png`, `diag_*`, `card_colour_*.png`, `all7.png` | thumbnails and crops | **do not commit**: several show the card with the name legible |
+| `card_colour.py/json` | already committed as docs/evidence/2026-09-13-card-chroma | leave |
+
+**Repo:** `git status` is empty. One stale worktree, `.claude/worktrees/adoring-bun-cb0df3`
+(branch `claude/adoring-bun-cb0df3` at 5942ed8, already contained in master): **recommend
+removing it** (`git worktree remove`, then delete the branch). Not done here, because this
+pass changes nothing but the notes.
+
+### H.5 Commits of 13 Sep, in order (author time -0700; B = on bundle-a-card-rung only; CP = cherry-picked onto master)
+
+    0d1ecc8  00:21      Notes: USDA POST session state, the food_facts mutation, dead ends, 12 Sep commit list
+    66161ef  12:21      Evidence: food_facts as it was before the step-4 resolve run
+    4182d9a  12:21      USDA search: POST the fields in a JSON body; pin the food each bench name selects
+    ebd3f9e  12:23      HANDOFF: the USDA POST results, corrected to 13 rows; wrong-food matches head the follow-up
+    5942ed8  12:23      Notes: the evidence blob is LF-normalised; record both hashes
+    06d17e5  14:06      Score the shipped number: meal macros; commit the zero-cost replay rig
+    592005b  14:36      Standing check: cache keys must derive from content; record the sweep
+    1db24c6  14:44      Rank the sweep's product defects; calibrate the target to Nutrition5k
+    43c9b2d  15:17      Nutrition cache key keeps raw/cooked/fresh
+    303f6b5  15:23      Plate ellipse: convert the model's long-side fractions to per-axis once
+    532a573  20:51      Record the depth probe, the ruler protocol, the photo-set limits, and the chroma detector experiment
+    86ca158  21:19      HANDOFF: two bundles and a parked list; the parking rule; photo provenance corrections; chroma net effect
+    7e2b559  21:24  B   Bundle A piece 1: card detector looks for edges in chroma first, grey second
+    ac99f3a  21:30  B   Bundle A piece 2: an inferred saved calibration no longer outranks a scale measured in the photo
+    a2fc9b7  21:30  B   Replay rig: --pieces-from, so a code change to one recorded arm cannot move the others
+    6ae385a  21:33  B   HANDOFF: phantom-food specification and a proposed amendment to Bundle B's acceptance
+    dfcddd9  21:36  B   HANDOFF: Bundle A pieces 1 and 2 scored
+    e4a34e8  21:52  B   Bundle A piece 2 amended: rank follows provenance and applicability
+    b941eef  21:52  B   HANDOFF: the ranking rule in provenance terms; Bundle B acceptance adopted with the exclusion ceiling
+    13812eb  21:33  CP  of 6ae385a
+    2502349  21:30  CP  of a2fc9b7
+    bf8b600  21:36  CP  of dfcddd9
+    eb87f92  21:52  CP  of b941eef
+    bbdf820  21:59      Bench intake: every row records what its weight includes
+    406904b  21:59      HANDOFF: the bench's weights do not say what they include; do not merge Bundle A before piece 3
+    (next)              this notes commit -- its own hash cannot be written into itself
+
+### H.6 If a fresh agent hears one thing
+
+Do not merge `bundle-a-card-rung`: piece 1 alone makes subscriber scans worse (37.3% ->
+43.4% MAE/mean), and only piece 3 -- the floor-height correction, blocked on one ruler reading
+from Gil -- can recover it, so the branch waits and nothing else fills the gap. The product's
+real number is meal energy, not item grams: 48.4% MAE/mean calibrated, against a 16.5%
+published frontier measured in the same statistic. Its tail is phantom food and wrong
+nutrition rows, not geometry, and both bundles have pass/fail acceptance written down before
+anything is built. Score every change with the zero-cost replay rig in
+`docs/evidence/2026-09-13-meal-replay/`, prediction stated first; when a run contradicts its
+prediction, chase it before believing it -- today's two contradictions were both defects in
+the instrument, not the product. And when a question starts spawning questions, park it: the
+FOV hunt took an afternoon and produced no number, and one photo of a tape measure replaces it.
