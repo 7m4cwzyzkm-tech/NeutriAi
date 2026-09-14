@@ -40,6 +40,47 @@ another investigation is written down in PARKED, not followed (standing check).
 - **Acceptance:** per-meal MEAN below 55% while the MEDIAN barely moves. A median that
   moves materially means something other than the tail was fixed -- find out what.
 
+**PROPOSED AMENDMENT to that acceptance, with the number that forces it.** At n = 25 the
+median cannot discriminate: removing ONLY the three phantom items moves CAL median meal
+energy 40.9% -> 31.2% (score_n5k_metric, "phantom detections removed"), because meals 23
+and 25 both sit above the median and both fall below it -- two ranks. So a tail fix
+moves the median by itself. Replace "median barely moves" with a PAIRED check: every
+meal that contains no item the fix touches is identical in grams and energy, exactly.
+Keep the mean-below-55% criterion; report the median beside it, not as a gate.
+
+**PHANTOM FOOD -- SPECIFICATION, not built.** Two failures with different mechanisms, so
+two signals, each already present in the vision response:
+
+    signal                      rule                                              bench flags (41 items)        N5k flags (45)
+    A  off the vessel           item box < 50% inside plate_bbox, plate detected  23 cauliflower (0.00),        0
+                                                                                  23 macaroni salad (0.00),
+                                                                                  25 mayonnaise (0.33)
+    B  smear sized as a portion shape "spread" or food_group fat/sauce, and no     25 mayonnaise                 0
+                                typical_serving_g
+    corroboration               scene_notes names a second vessel                 23 ("Two plates visible")     0
+
+- **Action -- ask, never delete.** A flagged item leaves the meal total and is returned
+  as "also in the photo -- add it?". A wrong exclusion is one tap to undo; a silent one
+  is invisible. Signal B's alternative is a thin-layer cap on grams, which needs a
+  condiment density and thickness nobody has measured; the ask is cheaper and honest.
+- **Prediction** (same predictions, phantom items removed; score_n5k_metric):
+  CAL meal energy per-meal mean 74.7% -> 43.0%, MAE/mean 48.4% -> 40.4%;
+  UNCAL 72.7% -> 41.6%, 37.3% -> 31.7%. Meals changed: 23 and 25 only.
+- **Limits, stated before building:**
+  1. **In-sample.** The 0.5 threshold is set from three positives found on this very
+     bench; zero false exclusions on 86 items is a statement about photos with no
+     legitimate off-plate food.
+  2. **The untested failure is food legitimately beside the plate** -- a roll on the
+     table, a drink, food on paper or a board with a plate elsewhere, a soup crock on an
+     underplate, a tray meal. None is in any cached detection. It needs negatives before
+     it ships.
+  3. **plate_bbox is on the model's 0.05 grid**, so containment near 0.5 is coarse;
+     the mayonnaise's 0.33 is one grid step from 0.5.
+  4. **Multi-vessel meals** (a bowl and a plate both the user's) are the real conflict
+     with signal A and are not represented at all.
+
+**WRONG ROWS -- specification not yet written.** Next after the phantom fix is scored.
+
 ### PARKED -- not worked until both bundles score
 
 - FOV from a flat-tape photo (instructions: MEASURED-HEIGHT-NOTES, "TWO RULER MEASUREMENTS").
