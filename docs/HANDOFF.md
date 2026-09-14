@@ -686,6 +686,36 @@ needs none.**
      over-read to note, not a reason to fix first. `depth_raw.png` could feed the
      depth-map height path, which is off (NullDepth) -- a separate project.
 
+### The depth rung's first real test — Nutrition5k probe, 13 Sep (HEAD 303f6b5)
+
+16 depth-test dishes, one finished dish per built-up plate (198 plates in the 507), even
+kcal quantiles, mass >= 40 g. One gpt-4o detection + second_look + SAM2 per dish; no
+refine; nothing written. Request as a depth phone would send it: 359 mm, 69.05 deg (from
+the paper's 5.957e-3 cm^2/px at 640x480), no diameter, no calibration.
+
+- **Rung 2 is correct.** Selected on 16 of 16 dishes, every item `depth_model`, frame
+  scale 1.0000x the rig's 182,999 mm^2 on all 16.
+- **Accuracy at exact scale:** energy 47.3% MAE / mean (per-dish mean 58.4%, median
+  31.9%, +21% signed); mass 41.0% (50.8 / 36.5); carbs 59.6% (88.8 / 45.1). Frontier
+  16.5% / 13.7%.
+- **Where it goes, measured:** of the log energy error's variance 0.716, GRAMS carry
+  0.538 and energy per gram 0.120; grams are the larger term on 9 of 16 dishes (median
+  |error| 36% grams, 29% kcal per gram). **This splits grams from nutrition rows. It does
+  NOT split height from footprint, density and the serving-prior blend -- height is
+  untested, not proven dominant.** The ruler calibration set matters because it is the
+  first test of height.
+- **The label-matched calibration pre-empts measured depth.** With the bench account's
+  saved `dinner_plate` (254 mm), the 11 of 16 dishes the model called `dinner_plate`
+  moved to rung 1 on a plate not in the photo: energy 47.3% -> 57.5% MAE / mean, median
+  31.9% -> 42.7%. Recorded, not changed.
+- Caveats: n = 16; 640x480 frames; a known rig distance, so a floor on scale, not an
+  expectation. Probe script and the 16 cached detections are in a session scratchpad,
+  not the repo.
+- **The two fixes of 13 Sep measured before scoring, each alone:** preparation cache key
+  (43c9b2d) and plate-ellipse convention (303f6b5) each left all 364 replay arm-items and
+  both meal statistics identical, as pre-registered; the ellipse fix took the tilt on 26
+  of 26 bench plates from 41.4 deg to 0.0 deg.
+
 ---
 
 Weigh food from a photo accurately enough for weight control. Target **10% per-item
@@ -1777,6 +1807,37 @@ height x profile) -- which is what the table is fitted against. Paired with a
 tight per-piece volume they under-read by ~1/0.6. The samples differ from
 USDA's, so the ratio is a property of the FORM, not a precise constant.
 
+## WHAT THE 12 SEP GRAPE/CARROT PHOTOS CANNOT DO — recorded 13 Sep so nobody reshoots the same way
+
+IMG_4190-4198 (Downloads; iPhone 17 Pro originals, 4284x5712). Stated distance 304.8 mm
+lens to tabletop. Asked of them: the field of view, the plate floor height, and a
+plate/card/distance cross-check. **They cannot answer any of the three.** Photogrammetry
+on both stuck numbers is stopped; both are now ruler measurements
+(MEASURED-HEIGHT-NOTES.md, "TWO RULER MEASUREMENTS").
+
+- **Three of the six card-on-table frames are a BOWL of unknown size, not the taped 260 mm
+  plate:** 4192, 4193, 4196. Only 4190, 4194 and 4197 show the plate.
+- **The rim's 150-270 deg arc (left and top) is invisible on EVERY frame, including the
+  plate-only control 4198:** a 2.5-3.7 grey-level step against lit cloth. Rim ellipses
+  were fitted to about half a circle. **The 5-13 deg tilt figures they produced are
+  artefacts of that half-circle fit and are struck.**
+- **4197's rim leaves the frame** (-10 px on the right); 4196's is 33 px from it.
+- **Every table card is 180-220 mm off frame centre, with 2-10 deg of residual tilt:**
+  a 1-13% depth error at the card, against a card scale good only to about 3% -- on
+  the cloth its bottom and left edges are a 20-40 px soft ramp, not a step (4198's
+  card on the white plate is sharp all round).
+- **Consequence for any card-plus-distance method:** it assumes a perpendicular camera,
+  and under tilt the card is not at the stated distance. The floor-height step inherits
+  it: a scale difference between a table card and a plate card is floor height plus a
+  tilt-and-offset term these frames cannot separate.
+- **What they still ARE:** the grape series at 45 / 90 / 180 g on the taped plate, and the
+  best available evidence that the reference-card rung needs a flat, centred card on an
+  even-lit surface.
+
+**Do not reshoot this way.** For scale work: card flat, near the frame centre, diffuse
+light, level crosshair aligned, and the vessel fully inside the frame against a
+background it contrasts with all the way round.
+
 ## THE CARD / RIM GAP — AN OPEN INSTRUMENT QUESTION, NOT A FINDING
 
 On the taped 260 mm plate (IMG_4190/4194/4197) the card's mm/px is 1.10x the
@@ -1830,6 +1891,46 @@ contour reached. Nothing was changed.
 
 The aspect gate killed nothing. Any threshold change has to say which
 population it is for.
+
+### THE DETECTOR EXPERIMENT: a chroma edge finds 26 of 28 — 13 Sep 2026. Not shipped.
+
+**What changed, and only that:** `find_reference` is handed an image whose channels all
+equal chroma, C = sqrt(a*^2 + b*^2) (Lab), times a gain. Every gate, tolerance and the
+consensus rule are the shipped ones. **Chroma, not green:** the cards in 10, 11, 14 and
+15 are red. Frames exactly as production analyses them (EXIF-rotated, 1280 px). Hit =
+quad IoU >= 0.5 with the 12 Sep audit box (the grey detector's verified quad for its own
+5 hits); a detection anywhere else is a false positive.
+
+    edges on        recall on 28 card photos          false positives
+                                                        15 no-card   08b/08c   card photos
+    grey (shipped)   5  (10, 11, 14, 43, 44)             0            0         0
+    chroma x2       16 + 15                               0            0         0
+    chroma x3       25 + 15 = 26    misses: 40, 41        0            0         0
+    chroma x4       26 + 15 = 27    miss: 40              1 (03)       0         0
+
+- **15 has no audit box** (null in card_boxes.json); its detection is on the red card,
+  checked on a crop, and counted by eye.
+- **03's x4 false positive** is a quad around fettuccine in a black takeout box.
+- **Scale, chroma x3 against the audit boxes** (opposite-side averages): median -0.7%,
+  18 of 20 within -4.2% to +3.2%. The two outliers (20: +11.1%, 25: +14.9%) are the AUDIT
+  BOXES cutting off the card's dark left end -- crops checked; their box aspect is 1.46 /
+  1.38 against the chroma quads' 1.597 / 1.579 and the true 1.586. The audit boxes carry
+  about +/-3% themselves, so this bounds scale agreement; it does not establish scale
+  accuracy.
+- **Why grey fails and chroma does not:** on wood the card and table are near-isoluminant
+  (1.6-16.6 grey levels), but the table is orange-brown and the card is not -- in chroma
+  the card is the dark, even rectangle. On the tablecloth the card's shadow side is a soft
+  grey ramp, and grey is neutral, so the chroma edge ignores it.
+- **What stops it shipping today:**
+  1. **The gain is a parameter, chosen on this same set** (x2 16, x3 26, x4 27 + 1 FP).
+     In-sample. It needs a held-out set: IMG_4190-4198 and the calibration session.
+  2. **40 and 41 are still missed** (the 480x640 uploads, never diagnosed).
+  3. **A card whose chroma matches its background** -- a grey or black card, a green card
+     on salad -- has no chroma edge. A union with grey edges (keep grey's 5, add chroma's)
+     is the obvious form, and must be scored for false positives the same way.
+  4. **The corners are dropped at vision.py:1727-1729** whichever edge found them.
+- Evidence: `docs/evidence/2026-09-13-card-chroma/` (script and per-photo JSON; no images,
+  the crops show a legible card).
 
 ## THE CALIBRATED/UNCALIBRATED RUN — three premises corrected before spending
 

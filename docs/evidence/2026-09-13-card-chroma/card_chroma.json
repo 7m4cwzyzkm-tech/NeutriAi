@@ -1,0 +1,1535 @@
+[
+ {
+  "group": "card",
+  "name": "10-tacos-paper-card.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "grey detector quad (verified hit)",
+  "grey": [
+   "HIT",
+   1.0,
+   3.0,
+   "credit_card",
+   6,
+   251.6
+  ],
+  "chroma x2": [
+   "HIT",
+   0.976,
+   3.3,
+   "credit_card",
+   4,
+   250.9
+  ],
+  "chroma x3": [
+   "HIT",
+   0.98,
+   3.2,
+   "credit_card",
+   6,
+   251.2
+  ],
+  "chroma x4": [
+   "HIT",
+   0.967,
+   4.7,
+   "credit_card",
+   6,
+   247.5
+  ]
+ },
+ {
+  "group": "card",
+  "name": "11-kebab-paper-card.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "grey detector quad (verified hit)",
+  "grey": [
+   "HIT",
+   1.0,
+   1.8,
+   "credit_card",
+   6,
+   318.9
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.958,
+   3.4,
+   "credit_card",
+   3,
+   314.2
+  ],
+  "chroma x4": [
+   "HIT",
+   0.958,
+   3.4,
+   "credit_card",
+   5,
+   314.2
+  ]
+ },
+ {
+  "group": "card",
+  "name": "14-plate-mole-chicken-card.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "grey detector quad (verified hit)",
+  "grey": [
+   "HIT",
+   1.0,
+   2.6,
+   "credit_card",
+   2,
+   316.7
+  ],
+  "chroma x2": [
+   "HIT",
+   0.979,
+   2.2,
+   "credit_card",
+   4,
+   317.9
+  ],
+  "chroma x3": [
+   "HIT",
+   0.979,
+   2.2,
+   "credit_card",
+   6,
+   317.9
+  ],
+  "chroma x4": [
+   "HIT",
+   0.979,
+   2.2,
+   "credit_card",
+   6,
+   317.9
+  ]
+ },
+ {
+  "group": "card",
+  "name": "15-rajas-rice-card.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "no truth box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "detected, no truth box",
+   null,
+   null,
+   "credit_card",
+   6,
+   328.0
+  ],
+  "chroma x3": [
+   "detected, no truth box",
+   null,
+   null,
+   "credit_card",
+   6,
+   326.7
+  ],
+  "chroma x4": [
+   "detected, no truth box",
+   null,
+   null,
+   "credit_card",
+   6,
+   326.7
+  ]
+ },
+ {
+  "group": "card",
+  "name": "17-carrots-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.953,
+   -2.6,
+   "credit_card",
+   3,
+   299.3
+  ],
+  "chroma x4": [
+   "HIT",
+   0.953,
+   -2.6,
+   "credit_card",
+   5,
+   299.3
+  ]
+ },
+ {
+  "group": "card",
+  "name": "18-zucchini-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.941,
+   3.4,
+   "credit_card",
+   2,
+   291.3
+  ],
+  "chroma x3": [
+   "HIT",
+   0.941,
+   3.2,
+   "credit_card",
+   3,
+   291.9
+  ],
+  "chroma x4": [
+   "HIT",
+   0.941,
+   3.4,
+   "credit_card",
+   5,
+   291.3
+  ]
+ },
+ {
+  "group": "card",
+  "name": "19-fish-veg-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.969,
+   -1.2,
+   "credit_card",
+   2,
+   287.9
+  ],
+  "chroma x3": [
+   "HIT",
+   0.969,
+   -1.2,
+   "credit_card",
+   3,
+   287.9
+  ],
+  "chroma x4": [
+   "HIT",
+   0.967,
+   -1.2,
+   "credit_card",
+   4,
+   288.0
+  ]
+ },
+ {
+  "group": "card",
+  "name": "20-spaghetti-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.881,
+   10.9,
+   "credit_card",
+   2,
+   407.8
+  ],
+  "chroma x3": [
+   "HIT",
+   0.884,
+   11.1,
+   "credit_card",
+   3,
+   406.7
+  ],
+  "chroma x4": [
+   "HIT",
+   0.881,
+   10.9,
+   "credit_card",
+   5,
+   407.8
+  ]
+ },
+ {
+  "group": "card",
+  "name": "21-bbq-chicken-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.973,
+   -0.7,
+   "credit_card",
+   3,
+   333.3
+  ],
+  "chroma x4": [
+   "HIT",
+   0.964,
+   -1.0,
+   "credit_card",
+   5,
+   334.2
+  ]
+ },
+ {
+  "group": "card",
+  "name": "22-roast-beef-plate.jpg",
+  "size": [
+   1280,
+   960
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.954,
+   -2.3,
+   "credit_card",
+   2,
+   384.4
+  ],
+  "chroma x3": [
+   "HIT",
+   0.954,
+   -2.3,
+   "credit_card",
+   3,
+   384.4
+  ],
+  "chroma x4": [
+   "HIT",
+   0.954,
+   -1.7,
+   "credit_card",
+   5,
+   382.3
+  ]
+ },
+ {
+  "group": "card",
+  "name": "23-brussels-sprouts-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.971,
+   0.7,
+   "credit_card",
+   2,
+   386.2
+  ],
+  "chroma x3": [
+   "HIT",
+   0.972,
+   0.9,
+   "credit_card",
+   3,
+   385.3
+  ],
+  "chroma x4": [
+   "HIT",
+   0.967,
+   1.1,
+   "credit_card",
+   5,
+   384.6
+  ]
+ },
+ {
+  "group": "card",
+  "name": "24-macaroni-salad-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.942,
+   -2.3,
+   "credit_card",
+   2,
+   302.8
+  ],
+  "chroma x3": [
+   "HIT",
+   0.978,
+   -0.6,
+   "credit_card",
+   3,
+   297.7
+  ],
+  "chroma x4": [
+   "HIT",
+   0.981,
+   -0.4,
+   "credit_card",
+   5,
+   297.0
+  ]
+ },
+ {
+  "group": "card",
+  "name": "25-smashed-potatoes-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.843,
+   15.1,
+   "credit_card",
+   2,
+   358.9
+  ],
+  "chroma x3": [
+   "HIT",
+   0.845,
+   14.9,
+   "credit_card",
+   4,
+   359.6
+  ],
+  "chroma x4": [
+   "HIT",
+   0.843,
+   15.1,
+   "credit_card",
+   6,
+   358.9
+  ]
+ },
+ {
+  "group": "card",
+  "name": "26-potroast-rice-alone.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.972,
+   -1.4,
+   "credit_card",
+   2,
+   292.3
+  ],
+  "chroma x3": [
+   "HIT",
+   0.972,
+   -1.2,
+   "credit_card",
+   4,
+   291.8
+  ],
+  "chroma x4": [
+   "HIT",
+   0.972,
+   -1.2,
+   "credit_card",
+   6,
+   291.8
+  ]
+ },
+ {
+  "group": "card",
+  "name": "27-potroast-beef-alone.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.935,
+   -3.3,
+   "credit_card",
+   2,
+   265.7
+  ],
+  "chroma x3": [
+   "HIT",
+   0.936,
+   -3.2,
+   "credit_card",
+   3,
+   265.2
+  ],
+  "chroma x4": [
+   "HIT",
+   0.936,
+   -3.2,
+   "credit_card",
+   5,
+   265.2
+  ]
+ },
+ {
+  "group": "card",
+  "name": "28-potroast-bread-alone.jpg",
+  "size": [
+   1280,
+   960
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.947,
+   2.8,
+   "credit_card",
+   3,
+   369.9
+  ],
+  "chroma x4": [
+   "HIT",
+   0.947,
+   2.8,
+   "credit_card",
+   4,
+   369.9
+  ]
+ },
+ {
+  "group": "card",
+  "name": "29-potroast-plate-4items.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.979,
+   -0.1,
+   "credit_card",
+   2,
+   316.1
+  ],
+  "chroma x3": [
+   "HIT",
+   0.979,
+   -0.1,
+   "credit_card",
+   4,
+   316.1
+  ],
+  "chroma x4": [
+   "HIT",
+   0.979,
+   -0.1,
+   "credit_card",
+   6,
+   316.1
+  ]
+ },
+ {
+  "group": "card",
+  "name": "30-caesar-salad-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.971,
+   -0.6,
+   "credit_card",
+   3,
+   327.4
+  ],
+  "chroma x4": [
+   "HIT",
+   0.971,
+   -0.6,
+   "credit_card",
+   4,
+   327.4
+  ]
+ },
+ {
+  "group": "card",
+  "name": "31-chicken-noodle-crock.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.94,
+   -2.7,
+   "credit_card",
+   2,
+   259.2
+  ],
+  "chroma x3": [
+   "HIT",
+   0.974,
+   -0.7,
+   "credit_card",
+   4,
+   254.0
+  ],
+  "chroma x4": [
+   "HIT",
+   0.975,
+   -0.8,
+   "credit_card",
+   6,
+   254.3
+  ]
+ },
+ {
+  "group": "card",
+  "name": "32-beef-posole-crock.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.94,
+   -4.0,
+   "credit_card",
+   3,
+   304.5
+  ],
+  "chroma x4": [
+   "HIT",
+   0.94,
+   -4.0,
+   "credit_card",
+   5,
+   304.5
+  ]
+ },
+ {
+  "group": "card",
+  "name": "34-pizza-slice-plate.jpg",
+  "size": [
+   1280,
+   960
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.951,
+   -2.2,
+   "credit_card",
+   2,
+   371.4
+  ],
+  "chroma x3": [
+   "HIT",
+   0.917,
+   -4.2,
+   "credit_card",
+   4,
+   379.2
+  ],
+  "chroma x4": [
+   "HIT",
+   0.951,
+   -2.2,
+   "credit_card",
+   6,
+   371.4
+  ]
+ },
+ {
+  "group": "card",
+  "name": "36-slider-fries-card.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "HIT",
+   0.942,
+   -2.6,
+   "credit_card",
+   2,
+   284.7
+  ],
+  "chroma x3": [
+   "HIT",
+   0.942,
+   -2.6,
+   "credit_card",
+   4,
+   284.7
+  ],
+  "chroma x4": [
+   "HIT",
+   0.942,
+   -2.6,
+   "credit_card",
+   6,
+   284.7
+  ]
+ },
+ {
+  "group": "card",
+  "name": "40-trailmix-spread.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "card",
+  "name": "41-trailmix-heaped.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "HIT",
+   0.954,
+   -1.3,
+   "credit_card",
+   2,
+   303.2
+  ]
+ },
+ {
+  "group": "card",
+  "name": "42-chips-spread.jpg",
+  "size": [
+   640,
+   480
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.972,
+   0.4,
+   "credit_card",
+   2,
+   404.2
+  ],
+  "chroma x4": [
+   "HIT",
+   0.972,
+   0.4,
+   "credit_card",
+   3,
+   404.2
+  ]
+ },
+ {
+  "group": "card",
+  "name": "43-chips-heaped.jpg",
+  "size": [
+   1280,
+   960
+  ],
+  "truth_src": "grey detector quad (verified hit)",
+  "grey": [
+   "HIT",
+   1.0,
+   0.0,
+   "credit_card",
+   4,
+   426.1
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.97,
+   -1.8,
+   "credit_card",
+   2,
+   433.8
+  ],
+  "chroma x4": [
+   "HIT",
+   0.959,
+   0.6,
+   "credit_card",
+   3,
+   423.7
+  ]
+ },
+ {
+  "group": "card",
+  "name": "44-grapes-spread.jpg",
+  "size": [
+   1280,
+   960
+  ],
+  "truth_src": "grey detector quad (verified hit)",
+  "grey": [
+   "HIT",
+   1.0,
+   0.6,
+   "credit_card",
+   6,
+   403.4
+  ],
+  "chroma x2": [
+   "HIT",
+   0.957,
+   1.3,
+   "credit_card",
+   2,
+   400.5
+  ],
+  "chroma x3": [
+   "HIT",
+   0.957,
+   1.3,
+   "credit_card",
+   3,
+   400.5
+  ],
+  "chroma x4": [
+   "HIT",
+   0.957,
+   1.3,
+   "credit_card",
+   4,
+   400.5
+  ]
+ },
+ {
+  "group": "card",
+  "name": "45-grapes-cluster.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "audit colour box",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "HIT",
+   0.94,
+   -2.6,
+   "credit_card",
+   2,
+   307.6
+  ],
+  "chroma x4": [
+   "HIT",
+   0.938,
+   -2.6,
+   "credit_card",
+   4,
+   307.7
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "01-cheesesteak-paper.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "02-bread-rolls-container.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "03-alfredo-container.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "FALSE POSITIVE",
+   null,
+   null,
+   "credit_card",
+   2,
+   126.4
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "04-bean-soup-bowl-a.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "05-bean-soup-bowl-b.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "06-plate-meat-beans-rice.jpg",
+  "size": [
+   480,
+   640
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "07-plate-4items-topdown.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "08-plate-mole-chicken-topdown.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "09-tacos-paper-nocard.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "12-kebab-paper-nocard.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "13-kebab-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "16-rajas-rice-nocard.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "33-cheese-broccoli-crock.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "35-slider-fries-plate.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "nocard",
+  "name": "IMG_3938.jpeg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "extra-neg",
+  "name": "08b-plate-mole-chicken-close.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ },
+ {
+  "group": "extra-neg",
+  "name": "08c-plate-mole-chicken-tape.jpg",
+  "size": [
+   960,
+   1280
+  ],
+  "truth_src": "-",
+  "grey": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x2": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x3": [
+   "none",
+   null,
+   null
+  ],
+  "chroma x4": [
+   "none",
+   null,
+   null
+  ]
+ }
+]

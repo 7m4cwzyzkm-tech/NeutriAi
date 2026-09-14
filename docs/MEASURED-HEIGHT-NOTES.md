@@ -432,6 +432,69 @@ detector's corners) maps the food mask into mm^2 in the plate's own plane.
 **Grape series (45 / 90 / 180 g):** scored against the existing portion-sensitivity
 pre-registration, independently of all of the above.
 
+### TWO RULER MEASUREMENTS FOR THE SAME SESSION — plate floor height and field of view (13 Sep)
+
+Both were being derived from photographs of cards; both are cheaper and exact with a
+ruler. They go in the same `session.json`. Every number is still READ FROM A PHOTO where
+one can be taken, and the typed value is the cross-check -- the rule above.
+
+**A. Plate heights, per plate and bowl** (replaces the ~28 mm portion.py:1638-1678
+assumes for food above the table; do the deep bowl of IMG_4192/4193/4196 too, and give it
+a tape diameter).
+
+1. Plate empty, on the table where meals are shot.
+2. **Rim height.** Ruler standing vertical ON THE TABLE, zero end down, touching the
+   plate's outer edge at its highest point. Camera at rim height, square to the ruler
+   (`side_level`). Read the top of the rim. Shoot it; record `rim_height_mm_typed`.
+3. **Depth, rim to floor.** Lay a straight edge (a second ruler) across the plate, resting
+   on the rim at two opposite points. Stand the first ruler on the plate's inner surface at
+   the CENTRE, zero end down, touching the underside of the straight edge. Camera level
+   with the straight edge. Read where it crosses. Shoot it; record
+   `rim_to_floor_depth_mm_typed`.
+4. Floor height above the table = rim height - depth. For a bowl, depth is the fill
+   depth available, and floor height is read the same way.
+5. If the ruler's zero is not at its end, `zero_offset_mm` applies to both readings.
+
+**B. Field of view -- one flat tape, read at three points.**
+
+1. Main camera only: 1x, not 0.5x or 2x, and Macro Control OFF (at close range the phone
+   can switch to the ultra-wide silently). Photo mode, 4:3, no crop, no Portrait or Live
+   effects. Confirm afterwards: EXIF lens "6.765mm", digital zoom 1.0.
+2. Settings > Camera > Level ON. Shoot straight down; the level crosshair must turn
+   yellow (aligned) at the shutter.
+3. A tape measure lying flat on the table, straight, running across the WHOLE frame and
+   past both edges, through the frame centre. Weigh the ends if it curls.
+4. **Lens height.** Stand the ruler on the table beside the phone and read the height of
+   the main lens centre (the top-left lens of the three, not the phone's back or edge).
+   Record `lens_height_mm_typed`. A second person reads it, or use a stack of books as a
+   rest.
+5. **Two orientations at the SAME height:** tape along the frame's long side (landscape),
+   then along its short side (portrait).
+6. **Two heights, both orientations:** about 250 mm and about 400 mm. The ratio of the
+   two widths to the two heights removes the lens-position offset (~8 mm) instead of
+   carrying it as uncertainty: W is proportional to (D + offset), so two D's solve it.
+7. Nothing is read off the phone screen. From each ORIGINAL photo the harness reads the
+   tape value at the frame's LEFT edge, CENTRE and RIGHT edge (three clicks, stored in the
+   manifest), with the tape's FFT tick period as the pixel-per-mm check.
+8. **Squareness check, per photo:** |(centre - left) - (right - centre)| must be within
+   1% of the width read. Otherwise the camera was not square: reshoot, do not correct.
+9. FOV = 2 x arctan(W / 2D), W = right - left.
+
+**Manifest additions:**
+
+    "plates": [{"plate_id": "P1", ...,
+                "rim_height_mm_typed": 0, "rim_to_floor_depth_mm_typed": 0,
+                "frames": [{"file": "IMG_0000.jpeg", "role": "rim_height_side_level"},
+                           {"file": "IMG_0001.jpeg", "role": "floor_depth_side_level"}]}],
+    "fov": [{"file": "IMG_0002.jpeg", "tape_axis": "long", "lens_height_mm_typed": 250,
+             "height_to": "main lens centre", "level_crosshair_aligned": true},
+            {"file": "IMG_0003.jpeg", "tape_axis": "short", "lens_height_mm_typed": 250, ...},
+            {"file": "IMG_0004.jpeg", "tape_axis": "long", "lens_height_mm_typed": 400, ...},
+            {"file": "IMG_0005.jpeg", "tape_axis": "short", "lens_height_mm_typed": 400, ...}]
+
+Six photos, a few minutes, and two numbers that three rounds of card photogrammetry could
+not settle.
+
 ---
 
 ## E. HOUSEKEEPING RULE — for HANDOFF's class list, 12 Sep 2026
