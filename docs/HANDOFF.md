@@ -7,6 +7,12 @@ another investigation is written down in PARKED, not followed (standing check).
 
 ### BUNDLE A -- MAKE THE CARD RUNG WORK. Branch `bundle-a-card-rung`; nothing merges alone.
 
+**DO NOT MERGE `bundle-a-card-rung` TO MASTER UNTIL PIECE 3 LANDS** and the bundle scores as a
+whole. As it stands the branch makes master worse: piece 1 alone takes subscriber energy
+37.3% -> 43.4% MAE/mean and piece 2 moves nothing on the bench. Master carries the bundle's
+documentation and the rig fix only (cherry-picked 13 Sep); the three code commits stay on
+the branch.
+
     1. chroma card detector      26/28, 0 FP in-sample, gain frozen at x3      buildable now
     2. rung ordering             A SCALE MEASURED FROM THIS PHOTOGRAPH         built, scored
                                  OUTRANKS ANY SCALE CARRIED IN FROM OUTSIDE IT
@@ -129,7 +135,8 @@ two signals, each already present in the vision response:
 - Nutrition5k at 507 dishes.
 - Card corners carried through to a homography (dropped at vision.py:1727-1729).
 - Learned-plate pooling under the model's vessel name (MEASURED-HEIGHT-NOTES A, second cause).
-- **Bench data integrity** (found, not verified or corrected): scored 40, 41, 42, 45 are
+- **Bench data integrity** (found, not verified or corrected; see also "THE BENCH'S WEIGHTS
+  DO NOT SAY WHAT THEY INCLUDE", whose forward fix is already in): scored 40, 41, 42, 45 are
   640x480 re-encodes with no EXIF and no original on disk, while their pair partners 43
   and 44 are 5712x4284 originals -- both heap/spread pairs confound a ~9x resolution
   difference, and it likely explains grey recall finding 43/44 and missing 42/45. Legacy
@@ -2987,6 +2994,30 @@ synthetic inputs and passes; every real response yields 41.4 deg.
   portion-sensitivity arm below is the first hard one.
 
 ---
+
+## THE BENCH'S WEIGHTS DO NOT SAY WHAT THEY INCLUDE — 13 Sep 2026
+
+Same class as the soft-test entry above and the bench data-integrity finding (PARKED, top
+of this file): **something the record asserts that the data does not support.**
+
+- **Exposed by one photo.** "smashed potatoes = 136 g" on photo 25, a plate with a visible
+  smear of mayonnaise. Whether the mayonnaise is phantom food or part of the portion
+  depends on whether it was on the scale, and the record does not say. The phantom-food
+  rule is not built until Gil answers for this plate.
+- **The general statement.** For any bench plate with a sauce, dressing, oil, butter or
+  garnish, "is this detected item part of the portion?" is unanswerable from the weight.
+  No row has ever recorded it.
+- **Why it matters more than one photo.** Hidden fat is the failure this whole category is
+  worst at. `scripts/bench_all.py` records the NIH/NIDDK comparison as four leading apps
+  about a third light, largely from roughly 30 g of fat a meal (~270 kcal); Gil puts the
+  metabolic-kitchen figure at 250-345 kcal per meal (source not in the repo). **This bench
+  cannot currently measure our performance on it**, because it cannot say whether the fat
+  on a plate was weighed.
+- **Forward fix, 13 Sep.** Every bench row now carries `WEIGHED_WITH` in
+  `scripts/bench_all.py` -- `UNKNOWN`, or a list of what else was on the plate with
+  `on_scale` yes/no -- and `test_every_bench_row_says_what_its_weight_includes` fails any
+  row without it. The calibration sheet carries the same field, `also_on_plate`
+  (MEASURED-HEIGHT-NOTES). **Every existing row is UNKNOWN**; none is guessed either way.
 
 ## PORTION SENSITIVITY — THE TOP ACCEPTANCE TEST. Pre-registered before the photos. 12 Sep 2026
 
