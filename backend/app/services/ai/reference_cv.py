@@ -157,11 +157,47 @@ def _best_by_consensus(found: list[dict], width: int) -> tuple[int, dict] | None
     return best[0], best[2]
 
 
+# WHICH CHANNEL THE EDGES ARE COMPUTED ON: CHROMA FIRST, THEN GREY.
+#
+# Grey-level edges found the card on 5 of 28 bench photographs. On the wood
+# table the card and the table are near-isoluminant (1.6-16.6 grey levels),
+# and on the tablecloth the card's shadow side is a soft grey ramp. But the
+# table is orange-brown, the cloth is neutral, and cards are coloured: in
+# chroma -- distance from neutral grey, sqrt(a*^2 + b*^2) in Lab -- the card is
+# an even rectangle with a clean edge. Chroma is hue-blind on purpose: the
+# cards on this bench are green AND red, and a key on one hue would be fitted
+# to one card.
+#
+# Measured through these same gates, 13 Sep (docs/evidence/2026-09-13-card-chroma):
+#     grey 5/28   chroma x2 16+1   chroma x3 25+1   chroma x4 26+1 with 1 false positive
+# zero false positives at x3 on 15 card-free photos plus two more. The gain is
+# FROZEN at 3.0 and pre-registered against the calibration session as a
+# holdout; it is not to be moved to fit a photograph.
+#
+# Grey stays as the fallback, for a card whose colour matches its background
+# (a grey or black card) -- chroma sees no edge there. On the bench grey found
+# no card that chroma missed.
+CHROMA_GAIN = 3.0
+
+
+def _chroma_channel(rgb):
+    import cv2
+    import numpy as np
+
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    c = np.sqrt((lab[:, :, 1] - 128) ** 2 + (lab[:, :, 2] - 128) ** 2) * CHROMA_GAIN
+    return np.clip(c, 0, 255).astype(np.uint8)
+
+
 def find_reference(img) -> ReferenceFind | None:
     """Locate a known rectangle in a PIL image. None when there isn't one.
 
     None is a perfectly good answer and the common one -- most photos have no
     card in them. The caller falls back to the rest of the ladder.
+
+    Edges are looked for in chroma first and in grey only if chroma finds
+    nothing (see CHROMA_GAIN). Both channels pass through exactly the same
+    geometric gates and the same consensus rule.
 
     Deliberately not tunable from outside: a scale that changes with a
     parameter is not a measurement.
@@ -174,102 +210,114 @@ def find_reference(img) -> ReferenceFind | None:
         return None
 
     try:
-        w, h = img.size
         rgb = np.asarray(img.convert("RGB"))
-        gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-        frame_area = float(w * h)
-
-        found: list[dict] = []
-
-        # Several edge thresholds rather than one. A card can be dark on a pale
-        # cloth or pale on a dark table, and no single Canny pair finds both.
-        # This is not a parameter to tune -- every candidate still has to pass
-        # the same geometric tests, and how MANY settings agree is itself the
-        # evidence that a quad is real rather than a coincidence of one
-        # threshold.
-        for blur in (3, 5):
-            blurred = cv2.GaussianBlur(gray, (blur, blur), 0)
-            for lo, hi in ((30, 90), (50, 150), (75, 200)):
-                edges = cv2.Canny(blurred, lo, hi)
-                edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
-                contours, _ = cv2.findContours(
-                    edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
+        for channel_name, channel in (("chroma", _chroma_channel(rgb)),
+                                      ("grey", cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))):
+            found = _find_on_channel(channel)
+            if found is not None:
+                log.info(
+                    "reference_found",
+                    channel=channel_name,
+                    kind=found.kind,
+                    length_ratio=round(found.length_ratio, 4),
+                    frame_width_mm=round(found.frame_width_mm, 1),
+                    observed_aspect=round(found.observed_aspect, 3),
+                    tilt_deg=round(found.tilt_deg, 1),
+                    consensus=found.consensus,
                 )
-                for contour in contours:
-                    area = cv2.contourArea(contour)
-                    if not (MIN_AREA_FRACTION * frame_area < area < MAX_AREA_FRACTION * frame_area):
-                        continue
-                    perimeter = cv2.arcLength(contour, True)
-                    quad = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
-                    if len(quad) != 4 or not cv2.isContourConvex(quad):
-                        continue
-
-                    pts = quad.reshape(4, 2).astype(float)
-                    sides = [
-                        float(np.linalg.norm(pts[i] - pts[(i + 1) % 4]))
-                        for i in range(4)
-                    ]
-                    if min(sides) < 1e-6:
-                        continue
-                    # A rectangle's opposite sides stay close under mild
-                    # perspective. A trapezoid is a place mat, not a card.
-                    if abs(sides[0] - sides[2]) / max(sides[0], sides[2]) > OPPOSITE_SIDE_TOLERANCE:
-                        continue
-                    if abs(sides[1] - sides[3]) / max(sides[1], sides[3]) > OPPOSITE_SIDE_TOLERANCE:
-                        continue
-                    # ...and its corners stay near 90 degrees. This is the test
-                    # that rejects a plate rim or a fold of paper with four
-                    # corners: on the bench it removed most false candidates
-                    # before consensus had to.
-                    if _worst_corner_error(pts) > CORNER_ANGLE_TOLERANCE_DEG:
-                        continue
-
-                    long_px = (sides[0] + sides[2]) / 2.0
-                    short_px = (sides[1] + sides[3]) / 2.0
-                    if short_px > long_px:
-                        long_px, short_px = short_px, long_px
-                    observed = long_px / short_px
-
-                    for kind, (mm_long, mm_short) in REFERENCE_RECTANGLES.items():
-                        true_r = mm_long / mm_short
-                        miss = abs(observed - true_r) / true_r
-                        if miss > ASPECT_TOLERANCE:
-                            continue
-                        cx, cy = pts.mean(axis=0)
-                        found.append({
-                            "kind": kind, "miss": miss, "pts": pts,
-                            "long_px": long_px, "observed": observed,
-                            "cx": float(cx), "cy": float(cy),
-                            "setting": (blur, lo, hi),
-                            "mm_per_px": mm_long / long_px,
-                        })
-
-        best = _best_by_consensus(found, w)
-        if best is None:
-            return None
-        agreed, pick = best
-        found_ref = ReferenceFind(
-            kind=pick["kind"],
-            corners=pick["pts"].tolist(),
-            long_px=pick["long_px"],
-            image_size=(w, h),
-            observed_aspect=pick["observed"],
-            mm_per_px=pick["mm_per_px"],
-            consensus=agreed,
-        )
-        found = found_ref
-        log.info(
-            "reference_found",
-            kind=found.kind,
-            length_ratio=round(found.length_ratio, 4),
-            frame_width_mm=round(found.frame_width_mm, 1),
-            observed_aspect=round(found.observed_aspect, 3),
-            tilt_deg=round(found.tilt_deg, 1),
-            consensus=found.consensus,
-        )
-        return found
+                return found
+        return None
     except Exception as exc:  # noqa: BLE001
         # A detector that throws must not take a scan down with it. No card is
         # always a valid answer.
         log.warning("reference_cv_failed", error=str(exc)[:200])
         return None
+
+
+def _find_on_channel(gray) -> ReferenceFind | None:
+    """The card search on one single-channel 8-bit image. Raises on bad input;
+    `find_reference` is the guard."""
+    import cv2
+    import numpy as np
+
+    h, w = gray.shape[:2]
+    frame_area = float(w * h)
+
+    found: list[dict] = []
+
+    # Several edge thresholds rather than one. A card can be dark on a pale
+    # cloth or pale on a dark table, and no single Canny pair finds both.
+    # This is not a parameter to tune -- every candidate still has to pass
+    # the same geometric tests, and how MANY settings agree is itself the
+    # evidence that a quad is real rather than a coincidence of one
+    # threshold.
+    for blur in (3, 5):
+        blurred = cv2.GaussianBlur(gray, (blur, blur), 0)
+        for lo, hi in ((30, 90), (50, 150), (75, 200)):
+            edges = cv2.Canny(blurred, lo, hi)
+            edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
+            contours, _ = cv2.findContours(
+                edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
+            )
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if not (MIN_AREA_FRACTION * frame_area < area < MAX_AREA_FRACTION * frame_area):
+                    continue
+                perimeter = cv2.arcLength(contour, True)
+                quad = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+                if len(quad) != 4 or not cv2.isContourConvex(quad):
+                    continue
+
+                pts = quad.reshape(4, 2).astype(float)
+                sides = [
+                    float(np.linalg.norm(pts[i] - pts[(i + 1) % 4]))
+                    for i in range(4)
+                ]
+                if min(sides) < 1e-6:
+                    continue
+                # A rectangle's opposite sides stay close under mild
+                # perspective. A trapezoid is a place mat, not a card.
+                if abs(sides[0] - sides[2]) / max(sides[0], sides[2]) > OPPOSITE_SIDE_TOLERANCE:
+                    continue
+                if abs(sides[1] - sides[3]) / max(sides[1], sides[3]) > OPPOSITE_SIDE_TOLERANCE:
+                    continue
+                # ...and its corners stay near 90 degrees. This is the test
+                # that rejects a plate rim or a fold of paper with four
+                # corners: on the bench it removed most false candidates
+                # before consensus had to.
+                if _worst_corner_error(pts) > CORNER_ANGLE_TOLERANCE_DEG:
+                    continue
+
+                long_px = (sides[0] + sides[2]) / 2.0
+                short_px = (sides[1] + sides[3]) / 2.0
+                if short_px > long_px:
+                    long_px, short_px = short_px, long_px
+                observed = long_px / short_px
+
+                for kind, (mm_long, mm_short) in REFERENCE_RECTANGLES.items():
+                    true_r = mm_long / mm_short
+                    miss = abs(observed - true_r) / true_r
+                    if miss > ASPECT_TOLERANCE:
+                        continue
+                    cx, cy = pts.mean(axis=0)
+                    found.append({
+                        "kind": kind, "miss": miss, "pts": pts,
+                        "long_px": long_px, "observed": observed,
+                        "cx": float(cx), "cy": float(cy),
+                        "setting": (blur, lo, hi),
+                        "mm_per_px": mm_long / long_px,
+                    })
+
+    best = _best_by_consensus(found, w)
+    if best is None:
+        return None
+    agreed, pick = best
+    return ReferenceFind(
+        kind=pick["kind"],
+        corners=pick["pts"].tolist(),
+        long_px=pick["long_px"],
+        image_size=(w, h),
+        observed_aspect=pick["observed"],
+        mm_per_px=pick["mm_per_px"],
+        consensus=agreed,
+    )

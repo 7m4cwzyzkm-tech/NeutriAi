@@ -16,7 +16,7 @@ import pytest
 from PIL import Image
 
 from app.services.ai.reference_cv import (
-    MIN_SETTING_CONSENSUS, REFERENCE_RECTANGLES, find_reference,
+    MIN_SETTING_CONSENSUS, REFERENCE_RECTANGLES, _find_on_channel, find_reference,
 )
 
 CARD_MM_LONG, CARD_MM_SHORT = REFERENCE_RECTANGLES["credit_card"]
@@ -103,3 +103,64 @@ def test_a_detector_failure_never_takes_a_scan_down():
             raise RuntimeError("decode exploded")
 
     assert find_reference(NotAnImage()) is None
+
+
+# ---------------------------------------------------------------------------
+# Chroma first, grey as the fallback.
+#
+# Grey edges found the card on 5 of 28 bench photographs: on the wood table the
+# card and the table are near-isoluminant. These scenes pin the three cases the
+# channel order exists for.
+# ---------------------------------------------------------------------------
+def _coloured_scene(bg_rgb, card_rgb, blobs=None, card=True, width=900, height=1200):
+    rng = np.random.default_rng(11)
+    img = np.zeros((height, width, 3), dtype=np.uint8)
+    img[:] = bg_rgb
+    # Texture in the background's own colour family, so edges exist to trip on.
+    for _ in range(120):
+        cx, cy = int(rng.integers(0, width)), int(rng.integers(0, height))
+        jitter = rng.integers(-12, 13)
+        col = tuple(int(np.clip(v + jitter, 0, 255)) for v in bg_rgb)
+        cv2.circle(img, (cx, cy), int(rng.integers(15, 60)), col, -1)
+    for colour in blobs or []:
+        for _ in range(6):
+            cx, cy = int(rng.integers(80, width - 80)), int(rng.integers(80, height - 80))
+            cv2.circle(img, (cx, cy), int(rng.integers(30, 70)), colour, -1)
+    if card:
+        L, S = 300.0, 300.0 / (CARD_MM_LONG / CARD_MM_SHORT)
+        cx, cy = width / 2.0, height / 2.0
+        pts = np.array([[cx - L / 2, cy - S / 2], [cx + L / 2, cy - S / 2],
+                        [cx + L / 2, cy + S / 2], [cx - L / 2, cy + S / 2]], dtype=np.int32)
+        cv2.fillPoly(img, [pts], card_rgb)
+    return Image.fromarray(img)
+
+
+def _grey_luminance(rgb):
+    r, g, b = rgb
+    return 0.299 * r + 0.587 * g + 0.114 * b
+
+
+def test_a_card_as_bright_as_a_wood_table_is_found_by_its_colour():
+    """The bench failure: a green card on orange-brown wood, near-isoluminant."""
+    wood, green = (140, 98, 58), (55, 130, 70)
+    assert abs(_grey_luminance(wood) - _grey_luminance(green)) < 8
+    scene = _coloured_scene(wood, green)
+    grey = cv2.cvtColor(np.asarray(scene), cv2.COLOR_RGB2GRAY)
+    assert _find_on_channel(grey) is None, "the scene must defeat the grey channel"
+    found = find_reference(scene)
+    assert found is not None
+    assert found.mm_per_px == pytest.approx(CARD_MM_LONG / 300.0, rel=0.04)
+
+
+def test_a_grey_card_on_a_grey_table_falls_back_to_grey_edges():
+    """Chroma sees no edge between two neutrals; the grey channel must still work."""
+    found = find_reference(_coloured_scene((190, 190, 190), (60, 60, 60)))
+    assert found is not None
+    assert found.mm_per_px == pytest.approx(CARD_MM_LONG / 300.0, rel=0.04)
+
+
+def test_colourful_food_with_no_card_is_not_a_card():
+    """Chroma makes coloured food visible too: round blobs must not become a card."""
+    scene = _coloured_scene((140, 98, 58), None, blobs=[(60, 140, 60), (220, 120, 40), (200, 40, 40)],
+                            card=False)
+    assert find_reference(scene) is None
