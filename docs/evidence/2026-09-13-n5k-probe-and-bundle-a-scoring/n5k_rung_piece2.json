@@ -1,0 +1,703 @@
+{
+ "_provenance": {
+  "what": "piece 2 acceptance: CLEAN / BENCH / BENCH_OLD per dish; BENCH == CLEAN on 16/16",
+  "produced": "13 Sep 2026 ~21:35 -0700 by n5k_rung_acceptance.py piece2 at a2fc9b7 (branch bundle-a-card-rung)"
+ },
+ "rows": [
+  {
+   "id": "dish_1558720097",
+   "truth": {
+    "kcal": 30.34,
+    "mass": 74.0
+   },
+   "container": "side_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      23.9
+     ],
+     "kcal": 6.2139999999999995,
+     "mass": 23.9
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      23.9
+     ],
+     "kcal": 6.2139999999999995,
+     "mass": 23.9
+    },
+    "BENCH_OLD": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      23.9
+     ],
+     "kcal": 6.2139999999999995,
+     "mass": 23.9
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1558639876",
+   "truth": {
+    "kcal": 68.18,
+    "mass": 215.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      8.9,
+      110.1,
+      10.3
+     ],
+     "kcal": 80.5348,
+     "mass": 129.29999999999998
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      8.9,
+      110.1,
+      10.3
+     ],
+     "kcal": 80.5348,
+     "mass": 129.29999999999998
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      4.5,
+      55.9,
+      5.2
+     ],
+     "kcal": 40.8172,
+     "mass": 65.6
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1558549605",
+   "truth": {
+    "kcal": 97.5,
+    "mass": 75.0
+   },
+   "container": "side_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      221.9
+     ],
+     "kcal": 363.916,
+     "mass": 221.9
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      221.9
+     ],
+     "kcal": 363.916,
+     "mass": 221.9
+    },
+    "BENCH_OLD": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      221.9
+     ],
+     "kcal": 363.916,
+     "mass": 221.9
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1559842047",
+   "truth": {
+    "kcal": 153.690002,
+    "mass": 285.0
+   },
+   "container": "side_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      125.1,
+      35.4,
+      30.3
+     ],
+     "kcal": 107.574,
+     "mass": 190.79999999999998
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      125.1,
+      35.4,
+      30.3
+     ],
+     "kcal": 107.574,
+     "mass": 190.79999999999998
+    },
+    "BENCH_OLD": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      125.1,
+      35.4,
+      30.3
+     ],
+     "kcal": 107.574,
+     "mass": 190.79999999999998
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1558376734",
+   "truth": {
+    "kcal": 206.76001,
+    "mass": 60.0
+   },
+   "container": "side_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      75.8
+     ],
+     "kcal": 234.222,
+     "mass": 75.8
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      75.8
+     ],
+     "kcal": 234.222,
+     "mass": 75.8
+    },
+    "BENCH_OLD": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      75.8
+     ],
+     "kcal": 234.222,
+     "mass": 75.8
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1558373008",
+   "truth": {
+    "kcal": 251.558014,
+    "mass": 73.0
+   },
+   "container": "side_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      136.5
+     ],
+     "kcal": 638.82,
+     "mass": 136.5
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      136.5
+     ],
+     "kcal": 638.82,
+     "mass": 136.5
+    },
+    "BENCH_OLD": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      136.5
+     ],
+     "kcal": 638.82,
+     "mass": 136.5
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1561739265",
+   "truth": {
+    "kcal": 292.040009,
+    "mass": 308.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      60.3,
+      23.2,
+      65.2,
+      41.6,
+      83.4
+     ],
+     "kcal": 397.082,
+     "mass": 273.7
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      60.3,
+      23.2,
+      65.2,
+      41.6,
+      83.4
+     ],
+     "kcal": 397.082,
+     "mass": 273.7
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      72.2,
+      28.1,
+      77.4,
+      49.7,
+      106.6
+     ],
+     "kcal": 492.55099999999993,
+     "mass": 334.0
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1561405411",
+   "truth": {
+    "kcal": 332.063477,
+    "mass": 282.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      209.3,
+      188.8,
+      101.9,
+      23.3
+     ],
+     "kcal": 534.649,
+     "mass": 523.3000000000001
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      209.3,
+      188.8,
+      101.9,
+      23.3
+     ],
+     "kcal": 534.649,
+     "mass": 523.3000000000001
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 92128.63636363635,
+     "grams": [
+      81.1,
+      72.2,
+      41.0,
+      10.0
+     ],
+     "kcal": 206.35399999999998,
+     "mass": 204.3
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1563996509",
+   "truth": {
+    "kcal": 365.184875,
+    "mass": 316.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      53.7,
+      149.5,
+      47.7,
+      48.2
+     ],
+     "kcal": 407.634,
+     "mass": 299.1
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      53.7,
+      149.5,
+      47.7,
+      48.2
+     ],
+     "kcal": 407.634,
+     "mass": 299.1
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 67561.0,
+     "grams": [
+      55.8,
+      155.2,
+      49.2,
+      49.0
+     ],
+     "kcal": 421.664,
+     "mass": 309.2
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1565123881",
+   "truth": {
+    "kcal": 406.821747,
+    "mass": 515.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      91.5,
+      18.3,
+      52.4,
+      35.5
+     ],
+     "kcal": 241.61,
+     "mass": 197.7
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      91.5,
+      18.3,
+      52.4,
+      35.5
+     ],
+     "kcal": 241.61,
+     "mass": 197.7
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      86.0,
+      16.5,
+      48.3,
+      32.7
+     ],
+     "kcal": 223.036,
+     "mass": 183.5
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1557862783",
+   "truth": {
+    "kcal": 442.97998,
+    "mass": 258.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      238.6,
+      91.7,
+      105.0
+     ],
+     "kcal": 592.811,
+     "mass": 435.3
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      238.6,
+      91.7,
+      105.0
+     ],
+     "kcal": 592.811,
+     "mass": 435.3
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 112601.66666666666,
+     "grams": [
+      168.8,
+      64.6,
+      73.7
+     ],
+     "kcal": 418.073,
+     "mass": 307.1
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1564687090",
+   "truth": {
+    "kcal": 498.018677,
+    "mass": 416.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      118.9,
+      160.3,
+      118.7,
+      56.4
+     ],
+     "kcal": 468.334,
+     "mass": 454.3
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      118.9,
+      160.3,
+      118.7,
+      56.4
+     ],
+     "kcal": 468.334,
+     "mass": 454.3
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      79.8,
+      104.8,
+      79.7,
+      37.4
+     ],
+     "kcal": 312.009,
+     "mass": 301.7
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1563909580",
+   "truth": {
+    "kcal": 544.311523,
+    "mass": 361.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      41.2,
+      183.3,
+      58.1,
+      176.8
+     ],
+     "kcal": 409.70000000000005,
+     "mass": 459.40000000000003
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      41.2,
+      183.3,
+      58.1,
+      176.8
+     ],
+     "kcal": 409.70000000000005,
+     "mass": 459.40000000000003
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 67561.0,
+     "grams": [
+      18.5,
+      80.4,
+      25.6,
+      77.8
+     ],
+     "kcal": 181.15800000000002,
+     "mass": 202.3
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1561577947",
+   "truth": {
+    "kcal": 623.204285,
+    "mass": 424.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      208.2,
+      47.1,
+      167.3
+     ],
+     "kcal": 796.024,
+     "mass": 422.6
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      208.2,
+      47.1,
+      167.3
+     ],
+     "kcal": 796.024,
+     "mass": 422.6
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 67561.0,
+     "grams": [
+      201.0,
+      45.3,
+      161.6
+     ],
+     "kcal": 768.6489999999999,
+     "mass": 407.9
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1562963325",
+   "truth": {
+    "kcal": 760.161926,
+    "mass": 379.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      299.8,
+      44.1,
+      66.9
+     ],
+     "kcal": 556.44,
+     "mass": 410.8
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      299.8,
+      44.1,
+      66.9
+     ],
+     "kcal": 556.44,
+     "mass": 410.8
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      136.7,
+      20.2,
+      32.2
+     ],
+     "kcal": 258.226,
+     "mass": 189.1
+    }
+   },
+   "identical": true
+  },
+  {
+   "id": "dish_1563478751",
+   "truth": {
+    "kcal": 950.395081,
+    "mass": 545.0
+   },
+   "container": "dinner_plate",
+   "arms": {
+    "CLEAN": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      77.8
+     ],
+     "kcal": 94.916,
+     "mass": 77.8
+    },
+    "BENCH": {
+     "rung": "depth_model",
+     "mm2": 182999.03999999998,
+     "grams": [
+      77.8
+     ],
+     "kcal": 94.916,
+     "mass": 77.8
+    },
+    "BENCH_OLD": {
+     "rung": "plate_reference",
+     "mm2": 77955.0,
+     "grams": [
+      34.9
+     ],
+     "kcal": 42.577999999999996,
+     "mass": 34.9
+    }
+   },
+   "identical": true
+  }
+ ]
+}

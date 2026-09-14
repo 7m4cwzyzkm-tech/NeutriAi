@@ -1,0 +1,30 @@
+# PROVENANCE: stdout of n5k_probe.py, 13 Sep 2026, HEAD 303f6b5. Summary lines are HANDOFF's probe figures.
+HEAD 303f6b5
+FOV from the paper 69.05 deg; rig frame 182,999 mm^2
+2026-09-13 15:28:33 [warning  ] plate_outline_failed           error='The read operation timed out'
+  dish_1558720097 container=side_plate   CLEAN rung depth_model      1.0000x  mass     24/   74 (  -68%)  kcal     6/   30 (  -80%)  | BENCH rung depth_model kcal   -80%  items ['depth_model']
+  dish_1558639876 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    129/  215 (  -40%)  kcal    81/   68 (  +18%)  | BENCH rung plate_reference kcal   -40%  items ['depth_model', 'depth_model', 'depth_model']
+  dish_1558549605 container=side_plate   CLEAN rung depth_model      1.0000x  mass    222/   75 ( +196%)  kcal   364/   98 ( +273%)  | BENCH rung depth_model kcal  +273%  items ['depth_model']
+  dish_1559842047 container=side_plate   CLEAN rung depth_model      1.0000x  mass    191/  285 (  -33%)  kcal   108/  154 (  -30%)  | BENCH rung depth_model kcal   -30%  items ['depth_model', 'depth_model', 'depth_model']
+  dish_1558376734 container=side_plate   CLEAN rung depth_model      1.0000x  mass     76/   60 (  +26%)  kcal   234/  207 (  +13%)  | BENCH rung depth_model kcal   +13%  items ['depth_model']
+  dish_1558373008 container=side_plate   CLEAN rung depth_model      1.0000x  mass    136/   73 (  +87%)  kcal   639/  252 ( +154%)  | BENCH rung depth_model kcal  +154%  items ['depth_model']
+  dish_1561739265 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    274/  308 (  -11%)  kcal   397/  292 (  +36%)  | BENCH rung plate_reference kcal   +69%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1561405411 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    523/  282 (  +86%)  kcal   560/  332 (  +69%)  | BENCH rung plate_reference kcal   -35%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1563996509 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    299/  316 (   -5%)  kcal   408/  365 (  +12%)  | BENCH rung plate_reference kcal   +15%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1565123881 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    198/  515 (  -62%)  kcal   242/  407 (  -41%)  | BENCH rung plate_reference kcal   -45%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1557862783 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    435/  258 (  +69%)  kcal   593/  443 (  +34%)  | BENCH rung plate_reference kcal    -6%  items ['depth_model', 'depth_model', 'depth_model']
+  dish_1564687090 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    454/  416 (   +9%)  kcal   468/  498 (   -6%)  | BENCH rung plate_reference kcal   -37%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1563909580 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    459/  361 (  +27%)  kcal   410/  544 (  -25%)  | BENCH rung plate_reference kcal   -67%  items ['depth_model', 'depth_model', 'depth_model', 'depth_model']
+  dish_1561577947 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    423/  424 (   -0%)  kcal   796/  623 (  +28%)  | BENCH rung plate_reference kcal   +23%  items ['depth_model', 'depth_model', 'depth_model']
+  dish_1562963325 container=dinner_plate CLEAN rung depth_model      1.0000x  mass    411/  379 (   +8%)  kcal   556/  760 (  -27%)  | BENCH rung plate_reference kcal   -66%  items ['depth_model', 'depth_model', 'depth_model']
+  dish_1563478751 container=dinner_plate CLEAN rung depth_model      1.0000x  mass     78/  545 (  -86%)  kcal    95/  950 (  -90%)  | BENCH rung plate_reference kcal   -96%  items ['depth_model']
+
+CLEAN: frame rung {'depth_model': 16}; dishes 16 (one per built-up plate)
+  kcal  MAE  178.2 =  47.3% of mean (376)  per-dish mean  58.4%  median  31.9%  signed +21.2%
+  mass  MAE  117.5 =  41.0% of mean (287)  per-dish mean  50.8%  median  36.5%  signed +12.7%
+  carb  MAE   17.0 =  59.6% of mean (29)  per-dish mean  88.8%  median  45.1%  signed +34.0%
+
+BENCH: frame rung {'depth_model': 5, 'plate_reference': 11}; dishes 16 (one per built-up plate)
+  kcal  MAE  216.5 =  57.5% of mean (376)  per-dish mean  65.5%  median  42.7%  signed  +2.9%
+  mass  MAE  125.0 =  43.6% of mean (287)  per-dish mean  51.2%  median  38.5%  signed  -9.2%
+  carb  MAE   19.7 =  69.1% of mean (29)  per-dish mean  82.9%  median  58.4%  signed  +8.3%

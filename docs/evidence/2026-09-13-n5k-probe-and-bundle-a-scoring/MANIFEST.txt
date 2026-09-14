@@ -1,0 +1,51 @@
+Paid and non-regenerable artifacts of 13 Sep 2026
+
+Same class as 2026-09-12-food_facts-before-resolve.json: everything else in the session can be
+regenerated; the 16 detections cannot without paying again, and re-buying draws different ones.
+
+WHAT IS HERE
+  n5k/detections/*.json   16 PAID gpt-4o detections + second_look (Nutrition5k depth-test dishes)
+  n5k/selection.json      the 16 dishes and their weighed truth
+  n5k_probe.py/.json/.log the paid probe, at 303f6b5 (HANDOFF: 'The depth rung's first real test')
+  n5k_rung_acceptance.py  Bundle A piece 2 acceptance -- zero cost; re-run after piece 3
+  n5k_rung_piece2.json    its result at a2fc9b7: BENCH == CLEAN on 16/16
+  score_piece.py          per-piece bench scorer (needs chroma_net.json and the meal-replay rig)
+  chroma_net.py/.json     detector net effect at 532a573: UNCAL 37.3% -> 43.4% MAE/mean
+
+NOT HERE, deliberately
+  n5k/rgb/*.png, dish_metadata_cafe*.csv, depth_test_ids.txt  -- CC BY 4.0, re-downloadable
+  every thumbnail and crop of the bench photos -- several show a card with the name legible
+
+EDITS MADE ON COPYING (why the two hashes differ)
+  *.py    a '# PROVENANCE' comment header; absolute scratchpad/repo paths made relative;
+          n5k_rung_acceptance.py also downloads rgb images on first use
+  *.json  a '_provenance' key added (list results wrapped as {_provenance, rows}); contents unchanged
+  *.log   a one-line provenance header
+  .gitattributes (text=auto eol=lf) may store LF: hash `git show <commit>:<path>`, not a Windows checkout.
+
+sha256 of the scratchpad original                                  sha256 as written here                                            path  (note)
+9253673415fa000e18efa88c639c9bc96136c7f1742f1e261a285a2da14c636e  a466cb25077baefd02ab65d22d0fd451c6c4c4bb08519ac1c8332ef734069f41  n5k/detections/dish_1557862783.json  (PAID detection)
+e76bcfbabd057e58059719b73dd0844ebc22d528f2347534ed4afa0c81da9944  191d1ed0aa05057dc4b026b79e42db6be7da1b2a9e774ccdf7a41284c6559fa3  n5k/detections/dish_1558373008.json  (PAID detection)
+95f2045b5da5ca4f0cf5f26b7019b3cbad0674421c5b81af08e44d520dfed2d6  f7f71a9641f759fb0609f77d9c743bc4b2a44cb11ce4a82128b8e4eb10533792  n5k/detections/dish_1558376734.json  (PAID detection)
+d26d4e69515b3687a4a8c40e528215d0619cfa88fcf1a34202937697b480802e  d9ae538e2b71e4abb47ecc6c9074b60b6d32a33c2d22921c7989099993e581e8  n5k/detections/dish_1558549605.json  (PAID detection)
+ae4174f06c91e2cd1bdebacd1b4cd025d092b070b0ae98aeeb92b7389a5c88b5  97627ce6524cb6aa82bc968fa9dda29bb0457af00311b0cdbb951dcae9603729  n5k/detections/dish_1558639876.json  (PAID detection)
+db28f7e2f1d2a0c5b982be6cae104cc6c7c040d0acdc42fe8ce822b69aacbc2c  93872a8c4ebe1f23232ca675b7fe8693fa61dff52ed628a3107261371b1c552f  n5k/detections/dish_1558720097.json  (PAID detection)
+d8f5071190b874d7df7302b36eb4c74df0f9c6c96a0544acc0ef5a45f73e3043  668477ce4fefc0911fd69df32f0de00621abfba3f467b7d937e6cd05197cf43f  n5k/detections/dish_1559842047.json  (PAID detection)
+65dfe44ac9f16686b33ebd1c191b25fb5845c4dad2a69253f30da9053cd37ccb  ac829efe96d91a33611e2e8a3987ec9b7e49af1e78c8c145cbb6fd8bec79c539  n5k/detections/dish_1561405411.json  (PAID detection)
+01f2ded3143cfa13790e8c8385f649fa7ebd2ec63b438dade84c767c8c8c543f  7f1b53eea8b5490471dba8a5bbc1bcf9cce0dfedd2bfb53b792de9cfb72c122d  n5k/detections/dish_1561577947.json  (PAID detection)
+de0cc9edc53c7a9347f911909c00aa3a3e21c09d1f4204d421adae57875d10e5  c3920a50be95b4e81508444c0bfe96a8e1293c94dd92cf3cfbca2f7b68af6eda  n5k/detections/dish_1561739265.json  (PAID detection)
+652b2e4aa1763e654052c7e47a90b263244be7a69e21f98e3bb43f49798b7834  7fa6844ce53365b411dcc648e595693476049be4ebfdf01682d1f2ee73b4e311  n5k/detections/dish_1562963325.json  (PAID detection)
+c87784bf9b614c015703113820ab9bac0e607eb686fbe043f5c92841e259be6a  c36968669146eec19113a1d28687daa0964bd0e727a05f3adc9bbbdf60c9521f  n5k/detections/dish_1563478751.json  (PAID detection)
+5168c7aaad5be67e1c0320dd9b6a7e8088327e95d7fc587224abfab37f01e6a3  2b42f8caa74cc412274d3a09f6fcc0d15b083ee26ec8157d96dd28bc2abde07e  n5k/detections/dish_1563909580.json  (PAID detection)
+6521ce092e4fb906a79fe37d43fd040e89249f3f969549f55aea7743e25b5653  936d133be56b956496369903809850408dd3e672f27b6e79f216eb1a589e9c5a  n5k/detections/dish_1563996509.json  (PAID detection)
+ff9b786be509c26e41ebecf9698cfbf788f2dc80fbee4bd628d785a7d54d3d8f  3c5114fb00ae53b909da098a3d20a949d021a6101d10440470ddee684e797ed7  n5k/detections/dish_1564687090.json  (PAID detection)
+ceeaddafae8bb6ae9b57655f2f4ab23733fa639fffa5aa5e99d640fba86e043a  c0be24e2f98a930cf512fa4362141c6470c2a515265c80be5d98d69cb8af0d0e  n5k/detections/dish_1565123881.json  (PAID detection)
+da87d035ce7bf8d7d38a0ecd56da552f2d43dad3485edd5dedb89690637df4c5  1f63f72421c3366303742253e7c7582628782b162c75d5fb67b9855c1f33c03a  n5k/selection.json  (dish selection and truth)
+981232097261834b91bea80142aaa726c20c26127e65910798cd003bdce1d829  b0a0c4b1588df7430d23315e7811c3ab568619112764303ad29bd7b3ac061600  n5k_probe.py  (probe script)
+00e1b0dcaa9ff34d4bd3ce0e6195d7b9b03bd3e7c2bcc7555641d989a16f28f7  684bd8c4e6872f8c846540acdbedb7d7debc0750ffeddac3607f45f5a21e50f9  n5k_probe.json  (probe result)
+f53763f874bbd84caeb960d1c5d0c43b865b1a50bb70dca8d7587c596beee116  13a85a859ae66aff5f9763bf6e1ba050997429579784acb61ef3bdd0288c9059  n5k_probe.log  (probe log)
+54270a16eadddac6860689a4124ea6ad5c1706120e60e1b67a505e5e6e104ee7  2e237e3c8c2b577ab38bf1cd68830938b56ad576248817e6c88944a4d366fdbc  n5k_rung_acceptance.py  (piece 2 acceptance harness)
+05dc6b7331de7e951489213fa7219692178a90af5715d905cc7ae7f1b5f8b53b  353824aa1655f1c327f71893b4eef22e53753aa3fc54e75e0f4ab1b5dde5b93b  n5k_rung_piece2.json  (piece 2 acceptance result)
+f93464286add276eb564cfa070418084bdc84c6a2803d1eda6e5a1355e369beb  10a6bd20c6b67a5bec819901b8da15ca0c13631478f0b5ade0ae98fe95aef598  score_piece.py  (per-piece scorer)
+9d86899ef838cdffc356ebcdbe5769432ec730c93761c3581e3f65a0488d5bfd  2febd0d011c66276fbc51bc14edf6631e0e4d1736b09f97266c45f5a6cc07048  chroma_net.py  (detector net-effect script)
+6846eefac136cedb0cdb6958969ea7cf19f125c958ff9c7a335624743a27c22d  d97ea43dbc2967b5255b14259e653fa48b5cdf6af201c07241d4c0d0450761c9  chroma_net.json  (detector net-effect result)

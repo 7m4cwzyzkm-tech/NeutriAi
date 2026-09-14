@@ -1,0 +1,1300 @@
+{
+ "_provenance": {
+  "what": "per-dish probe result: CLEAN (359 mm, 69.05 deg) and BENCH (saved 254 mm dinner_plate) arms, old rung order",
+  "produced": "13 Sep 2026 by n5k_probe.py at 303f6b5; LLM nutrition fallback allowed"
+ },
+ "rows": [
+  {
+   "id": "dish_1558720097",
+   "truth": {
+    "kcal": 30.34,
+    "mass": 74.0,
+    "fat": 0.148,
+    "carb": 7.4,
+    "protein": 0.666
+   },
+   "container": "side_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "baby toddler carrots, stage 1",
+       23.9,
+       6.2
+      ]
+     ],
+     "totals": {
+      "mass": 23.9,
+      "kcal": 6.2139999999999995,
+      "fat": 0.0239,
+      "carb": 1.434,
+      "protein": 0.1912
+     }
+    },
+    "BENCH": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "baby toddler carrots, stage 1",
+       23.9,
+       6.2
+      ]
+     ],
+     "totals": {
+      "mass": 23.9,
+      "kcal": 6.2139999999999995,
+      "fat": 0.0239,
+      "carb": 1.434,
+      "protein": 0.1912
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1558639876",
+   "truth": {
+    "kcal": 68.18,
+    "mass": 215.0,
+    "fat": 0.529,
+    "carb": 15.370001,
+    "protein": 2.767
+   },
+   "container": "dinner_plate",
+   "container_shape": "round",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "carrot, dehydrated",
+       8.9,
+       30.3
+      ],
+      [
+       "papaya, raw",
+       110.1,
+       47.3
+      ],
+      [
+       "cauliflower, raw",
+       10.3,
+       2.8
+      ]
+     ],
+     "totals": {
+      "mass": 129.29999999999998,
+      "kcal": 80.5348,
+      "fat": 0.443384,
+      "carb": 19.48338,
+      "protein": 1.4072900000000002
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "carrot, dehydrated",
+       4.5,
+       15.3
+      ],
+      [
+       "papaya, raw",
+       55.9,
+       24.0
+      ],
+      [
+       "cauliflower, raw",
+       5.2,
+       1.4
+      ]
+     ],
+     "totals": {
+      "mass": 65.6,
+      "kcal": 40.8172,
+      "fat": 0.224766,
+      "carb": 9.87582,
+      "protein": 0.71251
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1558549605",
+   "truth": {
+    "kcal": 97.5,
+    "mass": 75.0,
+    "fat": 0.225,
+    "carb": 21.0,
+    "protein": 2.025
+   },
+   "container": "side_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "beans and white rice",
+       221.9,
+       363.9
+      ]
+     ],
+     "totals": {
+      "mass": 221.9,
+      "kcal": 363.916,
+      "fat": 9.34199,
+      "carb": 55.89661,
+      "protein": 14.423499999999999
+     }
+    },
+    "BENCH": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "beans and white rice",
+       221.9,
+       363.9
+      ]
+     ],
+     "totals": {
+      "mass": 221.9,
+      "kcal": 363.916,
+      "fat": 9.34199,
+      "carb": 55.89661,
+      "protein": 14.423499999999999
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1559842047",
+   "truth": {
+    "kcal": 153.690002,
+    "mass": 285.0,
+    "fat": 0.487,
+    "carb": 39.529999,
+    "protein": 1.992
+   },
+   "container": "side_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pear, raw",
+       125.1,
+       73.8
+      ],
+      [
+       "mandarin, seedless, peeled, raw",
+       35.4,
+       21.9
+      ],
+      [
+       "broccoli, raw",
+       30.3,
+       11.8
+      ]
+     ],
+     "totals": {
+      "mass": 190.79999999999998,
+      "kcal": 107.574,
+      "fat": 0.452802,
+      "carb": 25.633589999999998,
+      "protein": 1.60974
+     }
+    },
+    "BENCH": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pear, raw",
+       125.1,
+       73.8
+      ],
+      [
+       "mandarin, seedless, peeled, raw",
+       35.4,
+       21.9
+      ],
+      [
+       "broccoli, raw",
+       30.3,
+       11.8
+      ]
+     ],
+     "totals": {
+      "mass": 190.79999999999998,
+      "kcal": 107.574,
+      "fat": 0.452802,
+      "carb": 25.633589999999998,
+      "protein": 1.60974
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1558376734",
+   "truth": {
+    "kcal": 206.76001,
+    "mass": 60.0,
+    "fat": 16.380001,
+    "carb": 2.52,
+    "protein": 11.58
+   },
+   "container": "side_plate",
+   "container_shape": "round",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "sausage, smoked link sausage, pork",
+       75.8,
+       234.2
+      ]
+     ],
+     "totals": {
+      "mass": 75.8,
+      "kcal": 234.222,
+      "fat": 21.3756,
+      "carb": 0.7125199999999999,
+      "protein": 9.096
+     }
+    },
+    "BENCH": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "sausage, smoked link sausage, pork",
+       75.8,
+       234.2
+      ]
+     ],
+     "totals": {
+      "mass": 75.8,
+      "kcal": 234.222,
+      "fat": 21.3756,
+      "carb": 0.7125199999999999,
+      "protein": 9.096
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1558373008",
+   "truth": {
+    "kcal": 251.558014,
+    "mass": 73.0,
+    "fat": 19.929001,
+    "carb": 3.066,
+    "protein": 14.089001
+   },
+   "container": "side_plate",
+   "container_shape": "round",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pork, cured, bacon, pre-sliced, cooked, pan-fried",
+       136.5,
+       638.8
+      ]
+     ],
+     "totals": {
+      "mass": 136.5,
+      "kcal": 638.82,
+      "fat": 47.911500000000004,
+      "carb": 2.3205,
+      "protein": 46.2735
+     }
+    },
+    "BENCH": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pork, cured, bacon, pre-sliced, cooked, pan-fried",
+       136.5,
+       638.8
+      ]
+     ],
+     "totals": {
+      "mass": 136.5,
+      "kcal": 638.82,
+      "fat": 47.911500000000004,
+      "carb": 2.3205,
+      "protein": 46.2735
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1561739265",
+   "truth": {
+    "kcal": 292.040009,
+    "mass": 308.0,
+    "fat": 9.989,
+    "carb": 41.127003,
+    "protein": 10.689
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "asparagus, cooked, boiled, drained",
+       60.3,
+       13.3
+      ],
+      [
+       "oysters, steamed",
+       23.2,
+       15.1
+      ],
+      [
+       "sweet potato, candied",
+       65.2,
+       121.9
+      ],
+      [
+       "berries, frozen",
+       41.6,
+       21.6
+      ],
+      [
+       "tofu, fried",
+       83.4,
+       225.2
+      ]
+     ],
+     "totals": {
+      "mass": 273.7,
+      "kcal": 397.082,
+      "fat": 19.890980000000003,
+      "carb": 40.42705,
+      "protein": 19.889280000000003
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "asparagus, cooked, boiled, drained",
+       72.2,
+       15.9
+      ],
+      [
+       "oysters, steamed",
+       28.1,
+       18.3
+      ],
+      [
+       "sweet potato, candied",
+       77.4,
+       144.7
+      ],
+      [
+       "berries, frozen",
+       49.7,
+       25.8
+      ],
+      [
+       "tofu, fried",
+       106.6,
+       287.8
+      ]
+     ],
+     "totals": {
+      "mass": 334.0,
+      "kcal": 492.55099999999993,
+      "fat": 25.161499999999997,
+      "carb": 48.74847,
+      "protein": 25.096269999999997
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1561405411",
+   "truth": {
+    "kcal": 332.063477,
+    "mass": 282.0,
+    "fat": 8.511059,
+    "carb": 25.67544,
+    "protein": 37.227947
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "couscous, cooked",
+       209.3,
+       234.4
+      ],
+      [
+       "chicken fillet, grilled",
+       188.8,
+       285.1
+      ],
+      [
+       "arugula, raw",
+       101.9,
+       25.5
+      ],
+      [
+       "oysters, steamed",
+       23.3,
+       15.1
+      ]
+     ],
+     "totals": {
+      "mass": 523.3000000000001,
+      "kcal": 560.124,
+      "fat": 12.47998,
+      "carb": 57.534150000000004,
+      "protein": 54.36736
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 92128.63636363635,
+     "frame_vs_rig": 0.5034378123712363,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "couscous, cooked",
+       81.1,
+       90.8
+      ],
+      [
+       "chicken fillet, grilled",
+       72.2,
+       109.0
+      ],
+      [
+       "arugula, raw",
+       41.0,
+       10.2
+      ],
+      [
+       "oysters, steamed",
+       10.0,
+       6.5
+      ]
+     ],
+     "totals": {
+      "mass": 204.3,
+      "kcal": 216.60399999999998,
+      "fat": 4.81118,
+      "carb": 22.359619999999996,
+      "protein": 20.962310000000002
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1563996509",
+   "truth": {
+    "kcal": 365.184875,
+    "mass": 316.0,
+    "fat": 17.874498,
+    "carb": 19.300793,
+    "protein": 32.752163
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "arugula, raw",
+       53.7,
+       13.4
+      ],
+      [
+       "chicken breast, grilled with sauce, skin eaten",
+       149.5,
+       302.0
+      ],
+      [
+       "oysters, steamed",
+       47.7,
+       31.0
+      ],
+      [
+       "potatoes, roasted, salt added in processing, frozen, unprepared",
+       48.2,
+       61.2
+      ]
+     ],
+     "totals": {
+      "mass": 299.1,
+      "kcal": 407.634,
+      "fat": 15.936410000000002,
+      "carb": 27.202630000000003,
+      "protein": 37.52346
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 67561.0,
+     "frame_vs_rig": 0.36918772907224,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "arugula, raw",
+       55.8,
+       13.9
+      ],
+      [
+       "chicken breast, grilled with sauce, skin eaten",
+       155.2,
+       313.5
+      ],
+      [
+       "oysters, steamed",
+       49.2,
+       32.0
+      ],
+      [
+       "potatoes, roasted, salt added in processing, frozen, unprepared",
+       49.0,
+       62.2
+      ]
+     ],
+     "totals": {
+      "mass": 309.2,
+      "kcal": 421.664,
+      "fat": 16.5187,
+      "carb": 27.958859999999998,
+      "protein": 38.9094
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1565123881",
+   "truth": {
+    "kcal": 406.821747,
+    "mass": 515.0,
+    "fat": 19.355543,
+    "carb": 31.0019,
+    "protein": 30.063168
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "caesar salad, with romaine, no dressing",
+       91.5,
+       70.5
+      ],
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       18.3,
+       46.8
+      ],
+      [
+       "roast beef spread",
+       52.4,
+       116.9
+      ],
+      [
+       "squash, zucchini, baby, raw",
+       35.5,
+       7.5
+      ]
+     ],
+     "totals": {
+      "mass": 197.7,
+      "kcal": 241.61,
+      "fat": 13.37715,
+      "carb": 15.73132,
+      "protein": 14.98165
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "caesar salad, with romaine, no dressing",
+       86.0,
+       66.2
+      ],
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       16.5,
+       42.2
+      ],
+      [
+       "roast beef spread",
+       48.3,
+       107.7
+      ],
+      [
+       "squash, zucchini, baby, raw",
+       32.7,
+       6.9
+      ]
+     ],
+     "totals": {
+      "mass": 183.5,
+      "kcal": 223.036,
+      "fat": 12.3553,
+      "carb": 14.506960000000001,
+      "protein": 13.82807
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1557862783",
+   "truth": {
+    "kcal": 442.97998,
+    "mass": 258.0,
+    "fat": 24.919001,
+    "carb": 3.85,
+    "protein": 50.416
+   },
+   "container": "dinner_plate",
+   "container_shape": "round",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pepper steak",
+       238.6,
+       346.0
+      ],
+      [
+       "cauliflower, cooked, boiled, drained, with salt",
+       91.7,
+       21.1
+      ],
+      [
+       "chicken, feet, boiled",
+       105.0,
+       225.8
+      ]
+     ],
+     "totals": {
+      "mass": 435.3,
+      "kcal": 592.811,
+      "fat": 37.50297,
+      "carb": 14.33411,
+      "protein": 50.40296
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 112601.66666666666,
+     "frame_vs_rig": 0.6153128817870666,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "pepper steak",
+       168.8,
+       244.8
+      ],
+      [
+       "cauliflower, cooked, boiled, drained, with salt",
+       64.6,
+       14.9
+      ],
+      [
+       "chicken, feet, boiled",
+       73.7,
+       158.5
+      ]
+     ],
+     "totals": {
+      "mass": 307.1,
+      "kcal": 418.073,
+      "fat": 26.44546,
+      "carb": 10.12838,
+      "protein": 35.539880000000004
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1564687090",
+   "truth": {
+    "kcal": 498.018677,
+    "mass": 416.0,
+    "fat": 32.74007,
+    "carb": 40.485527,
+    "protein": 38.089466
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "pepper steak",
+       118.9,
+       172.4
+      ],
+      [
+       "green beans, raw",
+       160.3,
+       64.1
+      ],
+      [
+       "ratatouille",
+       118.7,
+       79.5
+      ],
+      [
+       "tofu, fried",
+       56.4,
+       152.3
+      ]
+     ],
+     "totals": {
+      "mass": 454.3,
+      "kcal": 468.334,
+      "fat": 28.29983,
+      "carb": 28.884520000000002,
+      "protein": 29.18026
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "pepper steak",
+       79.8,
+       115.7
+      ],
+      [
+       "green beans, raw",
+       104.8,
+       41.9
+      ],
+      [
+       "ratatouille",
+       79.7,
+       53.4
+      ],
+      [
+       "tofu, fried",
+       37.4,
+       101.0
+      ]
+     ],
+     "totals": {
+      "mass": 301.7,
+      "kcal": 312.009,
+      "fat": 18.895809999999997,
+      "carb": 19.14133,
+      "protein": 19.44473
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1563909580",
+   "truth": {
+    "kcal": 544.311523,
+    "mass": 361.0,
+    "fat": 20.122177,
+    "carb": 74.144119,
+    "protein": 18.481764
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       41.2,
+       105.5
+      ],
+      [
+       "green beans, raw",
+       183.3,
+       73.3
+      ],
+      [
+       "spinach salad, no dressing",
+       58.1,
+       48.8
+      ],
+      [
+       "yellow rice, cooked, fat added",
+       176.8,
+       182.1
+      ]
+     ],
+     "totals": {
+      "mass": 459.40000000000003,
+      "kcal": 409.70000000000005,
+      "fat": 11.29835,
+      "carb": 60.96002,
+      "protein": 16.074910000000003
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 67561.0,
+     "frame_vs_rig": 0.36918772907224,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       18.5,
+       47.4
+      ],
+      [
+       "green beans, raw",
+       80.4,
+       32.2
+      ],
+      [
+       "spinach salad, no dressing",
+       25.6,
+       21.5
+      ],
+      [
+       "yellow rice, cooked, fat added",
+       77.8,
+       80.1
+      ]
+     ],
+     "totals": {
+      "mass": 202.3,
+      "kcal": 181.15800000000002,
+      "fat": 5.004580000000001,
+      "carb": 26.92428,
+      "protein": 7.11828
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1561577947",
+   "truth": {
+    "kcal": 623.204285,
+    "mass": 424.0,
+    "fat": 33.782948,
+    "carb": 12.882619,
+    "protein": 67.202637
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "chicken salad spread",
+       208.2,
+       416.4
+      ],
+      [
+       "mixed salad greens, raw",
+       47.1,
+       9.9
+      ],
+      [
+       "macaroni or pasta salad, made with mayonnaise",
+       167.3,
+       369.7
+      ]
+     ],
+     "totals": {
+      "mass": 422.6,
+      "kcal": 796.024,
+      "fat": 47.520509999999994,
+      "carb": 58.282599999999995,
+      "protein": 32.313069999999996
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 67561.0,
+     "frame_vs_rig": 0.36918772907224,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "chicken salad spread",
+       201.0,
+       402.0
+      ],
+      [
+       "mixed salad greens, raw",
+       45.3,
+       9.5
+      ],
+      [
+       "macaroni or pasta salad, made with mayonnaise",
+       161.6,
+       357.1
+      ]
+     ],
+     "totals": {
+      "mass": 407.9,
+      "kcal": 768.6489999999999,
+      "fat": 45.886649999999996,
+      "carb": 56.282289999999996,
+      "protein": 31.19719
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1562963325",
+   "truth": {
+    "kcal": 760.161926,
+    "mass": 379.0,
+    "fat": 31.468941,
+    "carb": 65.333321,
+    "protein": 51.822536
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model",
+      "depth_model",
+      "depth_model"
+     ],
+     "items": [
+      [
+       "stir fried beef and vegetables in soy sauce",
+       299.8,
+       305.8
+      ],
+      [
+       "apple salad with dressing",
+       44.1,
+       79.4
+      ],
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       66.9,
+       171.3
+      ]
+     ],
+     "totals": {
+      "mass": 410.8,
+      "kcal": 556.44,
+      "fat": 26.45362,
+      "carb": 39.965520000000005,
+      "protein": 41.37119
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference",
+      "plate_reference",
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "stir fried beef and vegetables in soy sauce",
+       136.7,
+       139.4
+      ],
+      [
+       "apple salad with dressing",
+       20.2,
+       36.4
+      ],
+      [
+       "digiorno pizza, cheese topping, rising crust, frozen, baked",
+       32.2,
+       82.4
+      ]
+     ],
+     "totals": {
+      "mass": 189.1,
+      "kcal": 258.226,
+      "fat": 12.22095,
+      "carb": 18.77348,
+      "protein": 19.08241
+     }
+    }
+   }
+  },
+  {
+   "id": "dish_1563478751",
+   "truth": {
+    "kcal": 950.395081,
+    "mass": 545.0,
+    "fat": 45.303986,
+    "carb": 54.133282,
+    "protein": 74.772202
+   },
+   "container": "dinner_plate",
+   "container_shape": "square",
+   "card": false,
+   "arms": {
+    "CLEAN": {
+     "frame_rung": "depth_model",
+     "frame_mm2": 182999.03999999998,
+     "frame_vs_rig": 1.0,
+     "item_methods": [
+      "depth_model"
+     ],
+     "items": [
+      [
+       "beef and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, gravy",
+       77.8,
+       94.9
+      ]
+     ],
+     "totals": {
+      "mass": 77.8,
+      "kcal": 94.916,
+      "fat": 5.71052,
+      "carb": 5.03366,
+      "protein": 6.3095799999999995
+     }
+    },
+    "BENCH": {
+     "frame_rung": "plate_reference",
+     "frame_mm2": 77955.0,
+     "frame_vs_rig": 0.42598584123719996,
+     "item_methods": [
+      "plate_reference"
+     ],
+     "items": [
+      [
+       "beef and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, gravy",
+       34.9,
+       42.6
+      ]
+     ],
+     "totals": {
+      "mass": 34.9,
+      "kcal": 42.577999999999996,
+      "fat": 2.56166,
+      "carb": 2.2580299999999998,
+      "protein": 2.8303899999999995
+     }
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,778 @@
+{
+ "_provenance": {
+  "what": "the 16 dishes the probe used, one final dish per built-up plate",
+  "produced": "13 Sep 2026 from depth_test_ids.txt + dish_metadata_cafe{1,2}.csv (not committed; re-downloadable)"
+ },
+ "rule": "depth_test_ids; built-up plates chained when a later scan within 900 s contains the earlier scan's ingredient set; one final dish per chain; mass >= 40 g, kcal >= 30, no 'deprecated' ingredient label; 16 at even kcal quantiles",
+ "plates": 198,
+ "dishes": [
+  {
+   "id": "dish_1558720097",
+   "kcal": 30.34,
+   "mass": 74.0,
+   "fat": 0.148,
+   "carb": 7.4,
+   "protein": 0.666,
+   "ingr": [
+    [
+     "carrot",
+     74.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1558639876",
+   "kcal": 68.18,
+   "mass": 215.0,
+   "fat": 0.529,
+   "carb": 15.370001,
+   "protein": 2.767,
+   "ingr": [
+    [
+     "carrot",
+     57.0
+    ],
+    [
+     "cantaloupe",
+     59.0
+    ],
+    [
+     "cauliflower",
+     99.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1558549605",
+   "kcal": 97.5,
+   "mass": 75.0,
+   "fat": 0.225,
+   "carb": 21.0,
+   "protein": 2.025,
+   "ingr": [
+    [
+     "white rice",
+     75.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1559842047",
+   "kcal": 153.690002,
+   "mass": 285.0,
+   "fat": 0.487,
+   "carb": 39.529999,
+   "protein": 1.992,
+   "ingr": [
+    [
+     "broccoli",
+     32.0
+    ],
+    [
+     "pears",
+     200.0
+    ],
+    [
+     "mandarin oranges",
+     53.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1558376734",
+   "kcal": 206.76001,
+   "mass": 60.0,
+   "fat": 16.380001,
+   "carb": 2.52,
+   "protein": 11.58,
+   "ingr": [
+    [
+     "sausage",
+     60.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1558373008",
+   "kcal": 251.558014,
+   "mass": 73.0,
+   "fat": 19.929001,
+   "carb": 3.066,
+   "protein": 14.089001,
+   "ingr": [
+    [
+     "sausage",
+     73.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1561739265",
+   "kcal": 292.040009,
+   "mass": 308.0,
+   "fat": 9.989,
+   "carb": 41.127003,
+   "protein": 10.689,
+   "ingr": [
+    [
+     "sweet potato",
+     82.0
+    ],
+    [
+     "hash browns",
+     43.0
+    ],
+    [
+     "broccoli",
+     51.0
+    ],
+    [
+     "egg whites",
+     71.0
+    ],
+    [
+     "berries",
+     61.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1561405411",
+   "kcal": 332.063477,
+   "mass": 282.0,
+   "fat": 8.511059,
+   "carb": 25.67544,
+   "protein": 37.227947,
+   "ingr": [
+    [
+     "green beans",
+     2.545266
+    ],
+    [
+     "broccoli",
+     55.545265
+    ],
+    [
+     "salt",
+     0.181426
+    ],
+    [
+     "pears",
+     4.711779
+    ],
+    [
+     "chicken",
+     101.810661
+    ],
+    [
+     "lemon juice",
+     1.884712
+    ],
+    [
+     "vinegar",
+     0.509053
+    ],
+    [
+     "arugula",
+     23.558897
+    ],
+    [
+     "spinach (raw)",
+     2.545266
+    ],
+    [
+     "parsley",
+     0.471178
+    ],
+    [
+     "olive oil",
+     4.02395
+    ],
+    [
+     "garlic",
+     1.253695
+    ],
+    [
+     "soy sauce",
+     0.509053
+    ],
+    [
+     "green onions",
+     0.509053
+    ],
+    [
+     "chickpeas",
+     9.423558
+    ],
+    [
+     "pepper",
+     2.827068
+    ],
+    [
+     "couscous",
+     59.0
+    ],
+    [
+     "white rice",
+     10.181066
+    ],
+    [
+     "ginger",
+     0.509053
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1563996509",
+   "kcal": 365.184875,
+   "mass": 316.0,
+   "fat": 17.874498,
+   "carb": 19.300793,
+   "protein": 32.752163,
+   "ingr": [
+    [
+     "walnuts",
+     1.567445
+    ],
+    [
+     "cauliflower",
+     81.0
+    ],
+    [
+     "oregano",
+     0.279805
+    ],
+    [
+     "arugula",
+     46.126915
+    ],
+    [
+     "mushroom",
+     4.476886
+    ],
+    [
+     "chard",
+     7.837227
+    ],
+    [
+     "wheat berry",
+     8.953772
+    ],
+    [
+     "garlic",
+     0.895377
+    ],
+    [
+     "shallots",
+     0.447689
+    ],
+    [
+     "thyme",
+     0.279805
+    ],
+    [
+     "cream",
+     3.581508
+    ],
+    [
+     "mustard",
+     0.489827
+    ],
+    [
+     "rosemary",
+     0.279805
+    ],
+    [
+     "white wine",
+     0.223844
+    ],
+    [
+     "chicken",
+     89.537712
+    ],
+    [
+     "pepper",
+     0.496671
+    ],
+    [
+     "vinegar",
+     1.46948
+    ],
+    [
+     "olive oil",
+     7.165158
+    ],
+    [
+     "blueberries",
+     3.134891
+    ],
+    [
+     "lemon juice",
+     0.223844
+    ],
+    [
+     "basil",
+     0.447689
+    ],
+    [
+     "salt",
+     1.189273
+    ],
+    [
+     "butter",
+     0.895377
+    ],
+    [
+     "roasted potatoes",
+     55.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1565123881",
+   "kcal": 406.821747,
+   "mass": 515.0,
+   "fat": 19.355543,
+   "carb": 31.0019,
+   "protein": 30.063168,
+   "ingr": [
+    [
+     "caesar salad",
+     314.0
+    ],
+    [
+     "olive oil",
+     0.381801
+    ],
+    [
+     "onions",
+     1.909004
+    ],
+    [
+     "cheese pizza",
+     35.0
+    ],
+    [
+     "zucchini",
+     45.5
+    ],
+    [
+     "spinach (cooked)",
+     1.909004
+    ],
+    [
+     "millet",
+     7.636017
+    ],
+    [
+     "shallots",
+     3.818008
+    ],
+    [
+     "bok choy",
+     1.909004
+    ],
+    [
+     "salt",
+     0.071588
+    ],
+    [
+     "beef",
+     57.270126
+    ],
+    [
+     "chayote squash",
+     45.5
+    ],
+    [
+     "vinegar",
+     0.09545
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1557862783",
+   "kcal": 442.97998,
+   "mass": 258.0,
+   "fat": 24.919001,
+   "carb": 3.85,
+   "protein": 50.416,
+   "ingr": [
+    [
+     "cauliflower",
+     77.0
+    ],
+    [
+     "steak",
+     118.0
+    ],
+    [
+     "chicken",
+     63.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1564687090",
+   "kcal": 498.018677,
+   "mass": 416.0,
+   "fat": 32.74007,
+   "carb": 40.485527,
+   "protein": 38.089466,
+   "ingr": [
+    [
+     "fish",
+     97.77095
+    ],
+    [
+     "millet",
+     6.792946
+    ],
+    [
+     "white rice",
+     19.55419
+    ],
+    [
+     "ketchup",
+     23.318527
+    ],
+    [
+     "steak",
+     50.947094
+    ],
+    [
+     "spinach (raw)",
+     1.698236
+    ],
+    [
+     "jalapenos",
+     1.955419
+    ],
+    [
+     "onions",
+     4.631365
+    ],
+    [
+     "wheat berry",
+     104.85437
+    ],
+    [
+     "olive oil",
+     9.496116
+    ],
+    [
+     "bell peppers",
+     3.612423
+    ],
+    [
+     "cilantro",
+     1.955419
+    ],
+    [
+     "vinegar",
+     0.339647
+    ],
+    [
+     "kale",
+     4.888547
+    ],
+    [
+     "green beans",
+     81.900002
+    ],
+    [
+     "lime",
+     0.977709
+    ],
+    [
+     "shallots",
+     0.977709
+    ],
+    [
+     "salt",
+     0.329339
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1563909580",
+   "kcal": 544.311523,
+   "mass": 361.0,
+   "fat": 20.122177,
+   "carb": 74.144119,
+   "protein": 18.481764,
+   "ingr": [
+    [
+     "mustard greens",
+     8.366014
+    ],
+    [
+     "cucumbers",
+     6.692811
+    ],
+    [
+     "tomatoes",
+     4.183007
+    ],
+    [
+     "salt",
+     0.20915
+    ],
+    [
+     "mustard",
+     0.418301
+    ],
+    [
+     "garlic",
+     0.627451
+    ],
+    [
+     "fried rice",
+     122.0
+    ],
+    [
+     "cheese pizza",
+     88.0
+    ],
+    [
+     "vinegar",
+     3.346405
+    ],
+    [
+     "spinach (raw)",
+     33.464054
+    ],
+    [
+     "green beans",
+     84.825005
+    ],
+    [
+     "olive oil",
+     8.86781
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1561577947",
+   "kcal": 623.204285,
+   "mass": 424.0,
+   "fat": 33.782948,
+   "carb": 12.882619,
+   "protein": 67.202637,
+   "ingr": [
+    [
+     "olive oil",
+     18.375505
+    ],
+    [
+     "basil",
+     0.988808
+    ],
+    [
+     "arugula",
+     119.729271
+    ],
+    [
+     "blueberries",
+     8.198945
+    ],
+    [
+     "vinegar",
+     3.843255
+    ],
+    [
+     "mustard",
+     1.281085
+    ],
+    [
+     "walnuts",
+     4.099473
+    ],
+    [
+     "white wine",
+     0.494404
+    ],
+    [
+     "salt",
+     2.746267
+    ],
+    [
+     "rosemary",
+     0.618005
+    ],
+    [
+     "oregano",
+     0.618005
+    ],
+    [
+     "cream",
+     7.910462
+    ],
+    [
+     "mushroom",
+     9.888078
+    ],
+    [
+     "wheat berry",
+     19.776155
+    ],
+    [
+     "chard",
+     20.497362
+    ],
+    [
+     "pepper",
+     1.116916
+    ],
+    [
+     "chicken",
+     197.761566
+    ],
+    [
+     "shallots",
+     0.988808
+    ],
+    [
+     "garlic",
+     1.977615
+    ],
+    [
+     "butter",
+     1.977615
+    ],
+    [
+     "lemon juice",
+     0.494404
+    ],
+    [
+     "thyme",
+     0.618005
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1562963325",
+   "kcal": 760.161926,
+   "mass": 379.0,
+   "fat": 31.468941,
+   "carb": 65.333321,
+   "protein": 51.822536,
+   "ingr": [
+    [
+     "sugar",
+     14.24821
+    ],
+    [
+     "garlic",
+     4.749403
+    ],
+    [
+     "pepper",
+     0.47494
+    ],
+    [
+     "white rice",
+     18.997614
+    ],
+    [
+     "bok choy",
+     18.997614
+    ],
+    [
+     "pork",
+     132.983292
+    ],
+    [
+     "salt",
+     0.949881
+    ],
+    [
+     "cheese pizza",
+     122.0
+    ],
+    [
+     "soy sauce",
+     7.599046
+    ],
+    [
+     "caesar salad",
+     58.0
+    ]
+   ],
+   "cafe": "1"
+  },
+  {
+   "id": "dish_1563478751",
+   "kcal": 950.395081,
+   "mass": 545.0,
+   "fat": 45.303986,
+   "carb": 54.133282,
+   "protein": 74.772202,
+   "ingr": [
+    [
+     "cream",
+     9.556165
+    ],
+    [
+     "mushroom",
+     35.835617
+    ],
+    [
+     "spinach (raw)",
+     23.890411
+    ],
+    [
+     "olive oil",
+     1.791781
+    ],
+    [
+     "pasta",
+     191.123291
+    ],
+    [
+     "beef",
+     238.904114
+    ],
+    [
+     "wine",
+     4.778082
+    ],
+    [
+     "garlic",
+     4.778082
+    ],
+    [
+     "sour cream",
+     9.556165
+    ],
+    [
+     "onions",
+     23.890411
+    ],
+    [
+     "thyme",
+     0.59726
+    ],
+    [
+     "salt",
+     0.29863
+    ]
+   ],
+   "cafe": "1"
+  }
+ ]
+}
