@@ -1,5 +1,68 @@
 # NeutriAI — handoff brief
 
+## WORK IN FLIGHT: TWO BUNDLES, AND A PARKED LIST — 13 Sep 2026 (Gil)
+
+**Nothing outside these two bundles until both are scored.** An investigation that spawns
+another investigation is written down in PARKED, not followed (standing check).
+
+### BUNDLE A -- MAKE THE CARD RUNG WORK. Branch `bundle-a-card-rung`; nothing merges alone.
+
+    1. chroma card detector      26/28, 0 FP in-sample, gain frozen at x3      buildable now
+    2. rung ordering             a label-matched saved calibration cannot     buildable now
+                                 outrank a scale measured in THIS photo
+                                 (camera distance, card)
+    3. floor-height correction   card-on-table over-read of food on a plate    needs Gil's ruler: ONE
+                                 (+21.6% area, median of 20 photos)            plate floor height
+
+- Each piece alone is inert or harmful (measured: piece 1 alone takes subscriber MAE/mean
+  37.3% -> 43.4%). Each is its own commit on the branch, scored after it, prediction
+  stated first; the branch merges only when the bundle scores.
+- **Piece 3 needs a camera distance D as well as the floor height h:** the correction is
+  (D - h)/D linear, and a card-rung scan carries no D. D comes from the card's own frame
+  width and a field of view. **FOV error barely reaches the correction** -- at h 10-28 mm
+  and D ~300 mm the correction is 3-9%, and a 4% FOV error moves it by 0.1-0.4% -- so the
+  default FOV serves and the tape photo stays PARKED. Limits, stated now: Gil's ruler
+  gives HIS plate's h, applied as a default to every plate; crocks and bowls need their
+  own h and are outside this bundle.
+- **Acceptance 1 (piece 2), free:** the 16 cached Nutrition5k detections, bench-calibration
+  arm vs clean arm. Before: 47.3% -> 57.5% MAE/mean, median 31.9% -> 42.7%. After: the
+  bench arm must equal the clean arm dish for dish. No model call, no photo.
+- **Acceptance 2 (pieces 1 + 3):** the uncalibrated bench arm, before and after, direction
+  predicted first.
+
+### BUNDLE B -- KILL THE TAIL. Per-meal mean 74.7% against median 40.9%.
+
+1. **Phantom food** -- correctly seen, not the user's portion (23 +664%, a neighbouring
+   plate; 25 +163%, a mayo smear). Specify the fix before building it: framing and
+   attribution, not measurement.
+2. **Wrong nutrition rows** -- 77% median kcal error on ~10 of 34 detections.
+
+- **Acceptance:** per-meal MEAN below 55% while the MEDIAN barely moves. A median that
+  moves materially means something other than the tail was fixed -- find out what.
+
+### PARKED -- not worked until both bundles score
+
+- FOV from a flat-tape photo (instructions: MEASURED-HEIGHT-NOTES, "TWO RULER MEASUREMENTS").
+- Monocular depth in `DEPTH_PROVIDER`.
+- `USE_MEASURED_HEIGHT` and the ruler calibration set -- height is untested.
+- Nutrition5k at 507 dishes.
+- Card corners carried through to a homography (dropped at vision.py:1727-1729).
+- Learned-plate pooling under the model's vessel name (MEASURED-HEIGHT-NOTES A, second cause).
+- **Bench data integrity** (found, not verified or corrected): scored 40, 41, 42, 45 are
+  640x480 re-encodes with no EXIF and no original on disk, while their pair partners 43
+  and 44 are 5712x4284 originals -- both heap/spread pairs confound a ~9x resolution
+  difference, and it likely explains grey recall finding 43/44 and missing 42/45. Legacy
+  09-14 are 1800x2400 EXIF-stripped re-encodes of IMG_4003/4004/4021/4020/4019/4028;
+  01-06 and 46 are 640x480 re-encodes with no original. All scored 17-36 are
+  byte-identical to their phone originals. 46 has a card but is outside the 28-card
+  recall denominator. 03/05/10 "mislabels" were the mechanical classifier's errors, not
+  the bench's.
+- **IMG_4197 provenance conflict:** Gil's pasted "measured at 12 in" photo is IMG_4197
+  (EXIF 12 Sep 14:28:14), inside the set he said was not measured. Thumbnail with
+  timestamp prepared, not sent.
+- Qualification of archive photos for FOV: only IMG_4118 (23) and IMG_4136 (30) passed
+  edges plus two-axis tilt; moot while FOV is parked.
+
 ## THE PRODUCT'S REAL SCORE: MEAL MACROS — 13 Sep 2026
 
 **The target is MACROS -- meal energy and carbs within 10% (Gil, 13 Sep). Weight
@@ -1809,11 +1872,24 @@ USDA's, so the ratio is a property of the FORM, not a precise constant.
 
 ## WHAT THE 12 SEP GRAPE/CARROT PHOTOS CANNOT DO — recorded 13 Sep so nobody reshoots the same way
 
-IMG_4190-4198 (Downloads; iPhone 17 Pro originals, 4284x5712). Stated distance 304.8 mm
-lens to tabletop. Asked of them: the field of view, the plate floor height, and a
-plate/card/distance cross-check. **They cannot answer any of the three.** Photogrammetry
-on both stuck numbers is stopped; both are now ruler measurements
-(MEASURED-HEIGHT-NOTES.md, "TWO RULER MEASUREMENTS").
+IMG_4190-4198 (Downloads; iPhone 17 Pro originals, 4284x5712). Asked of them: the field
+of view, the plate floor height, and a plate/card/distance cross-check. **They cannot
+answer any of the three.** Photogrammetry on both stuck numbers is stopped; both are now
+ruler measurements (MEASURED-HEIGHT-NOTES.md, "TWO RULER MEASUREMENTS").
+
+**FIRST DISQUALIFIER: NO MEASURED CAMERA DISTANCE.** The 304.8 mm (12 in) was analysed
+against these frames for a full session. Gil, 13 Sep: IMG_4190-4198 were NOT shot at a
+measured distance. His three statements about which photos were -- "tablecloth photos",
+"red-card photos", "green-card tablecloth photos" -- were not contradictory: those groups
+OVERLAP (a red card on the tablecloth, green cards on wood), and these frames sit on the
+same tablecloth as photos that were measured. Surface does not determine distance.
+Pending: group-level confirmation against a mechanically classified file list (surface x
+card, this set kept as its own cell), recorded in MEASURED-HEIGHT-NOTES with its date.
+Every FOV, distance and floor-height figure computed from these frames against 304.8 mm
+is void -- including the "274-292 mm implied" and "65.9-69.2 deg" readings. The reasons
+below are secondary: all still true, and still the reason not to reshoot this way.
+
+**Secondary:**
 
 - **Three of the six card-on-table frames are a BOWL of unknown size, not the taped 260 mm
   plate:** 4192, 4193, 4196. Only 4190, 4194 and 4197 show the plate.
@@ -1826,8 +1902,8 @@ on both stuck numbers is stopped; both are now ruler measurements
   a 1-13% depth error at the card, against a card scale good only to about 3% -- on
   the cloth its bottom and left edges are a 20-40 px soft ramp, not a step (4198's
   card on the white plate is sharp all round).
-- **Consequence for any card-plus-distance method:** it assumes a perpendicular camera,
-  and under tilt the card is not at the stated distance. The floor-height step inherits
+- **Consequence for any card-plus-distance method, even with a real distance:** it assumes
+  a perpendicular camera, and under tilt the card is not at the stated distance. The floor-height step inherits
   it: a scale difference between a table card and a plate card is floor height plus a
   tilt-and-offset term these frames cannot separate.
 - **What they still ARE:** the grape series at 45 / 90 / 180 g on the taped plate, and the
@@ -1931,6 +2007,95 @@ quad IoU >= 0.5 with the 12 Sep audit box (the grey detector's verified quad for
   4. **The corners are dropped at vision.py:1727-1729** whichever edge found them.
 - Evidence: `docs/evidence/2026-09-13-card-chroma/` (script and per-photo JSON; no images,
   the crops show a legible card).
+
+### PRE-REGISTRATION — chroma x3 on the calibration session. Written 13 Sep, before the photos exist.
+
+**Frozen:** gain 3.0, `find_reference` gates and constants as at 532a573, frame = EXIF
+rotation then 1280 px, exactly `card_chroma.py`. Nothing is re-tuned after the photos
+are seen; any change after scoring is a new experiment on a new holdout.
+
+**The holdout:** Gil's calibration session, 8 foods x 4 frames, card lying on the plate
+floor in every frame, a different surface, light and day from anything that set the gain.
+
+**What it can and cannot test -- decided now, not after.** The manifest's frame roles
+are `topdown`, `angled_45`, `side_level` and `scale_display`. The gates' measured cliff
+rejects a card seen beyond ~32-35 deg (THE CARD'S VIEWING ANGLE, below). So:
+
+    role            n    what it tests
+    topdown         8    THE TEST of the chroma edge
+    angled_45       8    the viewing-angle cliff, not the edge; reported, never pooled into recall
+    side_level      8    nothing: the card is edge-on; reported only
+    scale_display   8    whatever is in frame; reported only
+
+**And a limit on what a pass means.** A card on a WHITE plate is high-contrast in grey
+too (4198: grey consensus 6/6). The holdout tests whether x3 GENERALISES, not whether
+chroma BEATS grey -- that advantage lives on low-contrast surfaces (the wood). Grey is
+scored beside it on every frame.
+
+**Predictions:**
+- **Recall, topdown:** chroma x3 8/8, at least 7/8. Grey at least 6/8.
+- **Recall, angled_45:** 0-3/8 for both; set by the angle, not the edge.
+- **False positives** (a quad not on the card, any role, all 32): chroma x3 at most 1.
+  The risk is a green or orange food beside a white plate, not the plate.
+- **Scale, topdown hits:** truth is the card's four corners clicked on the ORIGINAL
+  full-resolution photo at the intersections of its straight edges (not a colour box --
+  12 Sep's boxes were off by 11-15% on two photos). Long side against that truth:
+  median |error| at most 1.5%, every hit within 3%.
+
+**REJECT x3 if any of these holds:**
+1. topdown recall at most 5/8;
+2. 2 or more false positives across the 32;
+3. topdown scale median |error| above 2%, or any single hit beyond 5%;
+4. x2 or x4, scored on the same frames, differs from x3 by 2 or more topdown hits --
+   then the gain is not stable, whatever x3 scored.
+A reject means the chroma detector does not ship on this evidence.
+
+**Asked of Gil for the same session, costing two frames:** one top-down frame with a GREY
+or BLACK card (or any card whose colour matches its background) -- the case chroma
+cannot see and the grey-plus-chroma union exists for -- and two top-down frames with NO
+card, for false positives on this surface.
+
+### THE SCALE BUNDLE — one owner, nothing ships alone. Recorded 13 Sep.
+
+Each piece alone is inert or harmful:
+
+    piece                     what it does                          state
+    chroma card detector      the card gets FOUND                   26/28 in-sample; holdout pre-registered above
+    rung ordering             a label-matched saved calibration     measured: pre-empts measured depth on 11/16
+                              no longer PRE-EMPTS a measurement     Nutrition5k dishes, +10.2 points MAE/mean
+    plate floor height        the card-on-table over-read of food   Gil's ruler, pending (MEASURED-HEIGHT-NOTES,
+                              on a plate (+10% linear, +21% area    "TWO RULER MEASUREMENTS")
+                              on 16 photos) is CORRECTED
+
+- **Detector without ordering:** a found card still loses to any saved calibration whose
+  vessel name matches.
+- **Detector without floor height:** found cards move subscriber scans onto rung 2a with
+  the over-read uncorrected, at a blend cap of 0.10 instead of 0.40 -- the prior that was
+  absorbing it stops. Measured net effect below.
+- **Ordering without detector:** there is almost no card (5/28) to promote.
+- **Owner:** ONE person, named before any piece merges. Unassigned today -- Gil to name.
+  Until then none of the three merges.
+
+**Measured 13 Sep: the detector ALONE makes subscriber scans WORSE.** Replay rig, zero paid
+calls, each photo run twice with only the detector changed (grey control reproduced every
+recorded gram; the calibrated arm moved on 0 photos, as it must):
+
+    subscriber (UNCAL), 25 meals     MAE / mean   per-meal mean   median   within 10%
+    grey detector (today)               37.3%          72.7%        29.1%      2/25
+    chroma x3, nothing else changed     43.4%          89.4%        40.3%      4/25
+
+- Scale source: `vessel_reference` 19 / `ai_prior` 5 / `reference_object` 3 ->
+  `reference_object` 23 / `vessel_reference` 4.
+- Of the 19 meals whose scale moved: 9 better, 10 worse; median |error| 29.1% -> 40.7%.
+  Worst, as predicted before the run: the crocks, 32 +29% -> +322%, 31 -20% -> +41%.
+  Also worse: `paper` photos whose geometry was already low and the serving guess had
+  been rescuing (17 +9% -> -72%, 27 +14% -> -33%, 42 +23% -> -35%).
+- **The over-read the floor height must correct, measured on the same run:** chroma card
+  frame area / taped-plate frame area, same photo, 20 plate photos: median 1.216x area
+  (1.107-1.330), 1.103x linear -- the +21% above, now from 20 photos. Crocks 1.415x (31)
+  and 5.116x (32; the Hough circle there may be the underplate, so not a clean number).
+- Evidence: scratchpad `chroma_net.py` / `chroma_net.json` (not committed; the committed
+  rig plus a detector swap reproduces it).
 
 ## THE CALIBRATED/UNCALIBRATED RUN — three premises corrected before spending
 
@@ -2384,6 +2549,27 @@ there a test that fails when the path is broken END TO END, not per stage?**
   `id(raw)`, CPython reused photo 23's id for photo 25's bytes, and every gram
   on 25 moved by exactly 1.081x. Nothing looked wrong. Only the rig's control
   (reproduce the recorded grams first) caught it.
+- **An investigation that spawns another investigation is written down and PARKED, not
+  followed (added 13 Sep, Gil).** Finish the current bundle, then pick from the parked
+  list. The two defined-end fixes of 13 Sep (cache key, axis convention) landed in one
+  afternoon with predictions and measurements; the FOV derivation branched five times
+  -- tablecloth photos, tilt, edges, detector, provenance -- and produced no number.
+  This rule would have stopped it at the first branch.
+- **Measured inputs name their files (added 13 Sep, Gil).** Every measured quantity in
+  these notes -- a distance, a diameter, a mass, a height -- names the EXACT FILES it
+  applies to at the moment it is stated, or it is not usable. A description of a set
+  ("the tablecloth photos", "the 12-inch photos") is not a provenance. The admitting
+  instance: a measured 12 in (304.8 mm) was analysed for a full session against
+  IMG_4190-4198, which were never measured. Asked which photos it belonged to, the
+  answer came as "tablecloth photos", "red-card photos" and "green-card tablecloth
+  photos" -- three TRUE descriptions of OVERLAPPING groups (a red card on the tablecloth,
+  green cards on wood), read as contradictions because no file names were attached.
+  Resolved by classifying files mechanically (surface x card) and confirming at group
+  level, so every answer lands on a file list. Same shape as the cache keys above -- a
+  label standing in for the thing -- applied to a measurement.
+  **Check the LENS per file, not just the phone:** three 4 Sep originals -- IMG_3938,
+  IMG_3939, IMG_3959 -- are the 2.22 mm ULTRA-WIDE, not the 6.765 mm main camera, and
+  IMG_3938 is a bench photo; the legacy 09-14 copies carry no EXIF at all.
 
 ### The cache sweep — 13 Sep 2026. Recorded, not fixed.
 
