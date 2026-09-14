@@ -259,7 +259,18 @@ async def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="+", metavar="PREFIX", help="photo prefixes, e.g. --only 29 35")
     ap.add_argument("--out", default=str(HERE / "replay.json"))
+    ap.add_argument("--pieces-from", metavar="REPLAY_JSON",
+                    help="take each photo's height branch from this earlier replay instead of "
+                         "searching for it. REQUIRED when the code under test changes any "
+                         "recorded arm: the search picks the combination that best reproduces "
+                         "all four recorded arms, so a legitimate change to one of them picks the "
+                         "wrong branch and moves the others. Measured 13 Sep: the chroma detector "
+                         "changed UNCAL and the search then moved CAL on 17, 19, 34 and 36.")
     args = ap.parse_args()
+    fixed_pieces = None
+    if args.pieces_from:
+        fixed_pieces = json.loads(Path(args.pieces_from).read_text(encoding="utf-8"))
+        fixed_pieces.pop("_provenance", None)
 
     recorded = json.loads((INPUTS / "paired_v2.json").read_text(encoding="utf-8"))
     names = [n for n in recorded if not args.only or n.startswith(tuple(args.only))]
@@ -297,7 +308,11 @@ async def main() -> int:
                       if rec["arms"][a][i]["measured_used"] is not None), None) for i in range(n)]
         idx = [i for i, u in enumerate(used) if u is not None]
         best = None
-        for combo in itertools.product((None, 0.95, 0.5), repeat=len(idx)):
+        combos = itertools.product((None, 0.95, 0.5), repeat=len(idx))
+        if fixed_pieces is not None:
+            given = fixed_pieces[name]["pieces"]
+            combos = [tuple(given[i] for i in idx)]
+        for combo in combos:
             pieces = [None] * n
             for i, p in zip(idx, combo):
                 pieces[i] = p
