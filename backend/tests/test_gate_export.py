@@ -54,13 +54,13 @@ def test_parse_piece2_counts_a_mismatch():
     obj = {"rows": [{"identical": True}, {"identical": False}, {"identical": True}]}
     assert gate_export.parse_piece2(obj) == {"identical": 2, "total": 3}
 
+@pytest.fixture(scope="module")
+def payload():
+    return gate_export.build_results()
+
 
 class TestBuildResults:
-    @classmethod
-    @pytest.fixture(scope="class")
-    def payload(cls):
-        return gate_export.build_results()
-
+    
     def test_top_level_shape(self, payload):
         assert payload["schema_version"] == gate_export.SCHEMA_VERSION
         assert payload["generator"] == "backend/scripts/gate_export.py"
