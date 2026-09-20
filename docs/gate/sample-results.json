@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-09-20T18:55:56Z",
+  "generator": "backend/scripts/gate_export.py",
+  "repo": {
+    "commit": "955a7ab33cb14bedf2a6608490a07089d6fddf11",
+    "branch": "claude/gate-export-schema-xf1np6"
+  },
+  "gates": [
+    {
+      "id": "bundle_b_energy_mean_below_55",
+      "bundle": "B",
+      "description": "Per-meal energy MEAN below 55% (CAL arm, the 25 scored meals).",
+      "metric": "meal_energy_mean_abs_pct_error",
+      "arm": "CAL",
+      "unit": "percent",
+      "comparison": "lt",
+      "threshold": 55.0,
+      "measurable": true,
+      "n": 25,
+      "value": 74.7,
+      "reason_not_measurable": null,
+      "evidence": [
+        {
+          "path": "docs/evidence/2026-09-13-meal-replay/score.txt",
+          "sha256": "f9cfc06c0b38e639d069a5655ce0116e9adef1b2179ffd2b0a59be7ac8f89e50"
+        }
+      ],
+      "notes": "This is the run recorded 13 Sep 2026, BEFORE the Bundle B phantom-food and wrong-row fixes (neither is built yet). It is reported here because it is the only value score.py currently produces for this metric, not because it represents a post-fix measurement. Re-run after a fix lands."
+    },
+    {
+      "id": "bundle_b_paired_invariant",
+      "bundle": "B",
+      "description": "Paired invariant: every meal containing no item a fix touches is BIT-IDENTICAL in every item's grams and energy, before and after.",
+      "metric": "untouched_meal_bit_identical_count",
+      "arm": null,
+      "unit": null,
+      "comparison": null,
+      "threshold": null,
+      "measurable": false,
+      "n": null,
+      "value": null,
+      "reason_not_measurable": "No fix exists yet to compare against. HANDOFF.md records the phantom-food classifier as 'SPECIFICATION, not built' and the wrong-rows piece as 'specification not yet written'. There is no before/after pair of replay runs in the repo to diff. Once a fix lands, this gate needs a second replay.json produced with the fix applied, diffed item-by-item (grams, kcal) against the current docs/evidence/2026-09-13-meal-replay/replay.json for every meal the fix did not touch.",
+      "evidence": [],
+      "notes": null
+    },
+    {
+      "id": "bundle_b_phantom_zero_legitimate_exclusions",
+      "bundle": "B",
+      "description": "Phantom-food piece: every EXCLUDED item is listed and checked by eye on its photograph; the count of LEGITIMATE items wrongly excluded must be zero on the 25 bench meals.",
+      "metric": "legitimate_items_wrongly_excluded",
+      "arm": null,
+      "unit": "count",
+      "comparison": "eq",
+      "threshold": 0,
+      "measurable": false,
+      "n": null,
+      "value": null,
+      "reason_not_measurable": "The phantom-food classifier is not built (HANDOFF.md: 'PHANTOM FOOD -- SPECIFICATION, not built'). There is no exclusion list to review. This gate becomes measurable once the classifier runs on the 25 bench meals and emits an excluded-item list for eye review against each photograph.",
+      "evidence": [],
+      "notes": null
+    },
+    {
+      "id": "bundle_a_piece2_bench_equals_clean",
+      "bundle": "A",
+      "description": "Piece 2 (rung ordering) acceptance: the bench-calibration arm (BENCH) equals the clean arm (CLEAN) dish for dish on the 16 cached Nutrition5k detections.",
+      "metric": "bench_equals_clean_dish_count",
+      "arm": null,
+      "unit": "count",
+      "comparison": "eq",
+      "threshold": 16,
+      "measurable": true,
+      "n": 16,
+      "value": 16,
+      "reason_not_measurable": null,
+      "evidence": [
+        {
+          "path": "docs/evidence/2026-09-13-n5k-probe-and-bundle-a-scoring/n5k_rung_piece2.json",
+          "sha256": "353824aa1655f1c327f71893b4eef22e53753aa3fc54e75e0f4ab1b5dde5b93b"
+        }
+      ],
+      "notes": "Recorded at commit a2fc9b7 on branch bundle-a-card-rung (per n5k_rung_piece2.json's own provenance), not at this export's commit. Bundle A piece 3 has not landed; HANDOFF.md says this acceptance 'needs re-running after piece 3'."
+    }
+  ]
+}
