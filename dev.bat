@@ -62,6 +62,7 @@ if "%~1"=="measure"   goto :measure
 if "%~1"=="mask"      goto :mask
 if "%~1"=="footprint" goto :footprint
 if "%~1"=="apispec"   goto :apispec
+if "%~1"=="gateexport" goto :gateexport
 if "%~1"=="scaleaudit" goto :scaleaudit
 if "%~1"=="segcheck"   goto :segcheck
 if "%~1"=="platecheck" goto :platecheck
@@ -331,6 +332,14 @@ shift
 python -m scripts.api_spec %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
+:gateexport
+REM  Write the Base44 Validation Gate results file from evidence already in
+REM  docs/evidence/. No model call, no paid API, no network, no live database.
+REM  See docs/gate/results-schema.md.
+shift
+python -m scripts.gate_export %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto :eof
+
 :footprint
 REM  What the measured footprint is worth, against the kitchen scale, WITHOUT
 REM  an API key. Hand-annotated plate and item boxes, footprints from the
@@ -481,6 +490,7 @@ echo     dev scandebug  why did a scan fail      (dev scandebug photo.jpg)
 echo     dev mask       what the food mask caught     (dev mask --overlay)
 echo     dev footprint  what a measured footprint is worth (no API key needed)
 echo     dev apispec    export openapi.json + API.md to send someone
+echo     dev gateexport write the Base44 Validation Gate results file (free, offline)
 echo     dev scaleaudit does every bench photo agree with its own card?
 echo     dev maskstability  is SAM2 the same twice? (3 calls)
 echo     dev dumpmask       draw production's own masks (free)
