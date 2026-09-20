@@ -48,3 +48,6 @@ mask_dumps/
 # runs all day would otherwise dirty the tree on every restart. When a run
 # matters, commit a copy under its own name (see the photo-35 files here).
 docs/evidence/api-*.txt
+
+backend/.env*
+*keys*.txt
