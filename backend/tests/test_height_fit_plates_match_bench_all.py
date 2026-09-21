@@ -6,15 +6,99 @@ the fix this test guards).
 
 Offline only: reads two small .py files from disk and parses them with `ast`.
 No import of either module's runtime code, no network, no photo, no .env.
+
+PROCESS HYGIENE (added 21 Sep 2026, the hard way). One test here used to
+check "does importing height_fit avoid app.config" by popping "app.config"
+out of sys.modules in-process and never putting it back -- which silently
+broke test_segment_hosted.py, ninety-some tests later in the same run, on
+Gil's machine (never in this cloud container, which has no real .env to
+expose the bug). That check now runs in an isolated subprocess instead (see
+test_importing_height_fit_does_not_pull_in_env_or_network), and
+`_guard_no_process_state_leaks`, an autouse fixture below, wraps every test
+in this file and fails whichever one leaks os.environ, the cwd, or
+app.config's identity, so the same class of bug cannot recur silently here
+again.
 """
 from __future__ import annotations
 
 import ast
+import os
 import pathlib
+import subprocess
+import sys
+import tempfile
 
 import pytest
 
 SCRIPTS = pathlib.Path(__file__).resolve().parents[1] / "scripts"
+BACKEND = SCRIPTS.parent
+
+
+@pytest.fixture(autouse=True)
+def _guard_no_process_state_leaks():
+    """Wraps every test in this file. Fails the test that caused it if
+    os.environ's keys, the cwd, or app.config's identity changed during it.
+
+    THE BUG THIS GUARDS, EXACTLY. An earlier version of
+    test_importing_height_fit_does_not_pull_in_env_or_network did
+    `sys.modules.pop("app.config", None)` in-process and never put it back.
+    The next `from app.config import settings` anywhere in the SAME pytest
+    process -- conftest.py's autouse `providers_are_never_live` fixture,
+    tests/conftest.py:43, which every other test depends on -- then had to
+    re-run app/config.py's module top level from scratch, building a BRAND
+    NEW Settings() instance (reading the real backend/.env on whoever's
+    machine ran it). conftest's fixture patched that new instance's
+    segmenter_provider to "" as always, but
+    app/services/ai/segment_hosted.py's own module-level `settings` name --
+    bound once, at its own first import, earlier in the process -- kept
+    pointing at the ORPHANED old instance, which nothing was patching
+    anymore. Reproduced on 21 Sep 2026 with a fake SEGMENTER_PROVIDER=
+    replicate env file in /tmp (never touching backend/.env): running
+    test_height_fit_plates_match_bench_all.py before test_segment_hosted.py
+    turned "assert S.from_settings().name == 'none'" into
+    "'sam2:replicate' == 'none'", a failure entirely caused by this file,
+    surfacing in a different one, ninety-some tests later.
+
+    Any test in this file that legitimately needs to touch os.environ, the
+    cwd, or sys.modules must use `monkeypatch` (which undoes it automatically)
+    or an isolated subprocess (which cannot touch this process's state at
+    all) -- never a raw mutation -- or it fails here instead of silently
+    poisoning whatever test happens to run after it.
+    """
+    environ_before = frozenset(os.environ.keys())
+    cwd_before = os.getcwd()
+    app_config_before = sys.modules.get("app.config")
+    settings_id_before = id(app_config_before.settings) if app_config_before else None
+    cache_before = (
+        app_config_before.get_settings.cache_info() if app_config_before else None
+    )
+
+    yield
+
+    assert frozenset(os.environ.keys()) == environ_before, (
+        "this test added or removed an os.environ key and did not restore "
+        "it -- use monkeypatch.setenv/delenv, or an isolated subprocess")
+    assert os.getcwd() == cwd_before, (
+        "this test changed the working directory and did not restore it "
+        "-- use monkeypatch.chdir, or an isolated subprocess")
+
+    app_config_after = sys.modules.get("app.config")
+    assert (app_config_after is not None) == (app_config_before is not None), (
+        "this test added or removed app.config from sys.modules -- this is "
+        "the exact mechanism that broke test_segment_hosted.py on 21 Sep "
+        "2026; see this fixture's own docstring")
+    if app_config_after is not None and settings_id_before is not None:
+        assert id(app_config_after.settings) == settings_id_before, (
+            "app.config.settings is a DIFFERENT object after this test than "
+            "before it -- something popped app.config out of sys.modules "
+            "and forced it to rebuild, orphaning every other already-"
+            "imported module's reference to the old settings instance "
+            "(the settings object conftest.py's autouse fixture patches, "
+            "which is now the WRONG one)")
+        assert app_config_after.get_settings.cache_info() == cache_before, (
+            "app.config.get_settings's lru_cache changed shape during this "
+            "test -- get_settings() was called in a way that rebuilt or "
+            "reset it")
 
 
 def _cases_diameters() -> dict[str, float | None]:
@@ -65,19 +149,52 @@ def test_importing_height_fit_does_not_pull_in_env_or_network():
     `import scripts.bench_all` here, this is the test that would catch it --
     app.config's module-level `settings = get_settings()` reads .env the
     moment it is imported, transitively, through bench_all -> scan_bench /
-    segment_hosted."""
-    import sys
+    segment_hosted.
 
-    for mod in ("app.config", "httpx", "scripts.bench_all", "scripts.scan_bench"):
-        sys.modules.pop(mod, None)
+    Checked in a SEPARATE PROCESS, not by popping modules out of this one's
+    sys.modules: an earlier version of this test did exactly that
+    (`sys.modules.pop("app.config", None)`) and never restored it, which
+    corrupted every later test's view of app.config for the rest of THIS
+    pytest run -- see `_guard_no_process_state_leaks` above for the full
+    story of what that broke. A subprocess cannot leak into this process no
+    matter what it imports, which is a stronger guarantee than remembering
+    to clean up after a same-process check. It is started from a temporary
+    directory outside the repo, with a deliberately minimal environment (no
+    inherited SEGMENTER_*/*_API_KEY/*_TOKEN variables), so a real .env or a
+    developer's shell exports cannot make this check pass or fail for the
+    wrong reason either.
+    """
+    script = (
+        "import sys; "
+        f"sys.path.insert(0, {str(BACKEND)!r}); "
+        "import scripts.height_fit; "
+        "print('app.config' in sys.modules); "
+        "print('httpx' in sys.modules)"
+    )
+    # PATH (and, on Windows, SYSTEMROOT) so the interpreter itself can start;
+    # nothing else -- specifically no SEGMENTER_*, *_API_KEY, *_TOKEN, or any
+    # other variable a real shell or .env might have set, so this check's
+    # result depends only on what height_fit.py's own imports do.
+    clean_env = {"PATH": os.environ.get("PATH", "")}
+    for var in ("SYSTEMROOT", "windir"):
+        if var in os.environ:
+            clean_env[var] = os.environ[var]
 
-    sys.path.insert(0, str(SCRIPTS.parent))
-    import scripts.height_fit  # noqa: F401
+    with tempfile.TemporaryDirectory() as tmp_cwd:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=tmp_cwd, env=clean_env,
+            capture_output=True, text=True, timeout=30,
+        )
 
-    assert "app.config" not in sys.modules, (
+    assert result.returncode == 0, (
+        f"subprocess failed to import height_fit:\n"
+        f"stdout={result.stdout!r}\nstderr={result.stderr!r}")
+    app_config_loaded, httpx_loaded = result.stdout.strip().splitlines()
+    assert app_config_loaded == "False", (
         "importing height_fit pulled in app.config, which reads backend/.env "
         "at import time -- see bench_all_plate_diameters()'s docstring")
-    assert "httpx" not in sys.modules, (
+    assert httpx_loaded == "False", (
         "importing height_fit pulled in an HTTP client at import time")
 
 
