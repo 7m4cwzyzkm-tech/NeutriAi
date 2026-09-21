@@ -43,6 +43,7 @@ mask_overlays/ on the way past. A second run reads the cache and is free.
 Pass --fresh to pay again deliberately.
 """
 import argparse
+import ast
 import math
 import pathlib
 import sys
@@ -78,6 +79,35 @@ MAX_PLATE_ASPECT = 1.25
 # every cached photograph, tables started at 0.51.
 MAX_HOLE_OVER_MASK = 0.35
 
+
+def bench_all_plate_diameters() -> dict[str, float | None]:
+    """{photo filename: declared plate diameter mm}, one entry per row of
+    bench_all.CASES -- read from bench_all.py's own SOURCE, not imported.
+
+    `import scripts.bench_all` would run that module's top level, which pulls
+    in `app.config` (reads backend/.env), `scripts.scan_bench` and
+    `app.services.ai.segment_hosted` (an HTTP client, `httpx`) -- all fine for
+    a script that runs the bench for real, wrong for a script that only wants
+    six numbers out of a literal list. Parsing the source with `ast` and
+    `ast.literal_eval` never executes any of bench_all.py's imports, so this
+    is the same numbers with none of that risk -- the same technique
+    test_wiring.py's own reachability check already uses, for the same
+    reason ("read from the SOURCE rather than from a live import graph").
+    `literal_eval` also refuses anything that is not a plain literal, so a
+    CASES row that ever stopped being a static tuple would raise here rather
+    than silently executing something.
+    """
+    path = pathlib.Path(__file__).resolve().parent / "bench_all.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "CASES" for t in node.targets
+        ):
+            cases = ast.literal_eval(node.value)
+            return {row[0]: row[1] for row in cases}
+    raise RuntimeError(f"CASES not found in {path}")
+
+
 # ONE FOOD ON THE PLATE, EACH WEIGHED ALONE.
 #
 # Only single-food photographs are here, and deliberately. With one food on the
@@ -87,31 +117,49 @@ MAX_HOLE_OVER_MASK = 0.35
 # left is the segmenter and the scale.
 #
 # Grams are from bench_all's table, which is this user's own kitchen scale with
-# the plate tared off.
-WEIGHED = [
-    ("17-carrots-plate.jpg",          229, "steamed carrots",     58),
-    ("18-zucchini-plate.jpg",         229, "steamed zucchini",    74),
-    ("20-spaghetti-plate.jpg",        229, "spaghetti with sauce", 253),
-    ("21-bbq-chicken-plate.jpg",      229, "bbq chicken thigh",   159),
-    ("22-roast-beef-plate.jpg",       229, "roast beef",           83),
-    ("23-brussels-sprouts-plate.jpg", 229, "brussels sprouts",     65),
-    ("24-macaroni-salad-plate.jpg",   229, "macaroni salad",       89),
-    ("25-smashed-potatoes-plate.jpg", 229, "smashed potatoes",    136),
-    ("26-potroast-rice-alone.jpg",    229, "white rice",           69),
-    ("27-potroast-beef-alone.jpg",    229, "pot roast",           114),
-    ("28-potroast-bread-alone.jpg",   229, "dinner roll",          42),
-    ("30-caesar-salad-plate.jpg",     229, "caesar salad",        123),
-    ("34-pizza-slice-plate.jpg",      229, "pizza slice",         120),
+# the plate tared off. The plate diameter is ALSO from bench_all's table --
+# looked up by filename via bench_all_plate_diameters() above -- rather than
+# copied here a second time: two typed copies of the same number is exactly
+# how rows 40-45 sat at a stale 222 mm here for days after bench_all.py was
+# corrected to 217 (measured 21 Sep 2026; see bench_all.py and HANDOFF.md).
+# `test_height_fit_plates_match_bench_all.py` fails if this ever drifts from
+# bench_all.py again.
+_PLATE_MM = bench_all_plate_diameters()
+
+# (filename, food name, weighed grams) -- the two fields bench_all does not
+# carry in this shape: its weight is bundled into one "food=grams" string
+# (parsed by parse_actuals for the bench's own scoring), and it has no
+# per-food split for the reason this file exists -- only single-food photos
+# are listed here at all, so no split is needed.
+_ROWS = [
+    ("17-carrots-plate.jpg",          "steamed carrots",     58),
+    ("18-zucchini-plate.jpg",         "steamed zucchini",    74),
+    ("20-spaghetti-plate.jpg",        "spaghetti with sauce", 253),
+    ("21-bbq-chicken-plate.jpg",      "bbq chicken thigh",   159),
+    ("22-roast-beef-plate.jpg",       "roast beef",           83),
+    ("23-brussels-sprouts-plate.jpg", "brussels sprouts",     65),
+    ("24-macaroni-salad-plate.jpg",   "macaroni salad",       89),
+    ("25-smashed-potatoes-plate.jpg", "smashed potatoes",    136),
+    ("26-potroast-rice-alone.jpg",    "white rice",           69),
+    ("27-potroast-beef-alone.jpg",    "pot roast",           114),
+    ("28-potroast-bread-alone.jpg",   "dinner roll",          42),
+    ("30-caesar-salad-plate.jpg",     "caesar salad",        123),
+    ("34-pizza-slice-plate.jpg",      "pizza slice",         120),
 
     # THE HEAP-VS-LAYER PAIRS -- same food, same weight, two arrangements.
-    # A different plate: 8.75 inches of Styrofoam, 222 mm, not the 229 above.
-    ("40-trailmix-spread.jpg",        222, "trail mix",            44),
-    ("41-trailmix-heaped.jpg",        222, "trail mix",            44),
-    ("42-chips-spread.jpg",           222, "tortilla chips",       25),
-    ("43-chips-heaped.jpg",           222, "tortilla chips",       25),
-    ("44-grapes-spread.jpg",          222, "grapes",               90),
-    ("45-grapes-cluster.jpg",         222, "grapes",               90),
+    # A different plate: nominal 8.75 in / 222 mm, never tape-measured.
+    # MEASURED 21 Sep 2026 (photo, ruler across the rim, +/-3 mm): outer
+    # diameter 217 mm, rim height 20 mm, flat inner floor 155 mm, rim uniform
+    # all round. 217, not the 229 above -- looked up from bench_all, below.
+    ("40-trailmix-spread.jpg",        "trail mix",            44),
+    ("41-trailmix-heaped.jpg",        "trail mix",            44),
+    ("42-chips-spread.jpg",           "tortilla chips",       25),
+    ("43-chips-heaped.jpg",           "tortilla chips",       25),
+    ("44-grapes-spread.jpg",          "grapes",               90),
+    ("45-grapes-cluster.jpg",         "grapes",               90),
 ]
+
+WEIGHED = [(name, _PLATE_MM[name], food, grams) for name, food, grams in _ROWS]
 
 
 def _bbox(m):
