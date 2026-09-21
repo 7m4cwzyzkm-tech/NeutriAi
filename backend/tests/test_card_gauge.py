@@ -20,7 +20,9 @@ from app.services.ai.card_gauge import (
     card_layout,
     distance_error_pct,
     distance_from_card,
+    distance_from_card_portrait,
     expected_card_px,
+    expected_card_px_portrait,
     frame_ground_coverage_mm,
     gauge_state,
 )
@@ -173,3 +175,70 @@ def test_the_fov_default_is_the_same_object_the_estimator_uses():
     import inspect
     default_fov = inspect.signature(card_layout).parameters["fov_deg"].default
     assert default_fov is DEFAULT_CAMERA_FOV_DEG
+
+
+# ---------------------------------------------------------------------------
+# expected_card_px_portrait / distance_from_card_portrait -- the fix for the
+# axis defect: portion.DEFAULT_CAMERA_FOV_DEG is the sensor's LONG axis, but
+# a portrait frame's card guide is drawn on its WIDTH, the SHORT axis.
+# ---------------------------------------------------------------------------
+def test_expected_card_px_portrait_matches_the_worked_example():
+    """A 1080x1440 portrait frame at 68 degrees LONG-axis FOV:
+    focal_px = (1440/2)/tan(34deg) ~= 1067.5, card_px ~= 1067.5*85.6/304.8
+    ~= 300 px -- not the ~25% smaller value the axis-confused single-axis
+    call would give (the next test)."""
+    got = expected_card_px_portrait(short_px=1080, long_px=1440, long_fov_deg=68.0)
+    assert got == pytest.approx(300.0, abs=1.0)
+
+    focal_px = (1440 / 2.0) / math.tan(math.radians(68.0) / 2.0)
+    assert focal_px == pytest.approx(1067.5, abs=0.1)
+    assert got == pytest.approx(focal_px * CARD_LONG_MM / TARGET_DISTANCE_MM, rel=1e-9)
+
+
+def test_using_the_short_axis_with_the_long_axis_fov_is_wrong_by_the_pixel_ratio():
+    """The defect itself, pinned as a regression: calling the single-axis
+    expected_card_px with the frame's WIDTH (short axis) and a LONG-axis FOV
+    -- an easy mistake, since portion.DEFAULT_CAMERA_FOV_DEG IS a long-axis
+    value -- disagrees with the correct portrait function by exactly
+    short_px / long_px, because focal_px is linear in the pixel count. At
+    1080 x 1440 that is a clean 0.75, a 25% miss, not an approximation."""
+    correct = expected_card_px_portrait(short_px=1080, long_px=1440, long_fov_deg=68.0)
+    axis_confused = expected_card_px(1080, 68.0)  # WRONG: short px, long fov
+    assert axis_confused == pytest.approx(correct * (1080.0 / 1440.0), rel=1e-9)
+    assert axis_confused == pytest.approx(correct * 0.75, rel=1e-9)
+    assert axis_confused < correct
+
+
+def test_expected_card_px_portrait_and_distance_from_card_portrait_are_exact_inverses():
+    for short_px, long_px, fov, distance in [
+        (1080, 1440, 68.0, 304.8), (720, 960, 60.0, 200.0), (1170, 2532, 71.0, 350.0),
+    ]:
+        px = expected_card_px_portrait(short_px, long_px, fov, distance)
+        recovered = distance_from_card_portrait(px, short_px, long_px, fov)
+        assert recovered == pytest.approx(distance, rel=0.005)
+
+
+def test_portrait_functions_reject_swapped_short_and_long():
+    """short_px larger than long_px is not a valid portrait frame -- almost
+    certainly the two arguments swapped, and silently accepting it would
+    reproduce the exact axis-confusion bug this function exists to prevent,
+    just moved one argument over. Must raise, not guess."""
+    with pytest.raises(ValueError):
+        expected_card_px_portrait(short_px=1440, long_px=1080, long_fov_deg=68.0)
+    with pytest.raises(ValueError):
+        distance_from_card_portrait(300.0, short_px=1440, long_px=1080, long_fov_deg=68.0)
+
+
+def test_the_gauge_still_never_changes_an_estimate_with_the_portrait_functions():
+    """Same load-bearing guarantee as the single-axis functions, re-checked
+    for the two new ones: calling them first must not move mm2_per_frame's
+    output for the same hint."""
+    hint = GeometryHint(reference_frame_width_mm=320.0, aspect_ratio=0.75, vessel="paper")
+    baseline, _ = mm2_per_frame(hint)
+
+    px = expected_card_px_portrait(1080, 1440, 68.0)
+    distance_from_card_portrait(px, 1080, 1440, 68.0)
+
+    after, method = mm2_per_frame(hint)
+    assert after == baseline
+    assert method == "reference_object"

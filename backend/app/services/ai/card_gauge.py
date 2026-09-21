@@ -32,21 +32,38 @@ REUSED, NOT DUPLICATED
   value `mm2_per_frame`'s depth rung falls back to when a phone does not
   report its own. Not a second default.
 
-A NOTE ON WHICH AXIS
+A NOTE ON WHICH AXIS -- AND A DEFECT THIS FIXES
 
 `portion.py`'s own comment on `DEFAULT_CAMERA_FOV_DEG` is explicit: "the
 quoted field of view spans the LONG axis of the sensor, not the image
 width. Those are the same thing only in landscape." `expected_card_px` and
 `distance_from_card` below are deliberately axis-agnostic pinhole trig: pass
-`image_width_px` and `fov_deg` for the SAME axis and the formula is exact,
-whichever axis that is. `ScanScreen.tsx`'s existing card box is
-132 x 83 points — width:height = 1.590, matching the card's own long:short
-ratio (85.60 / 53.98 = 1.586) to within rounding — which is the evidence
-used here to fix the pairing for the gauge specifically: the card lies with
-its LONG edge horizontal, so `CARD_WIDTH_MM` below is the card's long edge,
-compared against the frame's WIDTH axis (the sensor's SHORT physical axis in
-portrait). `card_layout`, which needs both frame axes at once, gets the
-long/short split right explicitly rather than leaning on that pairing.
+`axis_px` and `axis_fov_deg` for the SAME axis and the formula is exact,
+whichever axis that is -- their parameter names say so directly, rather than
+leaving it to the docstring alone.
+
+But the one case this module actually has to handle is a PORTRAIT frame,
+where the card guide is drawn along the frame's WIDTH -- the sensor's SHORT
+axis -- while `DEFAULT_CAMERA_FOV_DEG` (and any FOV a phone reports) is the
+LONG axis. Calling the single-axis form with the frame's width and that FOV
+silently reads the expected card size too small by exactly the short/long
+pixel ratio (25% low at a typical 1080 x 1440 frame) -- a real defect this
+module shipped with. `expected_card_px_portrait` and
+`distance_from_card_portrait` are the fix: they take both frame dimensions
+by name, compute `focal_px` from the long axis where the FOV is valid, and
+raise rather than silently mis-scale if the two are passed swapped. Use
+these two for any portrait frame; the single-axis functions remain for a
+caller that genuinely has one matched (axis_px, axis_fov_deg) pair, such as
+a device that reports a WIDTH-axis FOV directly.
+
+`ScanScreen.tsx`'s existing card box is 132 x 83 points — width:height =
+1.590, matching the card's own long:short ratio (85.60 / 53.98 = 1.586) to
+within rounding — which is the evidence used here to fix which card edge is
+which: the card lies with its LONG edge horizontal, so `CARD_LONG_MM` below
+(the card's long edge) is what is compared against the frame's WIDTH axis.
+`card_layout`, which needs both frame axes at once for a different reason
+(fitting the plate and the card together), gets the long/short split right
+independently, via `frame_ground_coverage_mm`.
 """
 from __future__ import annotations
 
@@ -85,22 +102,30 @@ GAUGE_TILT_LIMIT_DEG = 5.0
 GaugeState = Literal["too_far", "too_close", "tilted", "ok"]
 
 
-def expected_card_px(image_width_px: float, fov_deg: float,
+def expected_card_px(axis_px: float, axis_fov_deg: float,
                       distance_mm: float = TARGET_DISTANCE_MM) -> float:
     """The card's expected pixel width, straight down, at `distance_mm`.
 
-        focal_px = (image_width_px / 2) / tan(fov_deg / 2)
+        focal_px = (axis_px / 2) / tan(axis_fov_deg / 2)
         card_px  = focal_px * CARD_LONG_MM / distance_mm
 
-    `image_width_px` and `fov_deg` must describe the SAME axis (see the
-    module docstring) -- this function does not know or care which one, it
-    is exact for either as long as they agree.
+    `axis_px` and `axis_fov_deg` MUST be the SAME axis's pixel count and
+    field of view (renamed from `image_width_px`/`fov_deg` to say so in the
+    signature, not just the prose below) -- this function does not know or
+    care WHICH axis, it is exact for either as long as they agree. Getting
+    that pairing wrong is exactly the bug `expected_card_px_portrait` exists
+    to make impossible for the one case this module actually has to handle:
+    `portion.DEFAULT_CAMERA_FOV_DEG` is the sensor's LONG axis, but a
+    portrait frame's on-screen WIDTH -- where the card guide is drawn -- is
+    the SHORT axis. Calling this function with the frame's width in pixels
+    and that FOV is the defect this module had; see the module docstring and
+    `expected_card_px_portrait` below for the fix.
     """
-    focal_px = (image_width_px / 2.0) / math.tan(math.radians(fov_deg) / 2.0)
+    focal_px = (axis_px / 2.0) / math.tan(math.radians(axis_fov_deg) / 2.0)
     return focal_px * CARD_LONG_MM / distance_mm
 
 
-def distance_from_card(card_px: float, image_width_px: float, fov_deg: float) -> float:
+def distance_from_card(card_px: float, axis_px: float, axis_fov_deg: float) -> float:
     """The inverse of `expected_card_px`: given the card's MEASURED pixel
     width in an actual photo, the camera distance that photo was taken at.
 
@@ -108,8 +133,71 @@ def distance_from_card(card_px: float, image_width_px: float, fov_deg: float) ->
     `camera_distance_mm`, and for a card-rung photo this is how a client
     could report one from the SAME card the scale itself is measured from,
     rather than from the gauge's 12-inch target.
+
+    Same same-axis requirement as `expected_card_px` -- `axis_px` and
+    `axis_fov_deg` must describe the same axis as each other (though not
+    necessarily the same axis `card_px` was measured on, since `card_px` is
+    a measurement, not a frame dimension; the caller is responsible for
+    having measured it along the axis `axis_px`/`axis_fov_deg` describe).
     """
-    focal_px = (image_width_px / 2.0) / math.tan(math.radians(fov_deg) / 2.0)
+    focal_px = (axis_px / 2.0) / math.tan(math.radians(axis_fov_deg) / 2.0)
+    return focal_px * CARD_LONG_MM / card_px
+
+
+def _focal_px_long_axis(short_px: float, long_px: float, long_fov_deg: float) -> float:
+    """The shared trig for the *_portrait functions below: focal_px from the
+    LONG axis, where a phone's reported FOV (and DEFAULT_CAMERA_FOV_DEG) is
+    directly valid. `short_px` is not part of the arithmetic -- it is
+    required here purely as a guard, so a caller that has swapped the two
+    frame dimensions (an easy mistake: a portrait frame's WIDTH, in pixels,
+    is usually the SMALLER number) is told immediately, not handed a result
+    that is silently short by the swapped ratio."""
+    if short_px > long_px:
+        raise ValueError(
+            f"short_px ({short_px}) is larger than long_px ({long_px}) -- "
+            f"these look swapped. A portrait frame's short axis is its "
+            f"WIDTH (where the card guide is drawn); its long axis is its "
+            f"HEIGHT (where portion.DEFAULT_CAMERA_FOV_DEG applies directly).")
+    return (long_px / 2.0) / math.tan(math.radians(long_fov_deg) / 2.0)
+
+
+def expected_card_px_portrait(short_px: float, long_px: float, long_fov_deg: float,
+                               distance_mm: float = TARGET_DISTANCE_MM) -> float:
+    """`expected_card_px`, made safe for the one case this module actually
+    needs: a portrait frame, where the card guide is drawn along the frame's
+    WIDTH (the sensor's SHORT axis, `short_px`), but `portion.
+    DEFAULT_CAMERA_FOV_DEG` -- and any FOV a phone reports -- is the
+    sensor's LONG axis (`portion.py`'s own comment: "the quoted field of
+    view spans the LONG axis of the sensor, not the image width").
+
+        focal_px = (long_px / 2) / tan(long_fov_deg / 2)
+        card_px  = focal_px * CARD_LONG_MM / distance_mm
+
+    `focal_px` (a property of the lens and the sensor's pixel pitch, not of
+    orientation) is computed from the LONG axis, where the FOV is directly
+    valid -- exactly `mm2_per_frame`'s own depth rung. `short_px` is not
+    multiplied by anything here; it is required so the signature cannot be
+    confused with `expected_card_px`'s single-axis form, and is checked
+    against `long_px` as a guard (see `_focal_px_long_axis`) rather than
+    silently accepted and ignored. Calling the single-axis
+    `expected_card_px` with the frame's WIDTH and this same long-axis FOV --
+    exactly the bug this function replaces -- reads `short_px / long_px` too
+    small (linear in the pixel count, so the error is exact: at
+    1080 x 1440, that is 1080/1440 = 0.75 of the correct answer, a 25%
+    miss), which is what `test_using_the_short_axis_with_the_long_axis_fov_
+    is_wrong_by_the_pixel_ratio` in test_card_gauge.py checks directly.
+    """
+    focal_px = _focal_px_long_axis(short_px, long_px, long_fov_deg)
+    return focal_px * CARD_LONG_MM / distance_mm
+
+
+def distance_from_card_portrait(card_px: float, short_px: float, long_px: float,
+                                 long_fov_deg: float) -> float:
+    """The inverse of `expected_card_px_portrait`: the MEASURED card width
+    (along the frame's short/width axis, where the guide is drawn) plus the
+    frame's own two dimensions and its long-axis FOV, gives the camera
+    distance that photo was taken at."""
+    focal_px = _focal_px_long_axis(short_px, long_px, long_fov_deg)
     return focal_px * CARD_LONG_MM / card_px
 
 
