@@ -180,14 +180,17 @@ def test_the_fov_default_is_the_same_object_the_estimator_uses():
 # ---------------------------------------------------------------------------
 # expected_card_px_portrait / distance_from_card_portrait -- the fix for the
 # axis defect: portion.DEFAULT_CAMERA_FOV_DEG is the sensor's LONG axis, but
-# a portrait frame's card guide is drawn on its WIDTH, the SHORT axis.
+# a portrait frame's card guide is drawn on its WIDTH, the SHORT axis. These
+# two take the frame's raw width/height in EITHER order and sort long from
+# short themselves (max/min), which is what makes them orientation-
+# independent -- there is no longer an argument order to get backwards.
 # ---------------------------------------------------------------------------
 def test_expected_card_px_portrait_matches_the_worked_example():
     """A 1080x1440 portrait frame at 68 degrees LONG-axis FOV:
     focal_px = (1440/2)/tan(34deg) ~= 1067.5, card_px ~= 1067.5*85.6/304.8
     ~= 300 px -- not the ~25% smaller value the axis-confused single-axis
     call would give (the next test)."""
-    got = expected_card_px_portrait(short_px=1080, long_px=1440, long_fov_deg=68.0)
+    got = expected_card_px_portrait(image_width_px=1080, image_height_px=1440, long_fov_deg=68.0)
     assert got == pytest.approx(300.0, abs=1.0)
 
     focal_px = (1440 / 2.0) / math.tan(math.radians(68.0) / 2.0)
@@ -195,38 +198,85 @@ def test_expected_card_px_portrait_matches_the_worked_example():
     assert got == pytest.approx(focal_px * CARD_LONG_MM / TARGET_DISTANCE_MM, rel=1e-9)
 
 
+def test_expected_card_px_portrait_matches_iphone_17_pro_numbers():
+    """iPhone 17 Pro main-camera frame, 5712 x 4284, 68 degree long-axis FOV,
+    at the gauge's 12-inch (304.8 mm) target:
+
+        long_px  = max(5712, 4284) = 5712
+        focal_px = (5712 / 2) / tan(34 deg) ~= 4234.19
+        card_px  = 4234.19 * 85.60 / 304.8  ~= 1189.13 px
+
+    Computed once with Python's own math.tan beside the hand-worked numbers
+    above so a future change to the formula is caught even if both were
+    wrong the same way; printed here rather than only in a comment so the
+    number this test pins is visible without re-deriving it."""
+    got = expected_card_px_portrait(image_width_px=5712, image_height_px=4284, long_fov_deg=68.0,
+                                     distance_mm=304.8)
+    focal_px = (5712 / 2.0) / math.tan(math.radians(68.0) / 2.0)
+    expected = focal_px * CARD_LONG_MM / 304.8
+    assert expected == pytest.approx(1189.13, abs=0.01)
+    assert got == pytest.approx(expected, rel=1e-9)
+
+
 def test_using_the_short_axis_with_the_long_axis_fov_is_wrong_by_the_pixel_ratio():
     """The defect itself, pinned as a regression: calling the single-axis
     expected_card_px with the frame's WIDTH (short axis) and a LONG-axis FOV
     -- an easy mistake, since portion.DEFAULT_CAMERA_FOV_DEG IS a long-axis
-    value -- disagrees with the correct portrait function by exactly
-    short_px / long_px, because focal_px is linear in the pixel count. At
-    1080 x 1440 that is a clean 0.75, a 25% miss, not an approximation."""
-    correct = expected_card_px_portrait(short_px=1080, long_px=1440, long_fov_deg=68.0)
+    value -- disagrees with the correct orientation-independent function by
+    exactly short_px / long_px, because focal_px is linear in the pixel
+    count. At 1080 x 1440 that is a clean 0.75, a 25% miss, not an
+    approximation; at the iPhone 17 Pro's 5712 x 4284 (also a 4:3 sensor)
+    it is the same 0.75, showing the error is the aspect ratio, not the
+    specific resolution."""
+    correct = expected_card_px_portrait(image_width_px=1080, image_height_px=1440, long_fov_deg=68.0)
     axis_confused = expected_card_px(1080, 68.0)  # WRONG: short px, long fov
     assert axis_confused == pytest.approx(correct * (1080.0 / 1440.0), rel=1e-9)
     assert axis_confused == pytest.approx(correct * 0.75, rel=1e-9)
     assert axis_confused < correct
 
+    correct_iphone = expected_card_px_portrait(image_width_px=5712, image_height_px=4284,
+                                                long_fov_deg=68.0)
+    axis_confused_iphone = expected_card_px(4284, 68.0)  # WRONG: short px, long fov
+    assert axis_confused_iphone == pytest.approx(correct_iphone * 0.75, rel=1e-9)
+
 
 def test_expected_card_px_portrait_and_distance_from_card_portrait_are_exact_inverses():
-    for short_px, long_px, fov, distance in [
-        (1080, 1440, 68.0, 304.8), (720, 960, 60.0, 200.0), (1170, 2532, 71.0, 350.0),
+    """Round trip through the forward and inverse orientation-independent
+    formula, in both a portrait-shaped pair and a landscape-shaped pair --
+    the defect this module fixes was specific to which of the two frame
+    dimensions was larger, so both orderings must be checked, not just one."""
+    for width_px, height_px, fov, distance in [
+        (1080, 1440, 68.0, 304.8),    # portrait: width < height
+        (1440, 1080, 68.0, 304.8),    # landscape: width > height
+        (720, 960, 60.0, 200.0),
+        (2532, 1170, 71.0, 350.0),
+        (5712, 4284, 68.0, 304.8),    # iPhone 17 Pro, landscape-shaped pair
     ]:
-        px = expected_card_px_portrait(short_px, long_px, fov, distance)
-        recovered = distance_from_card_portrait(px, short_px, long_px, fov)
+        px = expected_card_px_portrait(width_px, height_px, fov, distance)
+        recovered = distance_from_card_portrait(px, width_px, height_px, fov)
         assert recovered == pytest.approx(distance, rel=0.005)
 
 
-def test_portrait_functions_reject_swapped_short_and_long():
-    """short_px larger than long_px is not a valid portrait frame -- almost
-    certainly the two arguments swapped, and silently accepting it would
-    reproduce the exact axis-confusion bug this function exists to prevent,
-    just moved one argument over. Must raise, not guess."""
-    with pytest.raises(ValueError):
-        expected_card_px_portrait(short_px=1440, long_px=1080, long_fov_deg=68.0)
-    with pytest.raises(ValueError):
-        distance_from_card_portrait(300.0, short_px=1440, long_px=1080, long_fov_deg=68.0)
+def test_same_scene_rotated_90_degrees_gives_the_same_distance():
+    """The orientation-independence guarantee, checked directly: shooting the
+    SAME physical scene in portrait and then rotating the camera 90 degrees
+    to landscape swaps which file dimension is called width and which is
+    called height, but does not change the physical focal length or the
+    card's own photographed pixel span. A gauge whose answer depended on
+    that labelling would report a different distance for the same photo,
+    which is exactly the axis-pairing class of bug this module exists to
+    prevent."""
+    card_px = 300.0
+    portrait = distance_from_card_portrait(card_px, image_width_px=1080, image_height_px=1440,
+                                            long_fov_deg=68.0)
+    landscape = distance_from_card_portrait(card_px, image_width_px=1440, image_height_px=1080,
+                                             long_fov_deg=68.0)
+    assert landscape == pytest.approx(portrait, rel=1e-12)
+
+    # Same check the other direction, through the forward formula.
+    expected_portrait = expected_card_px_portrait(1080, 1440, 68.0, distance_mm=304.8)
+    expected_landscape = expected_card_px_portrait(1440, 1080, 68.0, distance_mm=304.8)
+    assert expected_landscape == pytest.approx(expected_portrait, rel=1e-12)
 
 
 def test_the_gauge_still_never_changes_an_estimate_with_the_portrait_functions():

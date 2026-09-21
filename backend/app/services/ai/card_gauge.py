@@ -42,19 +42,33 @@ width. Those are the same thing only in landscape." `expected_card_px` and
 whichever axis that is -- their parameter names say so directly, rather than
 leaving it to the docstring alone.
 
-But the one case this module actually has to handle is a PORTRAIT frame,
-where the card guide is drawn along the frame's WIDTH -- the sensor's SHORT
-axis -- while `DEFAULT_CAMERA_FOV_DEG` (and any FOV a phone reports) is the
-LONG axis. Calling the single-axis form with the frame's width and that FOV
-silently reads the expected card size too small by exactly the short/long
-pixel ratio (25% low at a typical 1080 x 1440 frame) -- a real defect this
-module shipped with. `expected_card_px_portrait` and
-`distance_from_card_portrait` are the fix: they take both frame dimensions
-by name, compute `focal_px` from the long axis where the FOV is valid, and
-raise rather than silently mis-scale if the two are passed swapped. Use
-these two for any portrait frame; the single-axis functions remain for a
-caller that genuinely has one matched (axis_px, axis_fov_deg) pair, such as
-a device that reports a WIDTH-axis FOV directly.
+But the one case this module actually has to handle is a frame where the card
+guide is drawn along the SHORT axis -- portrait phone photos, where that axis
+is the frame's on-screen WIDTH -- while `DEFAULT_CAMERA_FOV_DEG` (and any FOV
+a phone reports) is the LONG axis. Calling the single-axis form with the
+frame's width and that FOV silently reads the expected card size too small by
+exactly the short/long pixel ratio (25% low at a typical 1080 x 1440 frame)
+-- a real defect this module shipped with.
+
+`expected_card_px_portrait` and `distance_from_card_portrait` are the fix,
+and they are ORIENTATION-INDEPENDENT rather than portrait-only despite the
+name (kept for continuity with the defect they fix): they take the frame's
+raw `image_width_px` and `image_height_px`, in whichever order the caller
+happens to have them, and sort out which one is the long axis themselves --
+`focal_px` is computed from `max(image_width_px, image_height_px)`, always,
+because focal_px is a property of the lens and the sensor's pixel pitch, not
+of which way the phone was held. That is what makes the same physical scene
+give the same distance whether it was shot in portrait or landscape: rotating
+the camera 90 degrees swaps which file dimension is called "width" and which
+is called "height," but `max()`/`min()` of the pair is unchanged, so
+`focal_px` is unchanged, and the card's own measured pixel span -- a
+photographed length, not a frame dimension -- does not care which axis
+label it happens to fall under either. There is no longer a way to pass
+these two dimensions in the "wrong" order, which is what made the single-axis
+form dangerous in the first place: use the portrait/orientation-independent
+pair for any frame, and reserve the single-axis functions for a caller that
+genuinely has one matched (axis_px, axis_fov_deg) pair from elsewhere, such
+as a device that reports a WIDTH-axis FOV directly.
 
 `ScanScreen.tsx`'s existing card box is 132 x 83 points — width:height =
 1.590, matching the card's own long:short ratio (85.60 / 53.98 = 1.586) to
@@ -144,60 +158,66 @@ def distance_from_card(card_px: float, axis_px: float, axis_fov_deg: float) -> f
     return focal_px * CARD_LONG_MM / card_px
 
 
-def _focal_px_long_axis(short_px: float, long_px: float, long_fov_deg: float) -> float:
-    """The shared trig for the *_portrait functions below: focal_px from the
-    LONG axis, where a phone's reported FOV (and DEFAULT_CAMERA_FOV_DEG) is
-    directly valid. `short_px` is not part of the arithmetic -- it is
-    required here purely as a guard, so a caller that has swapped the two
-    frame dimensions (an easy mistake: a portrait frame's WIDTH, in pixels,
-    is usually the SMALLER number) is told immediately, not handed a result
-    that is silently short by the swapped ratio."""
-    if short_px > long_px:
-        raise ValueError(
-            f"short_px ({short_px}) is larger than long_px ({long_px}) -- "
-            f"these look swapped. A portrait frame's short axis is its "
-            f"WIDTH (where the card guide is drawn); its long axis is its "
-            f"HEIGHT (where portion.DEFAULT_CAMERA_FOV_DEG applies directly).")
+def _focal_px_from_long_axis(image_width_px: float, image_height_px: float,
+                              long_fov_deg: float) -> float:
+    """The shared trig for the orientation-independent functions below:
+    focal_px from whichever of the two frame dimensions is LARGER, where a
+    phone's reported FOV (and DEFAULT_CAMERA_FOV_DEG) is directly valid.
+
+    Taking `max()` here, rather than asking the caller to already know which
+    of their two numbers is the long axis, is the actual fix: there is no
+    argument order left to get backwards, so the short-axis-paired-with-
+    long-axis-FOV mistake this module shipped with cannot be reintroduced by
+    a caller swapping two positional numbers. It is also what makes the
+    result orientation-independent -- `max(w, h)` and `min(w, h)` are the
+    same two numbers whether the pair arrives as (1080, 1440) or (1440,
+    1080), so a photo of the same scene rotated 90 degrees produces the same
+    focal_px.
+    """
+    long_px = max(image_width_px, image_height_px)
     return (long_px / 2.0) / math.tan(math.radians(long_fov_deg) / 2.0)
 
 
-def expected_card_px_portrait(short_px: float, long_px: float, long_fov_deg: float,
+def expected_card_px_portrait(image_width_px: float, image_height_px: float,
+                               long_fov_deg: float,
                                distance_mm: float = TARGET_DISTANCE_MM) -> float:
-    """`expected_card_px`, made safe for the one case this module actually
-    needs: a portrait frame, where the card guide is drawn along the frame's
-    WIDTH (the sensor's SHORT axis, `short_px`), but `portion.
-    DEFAULT_CAMERA_FOV_DEG` -- and any FOV a phone reports -- is the
-    sensor's LONG axis (`portion.py`'s own comment: "the quoted field of
-    view spans the LONG axis of the sensor, not the image width").
+    """`expected_card_px`, made orientation-independent: pass the frame's raw
+    `image_width_px` and `image_height_px` in whichever order they naturally
+    come, plus the sensor's LONG-axis FOV (`portion.DEFAULT_CAMERA_FOV_DEG`
+    and any FOV a phone reports are long-axis values -- `portion.py`'s own
+    comment: "the quoted field of view spans the LONG axis of the sensor,
+    not the image width").
 
-        focal_px = (long_px / 2) / tan(long_fov_deg / 2)
+        focal_px = (long_side_px / 2) / tan(long_fov_deg / 2)
         card_px  = focal_px * CARD_LONG_MM / distance_mm
 
-    `focal_px` (a property of the lens and the sensor's pixel pitch, not of
-    orientation) is computed from the LONG axis, where the FOV is directly
-    valid -- exactly `mm2_per_frame`'s own depth rung. `short_px` is not
-    multiplied by anything here; it is required so the signature cannot be
-    confused with `expected_card_px`'s single-axis form, and is checked
-    against `long_px` as a guard (see `_focal_px_long_axis`) rather than
-    silently accepted and ignored. Calling the single-axis
-    `expected_card_px` with the frame's WIDTH and this same long-axis FOV --
-    exactly the bug this function replaces -- reads `short_px / long_px` too
-    small (linear in the pixel count, so the error is exact: at
-    1080 x 1440, that is 1080/1440 = 0.75 of the correct answer, a 25%
-    miss), which is what `test_using_the_short_axis_with_the_long_axis_fov_
-    is_wrong_by_the_pixel_ratio` in test_card_gauge.py checks directly.
+    where `long_side_px = max(image_width_px, image_height_px)`. `focal_px`
+    is a property of the lens and the sensor's pixel pitch, not of
+    orientation, so it is computed from the long axis -- where the FOV is
+    directly valid, exactly `mm2_per_frame`'s own depth rung -- regardless of
+    which axis the card itself happens to lie along in the frame. Calling
+    the single-axis `expected_card_px` with the frame's short-axis pixel
+    count and this same long-axis FOV -- exactly the bug this function
+    replaces -- reads `short_px / long_px` too small (linear in the pixel
+    count, so the error is exact: at 1080 x 1440, that is 1080/1440 = 0.75
+    of the correct answer, a 25% miss), which is what
+    `test_using_the_short_axis_with_the_long_axis_fov_is_wrong_by_the_pixel_
+    ratio` in test_card_gauge.py checks directly.
     """
-    focal_px = _focal_px_long_axis(short_px, long_px, long_fov_deg)
+    focal_px = _focal_px_from_long_axis(image_width_px, image_height_px, long_fov_deg)
     return focal_px * CARD_LONG_MM / distance_mm
 
 
-def distance_from_card_portrait(card_px: float, short_px: float, long_px: float,
-                                 long_fov_deg: float) -> float:
-    """The inverse of `expected_card_px_portrait`: the MEASURED card width
-    (along the frame's short/width axis, where the guide is drawn) plus the
-    frame's own two dimensions and its long-axis FOV, gives the camera
-    distance that photo was taken at."""
-    focal_px = _focal_px_long_axis(short_px, long_px, long_fov_deg)
+def distance_from_card_portrait(card_px: float, image_width_px: float,
+                                 image_height_px: float, long_fov_deg: float) -> float:
+    """The inverse of `expected_card_px_portrait`: the card's MEASURED pixel
+    span (a photographed length -- it does not matter which frame axis it
+    fell along) plus the frame's raw width and height and its long-axis FOV,
+    gives the camera distance that photo was taken at. Orientation-
+    independent for the same reason `expected_card_px_portrait` is: `focal_px`
+    depends only on `max(image_width_px, image_height_px)`.
+    """
+    focal_px = _focal_px_from_long_axis(image_width_px, image_height_px, long_fov_deg)
     return focal_px * CARD_LONG_MM / card_px
 
 
