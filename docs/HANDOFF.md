@@ -2599,6 +2599,28 @@ tape is needed for this question. The 222 figure remains an undocumented
 nominal size and should be recorded as such, but the bench's ground truth is
 not the explanation for the card's excess.
 
+**MEASURED 21 Sep 2026.** Gil put a ruler on the actual foam plate used for
+rows 40-45: outer diameter about 217 mm (photo, top-down, ruler across the
+rim, +/-3 mm), rim height 20 mm, flat inner floor 155 mm, rim uniform all the
+way round. The declared plate diameter on bench_all.py's rows 40-45 is
+changed from 222 (the nominal "8.75 inches," never measured) to 217 on branch
+`bench-plate-217`. `height_fit.py:107-113` carries its own separate copy of
+these same six rows, also at 222 -- left unchanged on this branch, since the
+task scope was bench_all.py's `CASES` only; it is now stale against the
+measured value and worth the same fix later.
+
+**Consequence: nothing before this date is comparable to anything after it
+on these six rows.** Every calibrated-arm score computed against 222
+(including the +19.9%/+18.3% figures for photos 44/45 logged elsewhere in
+this file, and the "222 mm foam plate, card implies 230-256 mm" row in the
+yardstick table above) used a ground truth now known to be off by about 2.3%
+linear (222 vs 217), which is about 4.6% in area -- not large, but real, and
+in the SAME direction the card-excess discussion above was already
+discounting. This branch does not re-score anything; whoever next runs the
+bench or the replay rig on rows 40-45 should note the change date (21 Sep
+2026) and treat any pre-21-Sep score on these rows as measured against the
+old, unmeasured 222 figure.
+
 **Measured card correction candidate -- NOT APPLIED.** Against a tape-measured
 plate, a card at the table plane reads the plate rim +10% linear (median over 16
 photos, range +6% to +21%), i.e. about +21% in area. Two cautions before anyone

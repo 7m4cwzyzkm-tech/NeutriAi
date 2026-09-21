@@ -186,12 +186,12 @@ CASES = [
     # Deliberately awkward, and that is the point: a MIXTURE rather than one
     # food, grapes still on the stem, and a patterned tablecloth instead of
     # plain wood.
-    ("40-trailmix-spread.jpg",         222, "trail mix=44",       "per-item", 280),
-    ("41-trailmix-heaped.jpg",         222, "trail mix=44",       "per-item", 280),
-    ("42-chips-spread.jpg",            222, "tortilla chips=25",  "per-item", 280),
-    ("43-chips-heaped.jpg",            222, "tortilla chips=25",  "per-item", 280),
-    ("44-grapes-spread.jpg",           222, "grapes=90",          "per-item", 280),
-    ("45-grapes-cluster.jpg",          222, "grapes=90",          "per-item", 280),
+    ("40-trailmix-spread.jpg",         217, "trail mix=44",       "per-item", 280),
+    ("41-trailmix-heaped.jpg",         217, "trail mix=44",       "per-item", 280),
+    ("42-chips-spread.jpg",            217, "tortilla chips=25",  "per-item", 280),
+    ("43-chips-heaped.jpg",            217, "tortilla chips=25",  "per-item", 280),
+    ("44-grapes-spread.jpg",           217, "grapes=90",          "per-item", 280),
+    ("45-grapes-cluster.jpg",          217, "grapes=90",          "per-item", 280),
     ("35-slider-fries-plate.jpg",      229, "cheeseburger slider=145, french fries=65",
      "per-item"),
 
