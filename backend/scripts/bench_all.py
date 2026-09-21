@@ -165,7 +165,9 @@ CASES = [
     # it is the second plate on this bench that can score a SPLIT against a
     # scale rather than a total. The fries are also the first food here whose
     # pieces overlap and cast shadows on each other.
-    ("34-pizza-slice-plate.jpg",       229, "pizza slice=120",           "per-item"),
+    # Weights re-taken 20 Sep 2026 by Gil: plate 320 g empty, crock 138 g empty; food = gross - tare.
+    # Pizza gross 400 g -> 80 g (this row said 120 before).
+    ("34-pizza-slice-plate.jpg",       229, "pizza slice=80",            "per-item"),
 
     # ------------------------------------------------------------------
     # THE HEAP-VS-LAYER PAIRS. Same food, same weight, photographed twice.
@@ -252,11 +254,11 @@ WEIGHED_WITH: dict[str, object] = {
     "22-roast-beef-plate.jpg": UNKNOWN,
     "23-brussels-sprouts-plate.jpg": UNKNOWN,
     "24-macaroni-salad-plate.jpg": UNKNOWN,
-    "25-smashed-potatoes-plate.jpg": UNKNOWN,
-    "26-potroast-rice-alone.jpg": UNKNOWN,
-    "27-potroast-beef-alone.jpg": UNKNOWN,
-    "28-potroast-bread-alone.jpg": UNKNOWN,
-    "29-potroast-plate-4items.jpg": UNKNOWN,
+    "25-smashed-potatoes-plate.jpg": [],
+    "26-potroast-rice-alone.jpg": [],
+    "27-potroast-beef-alone.jpg": [],
+    "28-potroast-bread-alone.jpg": [],
+    "29-potroast-plate-4items.jpg": [{"what": "BBQ sauce, small dab between greens and roast (deliberate scanner probe)", "on_scale": "yes"}],
     "30-caesar-salad-plate.jpg": UNKNOWN,
     "31-chicken-noodle-crock.jpg": UNKNOWN,
     "32-beef-posole-crock.jpg": UNKNOWN,
