@@ -1255,7 +1255,7 @@ def test_no_module_is_built_and_left_unconnected():
         # camera-gauge-12in, 20 Sep 2026.
         "services/ai/card_gauge.py",
     }
-    orphans = {str(f.relative_to(app)) for f in files - seen} - ALLOWED_UNREACHED
+    orphans = {f.relative_to(app).as_posix() for f in files - seen} - ALLOWED_UNREACHED
     assert not orphans, (
         f"built and connected to nothing: {sorted(orphans)}. Either wire it in "
         f"or delete it -- a module the app cannot reach is a module whose tests "
