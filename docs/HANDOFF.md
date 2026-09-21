@@ -2621,6 +2621,20 @@ bench or the replay rig on rows 40-45 should note the change date (21 Sep
 2026) and treat any pre-21-Sep score on these rows as measured against the
 old, unmeasured 222 figure.
 
+**WEIGHED_WITH recorded, 21 Sep 2026.** Per Gil, 21 Sep 2026, from memory
+(not a contemporaneous record): for rows 40-45, the food was weighed alone
+with the plate tared -- the scale was zeroed with the empty foam plate on
+it, then the food added, so the display read the food's weight only. Foam
+plate 3 g (already stated for these rows, bench_all.py:178-180). Declared
+weights are net food weight; no correction is needed. `WEIGHED_WITH` for
+these six rows is changed from `UNKNOWN` to `[]` -- the vocabulary's own
+value for "nothing else was on the plate" (bench_all.py:244-250), which is
+exactly what "weighed alone" means; no new value was needed and none was
+invented. State this plainly: this is a recollection, not a note taken at
+the time of weighing, the way the tape figures under THE YARDSTICK above
+are. Nothing else about these rows changed -- not the weight, the plate
+diameter, the distance, or the food names.
+
 **Measured card correction candidate -- NOT APPLIED.** Against a tape-measured
 plate, a card at the table plane reads the plate rim +10% linear (median over 16
 photos, range +6% to +21%), i.e. about +21% in area. Two cautions before anyone

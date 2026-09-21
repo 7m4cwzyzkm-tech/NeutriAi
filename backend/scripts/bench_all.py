@@ -270,12 +270,19 @@ WEIGHED_WITH: dict[str, object] = {
     "34-pizza-slice-plate.jpg": UNKNOWN,
     "35-slider-fries-plate.jpg": UNKNOWN,
     "36-slider-fries-card.jpg": UNKNOWN,
-    "40-trailmix-spread.jpg": UNKNOWN,
-    "41-trailmix-heaped.jpg": UNKNOWN,
-    "42-chips-spread.jpg": UNKNOWN,
-    "43-chips-heaped.jpg": UNKNOWN,
-    "44-grapes-spread.jpg": UNKNOWN,
-    "45-grapes-cluster.jpg": UNKNOWN,
+    # WEIGHED ALONE, PLATE TARED -- per Gil, 21 Sep 2026, from memory (not a
+    # contemporaneous record): the food was weighed by itself, with the foam
+    # plate zeroed out on the scale first. Nothing else was on the plate, so
+    # [] -- not a guess at what else might have been there, the actual
+    # recorded method for these six. Declared weights are net food weight;
+    # no correction needed. See HANDOFF.md's dated note for the full
+    # provenance and its caveat.
+    "40-trailmix-spread.jpg": [],
+    "41-trailmix-heaped.jpg": [],
+    "42-chips-spread.jpg": [],
+    "43-chips-heaped.jpg": [],
+    "44-grapes-spread.jpg": [],
+    "45-grapes-cluster.jpg": [],
 }
 
 
