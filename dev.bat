@@ -120,7 +120,8 @@ REM  -u matters: through a PIPE python buffers, and a log that sits at zero
 REM  bytes for the whole run is the exact bug that made a healthy run and a
 REM  hang look identical.
 set NUTRIAI_MASK_DUMP=%~dp0mask_dumps
-python -u -m uvicorn app.main:app --reload --port 8000 2>&1 | python -m scripts.tee "%~dp0docs\evidence" api
+REM  --host 0.0.0.0: phone-testing needs the PC's LAN IP to be reachable, which requires binding to 0.0.0.0, not just the uvicorn default of 127.0.0.1.
+python -u -m uvicorn app.main:app --host 0.0.0.0 --reload --port 8000 2>&1 | python -m scripts.tee "%~dp0docs\evidence" api
 goto :eof
 
 :seg
