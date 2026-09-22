@@ -26,6 +26,28 @@ class ScanRequest(InputBase):
     camera_distance_mm: float | None = Field(None, ge=80, le=2000)
     camera_fov_deg: float | None = Field(None, ge=40, le=100)
     camera_aspect_ratio: float | None = Field(None, ge=0.5, le=2.5)
+
+    # The captured photo's own pixel dimensions, and EXIF orientation when
+    # available. Not used by any estimation rung today -- added so the
+    # mobile app's on-screen 12-inch card gauge (mobile/src/lib/cardGauge.ts,
+    # ported from backend/app/services/ai/card_gauge.py) has somewhere to
+    # log what it measured, without requiring it: absent and unused is the
+    # same as every camera_* field above when a device cannot supply one.
+    image_width_px: float | None = Field(None, ge=1, le=20000)
+    image_height_px: float | None = Field(None, ge=1, le=20000)
+    image_orientation: int | None = Field(None, ge=1, le=8)  # EXIF Orientation, 1-8
+    # card_gauge.distance_error_pct's own output: how far off the gauge's
+    # 12-inch target the phone measured itself to be at capture, when a
+    # measured distance was available (mobile/src/native/depth.ts -- today,
+    # never, since no native depth module ships; see docs/design/mobile-
+    # camera-survey-2026-09-21.md). LOGGING only, same caveat as the Python
+    # source: never a reason to reject or re-scale an estimate.
+    distance_error_pct: float | None = Field(None, ge=-100, le=1000)
+    # The on-screen gauge's own live accelerometer tilt reading at the
+    # moment of capture (mobile/src/hooks/useTiltReading.ts), in degrees
+    # from level. LOGGING only; the estimator does not read this.
+    tilt_deg_at_capture: float | None = Field(None, ge=0, le=90)
+
     # Measure each food's footprint from the pixels and report it alongside the
     # estimate, without letting it change the estimate. Off by default and set
     # only by the bench: the measurement costs about 3 seconds of OpenCV on a

@@ -1,13 +1,17 @@
 /**
- * The camera flow. Three states in one screen: capture, analysing, results.
+ * The camera flow. Four states in one screen: info, capture, analysing, results.
  *
  * The results state is where the product earns trust, so it does two things
  * most calorie apps don't: it shows the gram *range* rather than a fake-precise
  * single number, and it colours each item by how confident the estimate is.
  * Everything is editable before it counts.
+ *
+ * The info state exists so the camera view itself can show nothing but the
+ * camera and its guides -- meal slot and an optional food/plate description
+ * are collected here, first, and submitted before the camera ever opens.
  */
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, LayoutChangeEvent, ScrollView, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { CameraGeometry, measureCameraGeometry } from '../native/depth';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,10 +21,38 @@ import { confidenceColor, radius, space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
 import { uploadImage } from '../api/supabase';
 import { useScanMeal } from '../hooks/useApi';
+import { useTiltReading } from '../hooks/useTiltReading';
 import type { ScanResult } from '../api/types';
 import { methodLabel } from '../lib/method';
+import {
+  DEFAULT_CAMERA_FOV_DEG,
+  distanceErrorPct,
+  expectedCardBoxPoints,
+  gaugeState,
+  TARGET_DISTANCE_MM,
+} from '../lib/cardGauge';
 
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+
+// The plate-framing circle's diameter, as a fraction of the frame's SHORTER
+// side. The original box used top:18%/bottom:32% (50% of height) with
+// left:8%/right:8% (84% of width) -- two different fractions of two
+// different dimensions with a large borderRadius applied, which is a
+// squashed oval on any screen whose width and height differ (every phone),
+// clipping a plate that actually fills the frame. No comment or commit
+// message (checked git log/blame on this file) explains why those two
+// fractions were chosen independently; 0.84 is kept here only because it
+// was the more generous (less clipping) of the two original margins, now
+// applied to BOTH dimensions via the shorter side, so the result is an
+// actual circle that fits inside the frame on any aspect ratio.
+const PLATE_CIRCLE_FRAME_FRACTION = 0.84;
+// Where the circle's own centre sits, as a fraction of the frame's height.
+// The original box's vertical centre was at (18% + 68%) / 2 = 43% (its own
+// span was 18% to 100%-32%=68%) -- biased above the geometric middle to
+// leave room below for the card guide and the bottom control panel. Kept at
+// the same 43% so the overall layout does not shift now that the box is
+// square instead of tall.
+const PLATE_CIRCLE_VERTICAL_CENTER_FRACTION = 0.43;
 
 export function ScanScreen() {
   const c = useTheme();
@@ -28,6 +60,11 @@ export function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [shots, setShots] = useState<string[]>([]);
   const [slot, setSlot] = useState<(typeof SLOTS)[number] | null>(null);
+  // Collected on the info state, before the camera opens -- see the top
+  // comment. Neither is reset by a retake (below): the meal being logged
+  // and its description do not change just because the photo was retaken.
+  const [note, setNote] = useState('');
+  const [infoSubmitted, setInfoSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const scan = useScanMeal();
@@ -35,23 +72,79 @@ export function ScanScreen() {
   // Geometry belongs to the moment the shutter fired -- by the time the
   // user taps Analyse the phone has moved and any distance is stale.
   const [geometry, setGeometry] = useState<CameraGeometry>({});
-  // Retaking specifically to give the photo a scale. Only ever set by the
-  // "no scale in this photo" banner, so the card guide appears when it will
-  // actually help and never as one more thing to read past.
+  // Extra capture-time bookkeeping the backend's ScanRequest also accepts,
+  // separate from `geometry` above because it is sourced differently: image
+  // dimensions come from the photo itself, not the (still-unbuilt, see
+  // native/depth.ts) NeutriDepth sensor bridge, and distance_error_pct/tilt
+  // come from THIS screen's on-device gauge, not from `measureCameraGeometry`.
+  const [captureExtras, setCaptureExtras] = useState<{
+    image_width_px?: number;
+    image_height_px?: number;
+    image_orientation?: number;
+    distance_error_pct?: number;
+    tilt_deg_at_capture?: number;
+  }>({});
+  // Whether this retake was specifically prompted by a failed/unmeasured
+  // scan (see the "Retake with a card" button below). The card guide itself
+  // no longer gates on this -- Gil's 3-week-trial design (docs/HANDOFF.md)
+  // wants the card guide showing on EVERY photo, not only after a failure,
+  // and the flag that used to gate it was never set on the ordinary capture
+  // path anyway (the comment above used to claim a banner set it; no such
+  // banner exists in this file or anywhere else in mobile/src -- confirmed
+  // by grep). Kept, not deleted, as the one signal this screen has for "the
+  // user was specifically told their last photo needed a card" -- a cheap
+  // extension point for a future escalation (e.g. more insistent copy after
+  // a repeat failure), never a way to block the shutter.
   const [needCard, setNeedCard] = useState(false);
+  // The live camera view's own on-screen size, in points -- captured via
+  // onLayout since RN gives no other way to read a flex:1 View's rendered
+  // size. Needed to size the card guide for THIS device's screen, not one
+  // hardcoded number for every phone. Starts at {0,0}; the guide simply
+  // does not render until a real layout arrives (see the render below).
+  const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
+  function onCameraLayout(e: LayoutChangeEvent) {
+    const { width, height } = e.nativeEvent.layout;
+    setFrameSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+  }
+  // Only live while the capture view is actually showing -- see
+  // useTiltReading's own doc for why this can't just be "always call the
+  // hook and ignore the value" (it can, Rules of Hooks require the call
+  // either way; `enabled` stops the underlying subscription's battery cost).
+  const showingCapture = !result && !uploading && !scan.isPending;
+  const tiltDeg = useTiltReading(showingCapture);
 
   async function capture() {
     // Measured alongside the capture, not before or after it, and never
     // awaited on its own -- measureCameraGeometry resolves to {} rather than
     // throwing or hanging, so a missing or slow sensor cannot block a photo.
     const [photo, measured] = await Promise.all([
-      cameraRef.current?.takePictureAsync({ quality: 0.8 }),
+      cameraRef.current?.takePictureAsync({ quality: 0.8, exif: true }),
       measureCameraGeometry(),
     ]);
     if (photo?.uri) {
       setShots((s) => [...s, photo.uri].slice(0, 3));
       // The first shot is the one the estimator scales from.
       setGeometry((g) => (Object.keys(g).length ? g : measured));
+      setCaptureExtras((prev) => {
+        if (Object.keys(prev).length) return prev; // first shot only, same as geometry above
+        const next: typeof prev = {
+          image_width_px: photo.width,
+          image_height_px: photo.height,
+        };
+        // EXIF orientation, when the platform/library provides it. Not
+        // verified on device -- see this task's report on what could not
+        // be run. Absent rather than guessed if the field isn't there.
+        const orientation = (photo as { exif?: { Orientation?: number } }).exif?.Orientation;
+        if (typeof orientation === 'number') next.image_orientation = orientation;
+        // distance_error_pct needs a REAL measured distance -- only ever
+        // present today if a future NeutriDepth native module ships (see
+        // native/depth.ts); omitted, not faked, until then.
+        if (typeof measured.camera_distance_mm === 'number') {
+          next.distance_error_pct = distanceErrorPct(measured.camera_distance_mm, TARGET_DISTANCE_MM);
+        }
+        if (typeof tiltDeg === 'number') next.tilt_deg_at_capture = Math.round(tiltDeg * 10) / 10;
+        return next;
+      });
     }
   }
 
@@ -71,7 +164,9 @@ export function ScanScreen() {
       const res = await scan.mutateAsync({
         image_paths: paths,
         meal_slot: slot ?? undefined,
+        note: note.trim() || undefined,
         ...geometry,
+        ...captureExtras,
       });
       setResult(res);
     } catch (e: any) {
@@ -83,6 +178,45 @@ export function ScanScreen() {
     } finally {
       setUploading(false);
     }
+  }
+
+  // -------------------------------------------------------------------- info
+  // Shown once per scan, before the camera opens. `infoSubmitted` is never
+  // reset by a retake (see the failed-scan and not-measured buttons below),
+  // so this does not reappear mid-flow -- only at the start of a new scan.
+  if (!infoSubmitted) {
+    return (
+      <Screen>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <View style={{ flex: 1, padding: space.lg, gap: space.lg, justifyContent: 'center' }}>
+            <View>
+              <Label>Before you scan</Label>
+              <H1>What are you eating?</H1>
+            </View>
+            <Card style={{ gap: space.md }}>
+              <Label>Meal</Label>
+              <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
+                {SLOTS.map((s) => (
+                  <Chip key={s} label={s} active={slot === s} onPress={() => setSlot(s)} />
+                ))}
+              </Row>
+              <Label>What is it? (optional)</Label>
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="e.g. chicken salad, leftovers from Tuesday"
+                placeholderTextColor={c.textFaint}
+                style={{
+                  backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+                  padding: space.lg, color: c.text, fontSize: 16,
+                }}
+              />
+            </Card>
+            <Button title="Continue to camera" disabled={!slot} onPress={() => setInfoSubmitted(true)} />
+          </View>
+        </SafeAreaView>
+      </Screen>
+    );
   }
 
   // ---------------------------------------------------------------- results
@@ -315,52 +449,109 @@ export function ScanScreen() {
     );
   }
 
+  // The guide box's size, in points, for THIS device's own on-screen camera
+  // view -- see cardGauge.expectedCardBoxPoints for why points (not raw
+  // camera pixels) is the right unit here. DEFAULT_CAMERA_FOV_DEG is the
+  // same long-axis default the backend falls back to (portion.py:47) when a
+  // phone does not report its own FOV -- which is always, today, since this
+  // app has no native module that reads a real one (native/depth.ts).
+  // Using the documented default rather than a fabricated "real" FOV is
+  // deliberate; the gap between them is a code comment, not user-facing text.
+  const cardBox =
+    frameSize.width > 0 && frameSize.height > 0
+      ? expectedCardBoxPoints(frameSize.width, frameSize.height, DEFAULT_CAMERA_FOV_DEG, TARGET_DISTANCE_MM)
+      : null;
+  // measuredCardPx === expectedPx (ratio exactly 1) because this build has
+  // no live card-width measurement -- no frame-processing library was added
+  // (out of scope; see this task's hard rules and report). So this can only
+  // ever resolve to "ok" or "tilted," never "too_far"/"too_close" -- an
+  // honest limit, not a bug: the ONE thing actually measured live here is
+  // tilt, from the real accelerometer, and gaugeState's own tilt-first
+  // precedence is exactly what makes reporting just that safe to do through
+  // the real function rather than a hand-rolled shortcut.
+  const guideState = cardBox ? gaugeState(cardBox.widthPoints, cardBox.widthPoints, tiltDeg ?? 0) : null;
+  const guideColor = guideState === 'ok' ? c.success : c.warn;
+  const guideLabel =
+    guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
+
+  // A TRUE circle, computed from this device's own frame size -- not the
+  // fixed top:18%/left:8%/bottom:32%/right:8% percentages this replaces
+  // (two different fractions of two different dimensions, which is a
+  // squashed oval on any screen whose width and height differ, clipping a
+  // plate that fills the frame; see PLATE_CIRCLE_FRAME_FRACTION's own
+  // comment above for why 0.84 and no other reason was found for the
+  // original split). Null, like cardBox, until a real layout arrives.
+  const plateCircle =
+    frameSize.width > 0 && frameSize.height > 0
+      ? (() => {
+          const size = Math.min(frameSize.width, frameSize.height) * PLATE_CIRCLE_FRAME_FRACTION;
+          return {
+            size,
+            left: (frameSize.width - size) / 2,
+            top: frameSize.height * PLATE_CIRCLE_VERTICAL_CENTER_FRACTION - size / 2,
+          };
+        })()
+      : null;
+
   return (
     <Screen>
       <View style={{ flex: 1 }}>
-        <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" />
+        <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" onLayout={onCameraLayout} />
 
         {/* Framing guide: keeping the whole plate in frame is what makes the
             plate-reference estimate possible, so we ask for it visually. */}
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute', top: '18%', left: '8%', right: '8%', bottom: '32%',
-            borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 200,
-          }}
-        />
+        {plateCircle ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute', top: plateCircle.top, left: plateCircle.left,
+              width: plateCircle.size, height: plateCircle.size, borderRadius: plateCircle.size / 2,
+              borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+            }}
+          />
+        ) : null}
         {/* A card is 85.6 mm on its long edge, the same for every bank in the
             world, which is why it works as a ruler at all. It only works if it
             is IN the shot and lying flat beside the food -- one measured 12%
-            small because it sat on the table rather than on the plate. */}
-        {needCard ? (
+            small because it sat on the table rather than on the plate.
+            Sized from this device's own field of view and the gauge's
+            12-inch target (cardGauge.expectedCardBoxPoints), not a single
+            fixed 132x83 box for every phone -- see docs/design/mobile-camera-
+            survey-2026-09-21.md for what that box used to be.
+            Shown by default, every time this screen is open -- not gated
+            behind `needCard` any more. Gil's 3-week-trial design wants the
+            card as the ruler on EVERY photo, not a rare fallback; see
+            needCard's own comment above for why that gate came off. */}
+        {cardBox ? (
           <View
             pointerEvents="none"
             style={{
               position: 'absolute', bottom: '34%', alignSelf: 'center',
-              width: 132, height: 83, borderRadius: 8,
-              borderWidth: 2, borderStyle: 'dashed', borderColor: c.warn,
+              width: cardBox.widthPoints, height: cardBox.heightPoints, borderRadius: 8,
+              borderWidth: 2, borderStyle: 'dashed', borderColor: guideColor,
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Text style={[type.caption, { color: c.warn, fontWeight: '600' }]}>card here</Text>
+            <Text style={[type.caption, { color: guideColor, fontWeight: '600' }]}>{guideLabel}</Text>
           </View>
         ) : null}
 
-        <Text
-          style={[
-            type.caption,
-            {
-              position: 'absolute', top: '13%', width: '100%', textAlign: 'center',
-              color: needCard ? c.warn : 'rgba(255,255,255,0.85)',
-              fontWeight: needCard ? '600' : '400',
-            },
-          ]}
-        >
-          {needCard
-            ? 'Lay any bank card flat beside the food, in shot'
-            : 'Fit the whole plate inside the circle'}
-        </Text>
+        {/* Both guides now show together, so this is two short lines rather
+            than one message that swaps entirely -- the plate instruction is
+            never lost. Plain instructions, no "if you want"/"for best
+            results" language: the card stays advisory (it never blocks the
+            shutter below), but during the trial it is not optional either,
+            so the copy just says what to do. */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: '10%', width: '100%', alignItems: 'center' }}>
+          <Text style={[type.caption, { color: 'rgba(255,255,255,0.85)', textAlign: 'center' }]}>
+            Fit the whole plate inside the circle
+          </Text>
+          {cardBox ? (
+            <Text style={[type.caption, { color: guideColor, fontWeight: '600', textAlign: 'center', marginTop: 2 }]}>
+              Lay a bank card flat beside it
+            </Text>
+          ) : null}
+        </View>
 
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%' }}>
           <View style={{ padding: space.lg, gap: space.md, backgroundColor: 'rgba(0,0,0,0.55)' }}>
@@ -374,12 +565,6 @@ export function ScanScreen() {
                 </Text>
               </Row>
             ) : null}
-
-            <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
-              {SLOTS.map((s) => (
-                <Chip key={s} label={s} active={slot === s} onPress={() => setSlot(s)} />
-              ))}
-            </Row>
 
             <Row gap={space.md}>
               <Button title="Library" variant="secondary" style={{ flex: 1 }} onPress={pickFromLibrary} />

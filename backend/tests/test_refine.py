@@ -389,6 +389,71 @@ def test_a_real_scan_does_not_pay_for_the_shadow():
     assert ScanRequest(image_paths=["a.jpg"], measure_footprints=True).measure_footprints
 
 
+def test_the_card_gauge_fields_default_to_none_and_do_not_require_each_other():
+    """image_width_px, image_height_px, image_orientation, distance_error_pct
+    and tilt_deg_at_capture (added for the mobile on-screen card gauge,
+    mobile/src/lib/cardGauge.ts) must all default to None so an older app
+    build, or a device that measured nothing, sends a request that still
+    validates -- exactly like every camera_* field above them."""
+    from app.models.nutrition import ScanRequest
+
+    bare = ScanRequest(image_paths=["a.jpg"])
+    assert bare.image_width_px is None
+    assert bare.image_height_px is None
+    assert bare.image_orientation is None
+    assert bare.distance_error_pct is None
+    assert bare.tilt_deg_at_capture is None
+
+    # Any one alone is accepted -- these are independent optional fields,
+    # not a package that must arrive together.
+    only_width = ScanRequest(image_paths=["a.jpg"], image_width_px=4032)
+    assert only_width.image_width_px == 4032
+    assert only_width.image_height_px is None
+
+
+def test_the_card_gauge_fields_accept_a_full_reading():
+    """A device that measured everything the gauge can produce -- the
+    ordinary case once mobile/src/hooks/useTiltReading.ts and the photo's
+    own dimensions are both available -- must round-trip exactly."""
+    from app.models.nutrition import ScanRequest
+
+    full = ScanRequest(
+        image_paths=["a.jpg"],
+        image_width_px=3024,
+        image_height_px=4032,
+        image_orientation=1,
+        distance_error_pct=-12.5,
+        tilt_deg_at_capture=2.3,
+    )
+    assert full.image_width_px == 3024
+    assert full.image_height_px == 4032
+    assert full.image_orientation == 1
+    assert full.distance_error_pct == -12.5
+    assert full.tilt_deg_at_capture == 2.3
+
+
+@pytest.mark.parametrize("field,bad_value", [
+    ("image_width_px", 0),          # ge=1
+    ("image_height_px", -100),      # ge=1
+    ("image_orientation", 0),       # EXIF orientation is 1-8, ge=1
+    ("image_orientation", 9),       # le=8
+    ("tilt_deg_at_capture", -1),    # a tilt from level cannot be negative, ge=0
+    ("tilt_deg_at_capture", 91),    # le=90 -- gaugeState's acos-based formula
+                                    # cannot exceed 90 degrees by construction
+])
+def test_the_card_gauge_fields_reject_impossible_values(field, bad_value):
+    """A negative pixel count or a tilt outside 0-90 degrees is not a
+    stricter-than-usual sensor reading -- it is proof the field is being
+    fed something that is not what it claims to be, so pydantic must
+    refuse it the same way the existing camera_* fields already do."""
+    from pydantic import ValidationError
+
+    from app.models.nutrition import ScanRequest
+
+    with pytest.raises(ValidationError):
+        ScanRequest(image_paths=["a.jpg"], **{field: bad_value})
+
+
 def test_the_shadow_is_skipped_when_it_is_not_asked_for(monkeypatch):
     """...and skipping it must produce the same meal, not a different one."""
     _fake_facts(monkeypatch)
