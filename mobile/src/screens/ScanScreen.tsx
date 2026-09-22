@@ -529,6 +529,8 @@ export function ScanScreen() {
   // plate that fills the frame; see PLATE_CIRCLE_FRAME_FRACTION's own
   // comment above for why 0.84 and no other reason was found for the
   // original split). Null, like cardBox, until a real layout arrives.
+  // Position and size unchanged by this task -- Gil wants it exactly where
+  // it already is; only the card guide moved away from it.
   const plateCircle =
     frameSize.width > 0 && frameSize.height > 0
       ? (() => {
@@ -540,92 +542,105 @@ export function ScanScreen() {
           };
         })()
       : null;
-  // The card box's top edge, a fixed margin below the plate circle's own
-  // bottom edge on THIS device's screen -- not the fixed `bottom: '34%'`
-  // this replaces, which could land the card box inside or right at the
-  // circle's own bottom edge on some phones, visually telling the user to
-  // put the card ON the plate rather than beside it (backwards from "Lay a
-  // bank card flat beside it" below). space.lg (16pt): enough for the two
-  // shapes to read as clearly distinct rather than touching or merging
-  // into one silhouette, without eating much into the room a short screen
-  // has left for the capture button below.
-  const cardBoxTop = plateCircle ? plateCircle.top + plateCircle.size + space.lg : null;
 
   return (
     <Screen>
       <View style={{ flex: 1 }}>
         <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" onLayout={onCameraLayout} />
 
-        {/* Framing guide: keeping the whole plate in frame is what makes the
-            plate-reference estimate possible, so we ask for it visually. */}
+        {/* Framing guide, with its own caption now living right beside it
+            rather than in a shared block at a fixed 10% -- the card's
+            caption moved to the top (below), so this one no longer has to
+            share that spot. Wording (Gil, 22 Sep 2026): the circle is a
+            centering aid, not a boundary the plate must stay inside of --
+            the backend finds the plate in the full uploaded frame with its
+            own detection (food_seg.py's Hough-circle/color plate outline),
+            independent of this overlay, which is never applied to the
+            photo. What actually costs accuracy is the plate cut off by the
+            FRAME's own edges, not exceeding this drawn circle. */}
         {plateCircle ? (
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute', top: plateCircle.top, left: plateCircle.left,
-              width: plateCircle.size, height: plateCircle.size, borderRadius: plateCircle.size / 2,
-              borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-            }}
-          />
-        ) : null}
-        {/* A card is 85.6 mm on its long edge, the same for every bank in the
-            world, which is why it works as a ruler at all. It only works if it
-            is IN the shot and lying flat beside the food -- one measured 12%
-            small because it sat on the table rather than on the plate.
-            Sized from this device's own field of view and the gauge's
-            12-inch target (cardGauge.expectedCardBoxPoints), not a single
-            fixed 132x83 box for every phone -- see docs/design/mobile-camera-
-            survey-2026-09-21.md for what that box used to be.
-            Shown by default, every time this screen is open -- not gated
-            behind `needCard` any more. Gil's 3-week-trial design wants the
-            card as the ruler on EVERY photo, not a rare fallback; see
-            needCard's own comment above for why that gate came off. */}
-        {cardBox && cardBoxTop !== null ? (
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute', top: cardBoxTop, alignSelf: 'center',
-              width: cardBox.widthPoints, height: cardBox.heightPoints, borderRadius: 8,
-              borderWidth: 2, borderStyle: 'dashed', borderColor: guideColor,
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Text style={[type.caption, { color: guideColor, fontWeight: '600' }]}>{guideLabel}</Text>
-          </View>
+          <>
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute', top: plateCircle.top, left: plateCircle.left,
+                width: plateCircle.size, height: plateCircle.size, borderRadius: plateCircle.size / 2,
+                borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+              }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute', top: plateCircle.top + space.md, left: plateCircle.left,
+                width: plateCircle.size, alignItems: 'center',
+              }}
+            >
+              <Text style={[type.caption, { color: 'rgba(255,255,255,0.85)', textAlign: 'center' }]}>
+                Center your plate, keep it in frame
+              </Text>
+            </View>
+          </>
         ) : null}
 
-        {/* Both guides now show together, so this is two short lines rather
-            than one message that swaps entirely -- the plate instruction is
-            never lost. Plain instructions, no "if you want"/"for best
-            results" language: the card stays advisory (it never blocks the
-            shutter below), but during the trial it is not optional either,
-            so the copy just says what to do. */}
-        <View pointerEvents="none" style={{ position: 'absolute', top: '10%', width: '100%', alignItems: 'center' }}>
-          <Text style={[type.caption, { color: 'rgba(255,255,255,0.85)', textAlign: 'center' }]}>
-            Fit the whole plate inside the circle
-          </Text>
-          {cardBox ? (
-            <Text style={[type.caption, { color: guideColor, fontWeight: '600', textAlign: 'center', marginTop: 2 }]}>
-              Lay a bank card flat beside it
-            </Text>
-          ) : null}
-        </View>
+        {/* The card guide, moved to the TOP of the screen (Gil, 22 Sep
+            2026): positioned just below the plate circle it still read as
+            too close, which visually crowded the two guides together even
+            after fix-card-box-position separated them. Sitting inside a
+            top-edge SafeAreaView rather than a frameSize-derived pixel
+            offset, so it clears a notch/Dynamic Island on any device
+            without a hardcoded guess -- the same pattern the capture
+            button already uses at the bottom. No settings gear icon exists
+            on this screen (checked navigation and this file) to clear;
+            the only real constraint here is the safe area itself, which
+            this pattern already handles.
+            A card is 85.6 mm on its long edge, the same for every bank in
+            the world, which is why it works as a ruler at all. It only
+            works if it is IN the shot and lying flat beside the food --
+            one measured 12% small because it sat on the table rather than
+            on the plate. Sized from this device's own field of view and
+            the gauge's 12-inch target (cardGauge.expectedCardBoxPoints),
+            not a single fixed 132x83 box for every phone -- see
+            docs/design/mobile-camera-survey-2026-09-21.md for what that
+            box used to be. Shown by default, every time this screen is
+            open -- not gated behind `needCard` any more. Gil's 3-week-
+            trial design wants the card as the ruler on EVERY photo, not a
+            rare fallback; see needCard's own comment above for why that
+            gate came off. */}
+        {cardBox ? (
+          <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, width: '100%', alignItems: 'center' }}>
+            <View style={{ paddingTop: space.sm, alignItems: 'center' }}>
+              <View
+                pointerEvents="none"
+                style={{
+                  width: cardBox.widthPoints, height: cardBox.heightPoints, borderRadius: 8,
+                  borderWidth: 2, borderStyle: 'dashed', borderColor: guideColor,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Text style={[type.caption, { color: guideColor, fontWeight: '600' }]}>{guideLabel}</Text>
+              </View>
+              <Text style={[type.caption, { color: guideColor, fontWeight: '600', textAlign: 'center', marginTop: 4 }]}>
+                Lay a bank card flat beside it
+              </Text>
+            </View>
+          </SafeAreaView>
+        ) : null}
 
-        {/* The one control this screen keeps: a small shutter button, pinned
-            to the very bottom. The card box's own bottom edge is now
-            cardBoxTop + cardBox.heightPoints (see cardBoxTop above), well
-            short of the bottom on a typical phone frame -- not checked
-            against every screen size; flagged in this task's report as a
-            possible tight fit on a short/small device. Hardware-volume-
-            button capture is Gil's eventual preference but needs a native
-            module and a custom dev build outside Expo Go -- explicitly
-            deferred, not part of this task; a small on-screen button
-            stands in for it. Text over an icon: no icon library is used
-            anywhere else in this app, and adding one only for this button
-            is exactly the kind of new dependency this task rules out. */}
+        {/* The one control this screen keeps: a small shutter button,
+            pinned to the very bottom. Hardware-volume-button capture is
+            Gil's eventual preference but needs a native module and a
+            custom dev build outside Expo Go -- explicitly deferred, not
+            part of this task; a small on-screen button stands in for it.
+            Text over an icon: no icon library is used anywhere else in
+            this app, and adding one only for this button is exactly the
+            kind of new dependency that would be out of scope here. */}
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' }}>
           <View style={{ paddingBottom: space.xl }}>
-            <Button title="Capture" style={{ paddingHorizontal: space.xxl }} onPress={capture} />
+            <Button
+              title="Capture"
+              style={{ paddingHorizontal: space.xxl }}
+              onPress={capture}
+            />
           </View>
         </SafeAreaView>
       </View>
