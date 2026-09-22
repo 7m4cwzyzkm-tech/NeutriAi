@@ -13,7 +13,7 @@
  * Progress is saved on every step rather than at the end, so a user who drops
  * out at step 4 does not start over.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { radius, space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, H1, H2, Label, Row, Screen } from '../components/Primitives';
 import { api } from '../api/client';
-import { keys } from '../hooks/useApi';
+import { keys, useProfile } from '../hooks/useApi';
 import type { Targets } from '../api/types';
 
 const ACTIVITY = [
@@ -50,6 +50,8 @@ const DIETS = [
 
 const lbToKg = (lb: number) => lb * 0.45359237;
 const inToCm = (inches: number) => inches * 2.54;
+const kgToLb = (kg: number) => kg / 0.45359237;
+const cmToIn = (cm: number) => cm / 2.54;
 
 /**
  * Date of birth entry, MM/DD/YYYY.
@@ -84,6 +86,12 @@ function formatBirthInput(raw: string): string {
 export function toISODate(value: string): string | null {
   const m = BIRTH_PATTERN.exec(value);
   return m ? `${m[3]}-${m[1]}-${m[2]}` : null;
+}
+
+/** Inverse of toISODate, for pre-filling the field from a saved profile. */
+function fromISODate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[2]}/${m[3]}/${m[1]}` : '';
 }
 
 /**
@@ -127,6 +135,7 @@ export function OnboardingScreen() {
   const c = useTheme();
   const nav = useNavigation<any>();
   const qc = useQueryClient();
+  const { data: profile } = useProfile();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -142,6 +151,45 @@ export function OnboardingScreen() {
   const [goal, setGoal] = useState<string>('maintain');
   const [diet, setDiet] = useState<string>('balanced');
   const [targets, setTargets] = useState<Targets | null>(null);
+
+  /**
+   * Pre-fill from whatever is already saved, once.
+   *
+   * This screen is not only reached fresh -- HomeScreen sends anyone without
+   * a complete profile back to "Finish setup" (nav.navigate('Onboarding')),
+   * which lands here with a blank React state every time, regardless of what
+   * was already saved to the backend on a previous pass. A user who entered
+   * their sex and birth date, then left before finishing height/weight, saw
+   * those fields as if nothing had ever been typed -- indistinguishable from
+   * the save never having worked at all. The `hydrated` guard makes this
+   * fire once: a later refetch (e.g. the invalidation after step 4) must not
+   * overwrite whatever the user is now typing on a later step.
+   */
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (hydrated.current || !profile) return;
+    hydrated.current = true;
+    if (profile.sex) setSex(profile.sex);
+    if (profile.birth_date) setBirth(fromISODate(profile.birth_date));
+    const metric = profile.unit_system === 'metric';
+    setImperial(!metric);
+    if (profile.height_cm) {
+      if (metric) {
+        setHeightCm(String(profile.height_cm));
+      } else {
+        const totalIn = cmToIn(profile.height_cm);
+        setHeightFt(String(Math.floor(totalIn / 12)));
+        setHeightIn(String(Math.round(totalIn % 12)));
+      }
+    }
+    if (profile.weight_kg) {
+      const w = metric ? profile.weight_kg : kgToLb(profile.weight_kg);
+      setWeight(String(Math.round(w * 10) / 10));
+    }
+    if (profile.activity_level) setActivity(profile.activity_level);
+    if (profile.goal) setGoal(profile.goal);
+    if (profile.diet_mode) setDiet(profile.diet_mode);
+  }, [profile]);
 
   const heightValue = imperial
     ? inToCm(Number(heightFt || 0) * 12 + Number(heightIn || 0))
