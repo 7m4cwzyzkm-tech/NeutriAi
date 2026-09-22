@@ -122,6 +122,9 @@ export const api = {
   nutrition: {
     scan: (payload: {
       image_paths: string[]; meal_slot?: string; calibration_id?: string;
+      // A short food/plate description, collected on the Scan tab's info
+      // step before the camera opens. Optional on both sides.
+      note?: string;
       plate_diameter_mm?: number;
       // Camera geometry, when the device can measure it. Absent on devices
       // that cannot; the server falls back to a weaker rung rather than

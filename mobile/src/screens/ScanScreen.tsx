@@ -1,13 +1,17 @@
 /**
- * The camera flow. Three states in one screen: capture, analysing, results.
+ * The camera flow. Four states in one screen: info, capture, analysing, results.
  *
  * The results state is where the product earns trust, so it does two things
  * most calorie apps don't: it shows the gram *range* rather than a fake-precise
  * single number, and it colours each item by how confident the estimate is.
  * Everything is editable before it counts.
+ *
+ * The info state exists so the camera view itself can show nothing but the
+ * camera and its guides -- meal slot and an optional food/plate description
+ * are collected here, first, and submitted before the camera ever opens.
  */
 import React, { useState } from 'react';
-import { Alert, Image, LayoutChangeEvent, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, LayoutChangeEvent, ScrollView, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { CameraGeometry, measureCameraGeometry } from '../native/depth';
 import * as ImagePicker from 'expo-image-picker';
@@ -56,6 +60,11 @@ export function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [shots, setShots] = useState<string[]>([]);
   const [slot, setSlot] = useState<(typeof SLOTS)[number] | null>(null);
+  // Collected on the info state, before the camera opens -- see the top
+  // comment. Neither is reset by a retake (below): the meal being logged
+  // and its description do not change just because the photo was retaken.
+  const [note, setNote] = useState('');
+  const [infoSubmitted, setInfoSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const scan = useScanMeal();
@@ -155,6 +164,7 @@ export function ScanScreen() {
       const res = await scan.mutateAsync({
         image_paths: paths,
         meal_slot: slot ?? undefined,
+        note: note.trim() || undefined,
         ...geometry,
         ...captureExtras,
       });
@@ -168,6 +178,45 @@ export function ScanScreen() {
     } finally {
       setUploading(false);
     }
+  }
+
+  // -------------------------------------------------------------------- info
+  // Shown once per scan, before the camera opens. `infoSubmitted` is never
+  // reset by a retake (see the failed-scan and not-measured buttons below),
+  // so this does not reappear mid-flow -- only at the start of a new scan.
+  if (!infoSubmitted) {
+    return (
+      <Screen>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <View style={{ flex: 1, padding: space.lg, gap: space.lg, justifyContent: 'center' }}>
+            <View>
+              <Label>Before you scan</Label>
+              <H1>What are you eating?</H1>
+            </View>
+            <Card style={{ gap: space.md }}>
+              <Label>Meal</Label>
+              <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
+                {SLOTS.map((s) => (
+                  <Chip key={s} label={s} active={slot === s} onPress={() => setSlot(s)} />
+                ))}
+              </Row>
+              <Label>What is it? (optional)</Label>
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="e.g. chicken salad, leftovers from Tuesday"
+                placeholderTextColor={c.textFaint}
+                style={{
+                  backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+                  padding: space.lg, color: c.text, fontSize: 16,
+                }}
+              />
+            </Card>
+            <Button title="Continue to camera" disabled={!slot} onPress={() => setInfoSubmitted(true)} />
+          </View>
+        </SafeAreaView>
+      </Screen>
+    );
   }
 
   // ---------------------------------------------------------------- results
@@ -516,12 +565,6 @@ export function ScanScreen() {
                 </Text>
               </Row>
             ) : null}
-
-            <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
-              {SLOTS.map((s) => (
-                <Chip key={s} label={s} active={slot === s} onPress={() => setSlot(s)} />
-              ))}
-            </Row>
 
             <Row gap={space.md}>
               <Button title="Library" variant="secondary" style={{ flex: 1 }} onPress={pickFromLibrary} />
