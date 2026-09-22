@@ -627,17 +627,30 @@ export function ScanScreen() {
         ) : null}
 
         {/* The one control this screen keeps: a small shutter button,
-            pinned to the very bottom. Hardware-volume-button capture is
-            Gil's eventual preference but needs a native module and a
-            custom dev build outside Expo Go -- explicitly deferred, not
-            part of this task; a small on-screen button stands in for it.
-            Text over an icon: no icon library is used anywhere else in
-            this app, and adding one only for this button is exactly the
-            kind of new dependency that would be out of scope here. */}
+            pinned to the very bottom. Gated on guideState === 'ok' (Gil,
+            22 Sep 2026): there is no live card-detection on this build --
+            gaugeState only ever resolves 'ok' or 'tilted' because
+            measuredCardPx is hardcoded equal to expectedPx above (no
+            frame-processing library exists to measure a card live; out of
+            scope, confirmed with Gil). So 'ok' here means the phone is
+            being held level, nothing about a card actually being in
+            frame. Gil has explicitly accepted gating on this real,
+            measured signal (steadiness) rather than waiting on a card-
+            detection feature that does not exist -- disabled also covers
+            the initial null state before the first layout/tilt reading
+            arrives, so the button cannot be tapped before guideState has
+            a real value. Hardware-volume-button capture is Gil's eventual
+            preference but needs a native module and a custom dev build
+            outside Expo Go -- explicitly deferred, not part of this task;
+            a small on-screen button stands in for it. Text over an icon:
+            no icon library is used anywhere else in this app, and adding
+            one only for this button is exactly the kind of new dependency
+            that would be out of scope here. */}
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' }}>
           <View style={{ paddingBottom: space.xl }}>
             <Button
               title="Capture"
+              disabled={guideState !== 'ok'}
               style={{ paddingHorizontal: space.xxl }}
               onPress={capture}
             />
