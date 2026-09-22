@@ -175,9 +175,15 @@ CASES = [
     # of fries and lettuce, measured at -76.8% and +198% on this bench.
     # Topology alone cannot tell a layer from a heap. These can.
     #
-    # A DIFFERENT PLATE: 8.75 inches of Styrofoam weighing 3 g, not the 9-inch
-    # 320 g plate every photograph above uses. 222 mm, not 229 -- 3% in the
-    # diameter is 6% in the weight, so it is stated per row, never assumed.
+    # A DIFFERENT PLATE: Styrofoam weighing 3 g, not the 9-inch 320 g plate
+    # every photograph above uses. MEASURED 21 Sep 2026 (photo, ruler across
+    # the rim, +/-3 mm): outer diameter 217 mm, rim height 20 mm, flat inner
+    # floor 155 mm, rim uniform all round -- not the nominal 222 mm (8.75 in)
+    # this plate was carried at for days, never tape-measured. 217 mm, not
+    # 229 -- 5.2% in the diameter is 10.2% in the area (and so the weight),
+    # so it is stated per row, never assumed. Scores against the earlier
+    # 222 mm figure are not comparable to scores after 21 Sep 2026; see
+    # HANDOFF.md's "THE YARDSTICK" section for the full note.
     #
     # Shot from 10-12 inches, stated as 280 mm. Everything above was shot with
     # no recorded distance, so this is also the first look at whether the
@@ -186,12 +192,12 @@ CASES = [
     # Deliberately awkward, and that is the point: a MIXTURE rather than one
     # food, grapes still on the stem, and a patterned tablecloth instead of
     # plain wood.
-    ("40-trailmix-spread.jpg",         222, "trail mix=44",       "per-item", 280),
-    ("41-trailmix-heaped.jpg",         222, "trail mix=44",       "per-item", 280),
-    ("42-chips-spread.jpg",            222, "tortilla chips=25",  "per-item", 280),
-    ("43-chips-heaped.jpg",            222, "tortilla chips=25",  "per-item", 280),
-    ("44-grapes-spread.jpg",           222, "grapes=90",          "per-item", 280),
-    ("45-grapes-cluster.jpg",          222, "grapes=90",          "per-item", 280),
+    ("40-trailmix-spread.jpg",         217, "trail mix=44",       "per-item", 280),
+    ("41-trailmix-heaped.jpg",         217, "trail mix=44",       "per-item", 280),
+    ("42-chips-spread.jpg",            217, "tortilla chips=25",  "per-item", 280),
+    ("43-chips-heaped.jpg",            217, "tortilla chips=25",  "per-item", 280),
+    ("44-grapes-spread.jpg",           217, "grapes=90",          "per-item", 280),
+    ("45-grapes-cluster.jpg",          217, "grapes=90",          "per-item", 280),
     ("35-slider-fries-plate.jpg",      229, "cheeseburger slider=145, french fries=65",
      "per-item"),
 
@@ -264,12 +270,19 @@ WEIGHED_WITH: dict[str, object] = {
     "34-pizza-slice-plate.jpg": UNKNOWN,
     "35-slider-fries-plate.jpg": UNKNOWN,
     "36-slider-fries-card.jpg": UNKNOWN,
-    "40-trailmix-spread.jpg": UNKNOWN,
-    "41-trailmix-heaped.jpg": UNKNOWN,
-    "42-chips-spread.jpg": UNKNOWN,
-    "43-chips-heaped.jpg": UNKNOWN,
-    "44-grapes-spread.jpg": UNKNOWN,
-    "45-grapes-cluster.jpg": UNKNOWN,
+    # WEIGHED ALONE, PLATE TARED -- per Gil, 21 Sep 2026, from memory (not a
+    # contemporaneous record): the food was weighed by itself, with the foam
+    # plate zeroed out on the scale first. Nothing else was on the plate, so
+    # [] -- not a guess at what else might have been there, the actual
+    # recorded method for these six. Declared weights are net food weight;
+    # no correction needed. See HANDOFF.md's dated note for the full
+    # provenance and its caveat.
+    "40-trailmix-spread.jpg": [],
+    "41-trailmix-heaped.jpg": [],
+    "42-chips-spread.jpg": [],
+    "43-chips-heaped.jpg": [],
+    "44-grapes-spread.jpg": [],
+    "45-grapes-cluster.jpg": [],
 }
 
 
