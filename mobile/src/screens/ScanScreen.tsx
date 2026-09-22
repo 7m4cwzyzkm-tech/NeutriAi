@@ -30,6 +30,26 @@ import {
 
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 
+// The plate-framing circle's diameter, as a fraction of the frame's SHORTER
+// side. The original box used top:18%/bottom:32% (50% of height) with
+// left:8%/right:8% (84% of width) -- two different fractions of two
+// different dimensions with a large borderRadius applied, which is a
+// squashed oval on any screen whose width and height differ (every phone),
+// clipping a plate that actually fills the frame. No comment or commit
+// message (checked git log/blame on this file) explains why those two
+// fractions were chosen independently; 0.84 is kept here only because it
+// was the more generous (less clipping) of the two original margins, now
+// applied to BOTH dimensions via the shorter side, so the result is an
+// actual circle that fits inside the frame on any aspect ratio.
+const PLATE_CIRCLE_FRAME_FRACTION = 0.84;
+// Where the circle's own centre sits, as a fraction of the frame's height.
+// The original box's vertical centre was at (18% + 68%) / 2 = 43% (its own
+// span was 18% to 100%-32%=68%) -- biased above the geometric middle to
+// leave room below for the card guide and the bottom control panel. Kept at
+// the same 43% so the overall layout does not shift now that the box is
+// square instead of tall.
+const PLATE_CIRCLE_VERTICAL_CENTER_FRACTION = 0.43;
+
 export function ScanScreen() {
   const c = useTheme();
   const nav = useNavigation<any>();
@@ -55,9 +75,17 @@ export function ScanScreen() {
     distance_error_pct?: number;
     tilt_deg_at_capture?: number;
   }>({});
-  // Retaking specifically to give the photo a scale. Only ever set by the
-  // "no scale in this photo" banner, so the card guide appears when it will
-  // actually help and never as one more thing to read past.
+  // Whether this retake was specifically prompted by a failed/unmeasured
+  // scan (see the "Retake with a card" button below). The card guide itself
+  // no longer gates on this -- Gil's 3-week-trial design (docs/HANDOFF.md)
+  // wants the card guide showing on EVERY photo, not only after a failure,
+  // and the flag that used to gate it was never set on the ordinary capture
+  // path anyway (the comment above used to claim a banner set it; no such
+  // banner exists in this file or anywhere else in mobile/src -- confirmed
+  // by grep). Kept, not deleted, as the one signal this screen has for "the
+  // user was specifically told their last photo needed a card" -- a cheap
+  // extension point for a future escalation (e.g. more insistent copy after
+  // a repeat failure), never a way to block the shutter.
   const [needCard, setNeedCard] = useState(false);
   // The live camera view's own on-screen size, in points -- captured via
   // onLayout since RN gives no other way to read a flex:1 View's rendered
@@ -397,6 +425,25 @@ export function ScanScreen() {
   const guideLabel =
     guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
 
+  // A TRUE circle, computed from this device's own frame size -- not the
+  // fixed top:18%/left:8%/bottom:32%/right:8% percentages this replaces
+  // (two different fractions of two different dimensions, which is a
+  // squashed oval on any screen whose width and height differ, clipping a
+  // plate that fills the frame; see PLATE_CIRCLE_FRAME_FRACTION's own
+  // comment above for why 0.84 and no other reason was found for the
+  // original split). Null, like cardBox, until a real layout arrives.
+  const plateCircle =
+    frameSize.width > 0 && frameSize.height > 0
+      ? (() => {
+          const size = Math.min(frameSize.width, frameSize.height) * PLATE_CIRCLE_FRAME_FRACTION;
+          return {
+            size,
+            left: (frameSize.width - size) / 2,
+            top: frameSize.height * PLATE_CIRCLE_VERTICAL_CENTER_FRACTION - size / 2,
+          };
+        })()
+      : null;
+
   return (
     <Screen>
       <View style={{ flex: 1 }}>
@@ -404,13 +451,16 @@ export function ScanScreen() {
 
         {/* Framing guide: keeping the whole plate in frame is what makes the
             plate-reference estimate possible, so we ask for it visually. */}
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute', top: '18%', left: '8%', right: '8%', bottom: '32%',
-            borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 200,
-          }}
-        />
+        {plateCircle ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute', top: plateCircle.top, left: plateCircle.left,
+              width: plateCircle.size, height: plateCircle.size, borderRadius: plateCircle.size / 2,
+              borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+            }}
+          />
+        ) : null}
         {/* A card is 85.6 mm on its long edge, the same for every bank in the
             world, which is why it works as a ruler at all. It only works if it
             is IN the shot and lying flat beside the food -- one measured 12%
@@ -418,8 +468,12 @@ export function ScanScreen() {
             Sized from this device's own field of view and the gauge's
             12-inch target (cardGauge.expectedCardBoxPoints), not a single
             fixed 132x83 box for every phone -- see docs/design/mobile-camera-
-            survey-2026-09-21.md for what that box used to be. */}
-        {needCard && cardBox ? (
+            survey-2026-09-21.md for what that box used to be.
+            Shown by default, every time this screen is open -- not gated
+            behind `needCard` any more. Gil's 3-week-trial design wants the
+            card as the ruler on EVERY photo, not a rare fallback; see
+            needCard's own comment above for why that gate came off. */}
+        {cardBox ? (
           <View
             pointerEvents="none"
             style={{
@@ -433,20 +487,22 @@ export function ScanScreen() {
           </View>
         ) : null}
 
-        <Text
-          style={[
-            type.caption,
-            {
-              position: 'absolute', top: '13%', width: '100%', textAlign: 'center',
-              color: needCard ? guideColor : 'rgba(255,255,255,0.85)',
-              fontWeight: needCard ? '600' : '400',
-            },
-          ]}
-        >
-          {needCard
-            ? 'Lay any bank card flat beside the food, in shot'
-            : 'Fit the whole plate inside the circle'}
-        </Text>
+        {/* Both guides now show together, so this is two short lines rather
+            than one message that swaps entirely -- the plate instruction is
+            never lost. Plain instructions, no "if you want"/"for best
+            results" language: the card stays advisory (it never blocks the
+            shutter below), but during the trial it is not optional either,
+            so the copy just says what to do. */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: '10%', width: '100%', alignItems: 'center' }}>
+          <Text style={[type.caption, { color: 'rgba(255,255,255,0.85)', textAlign: 'center' }]}>
+            Fit the whole plate inside the circle
+          </Text>
+          {cardBox ? (
+            <Text style={[type.caption, { color: guideColor, fontWeight: '600', textAlign: 'center', marginTop: 2 }]}>
+              Lay a bank card flat beside it
+            </Text>
+          ) : null}
+        </View>
 
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%' }}>
           <View style={{ padding: space.lg, gap: space.md, backgroundColor: 'rgba(0,0,0,0.55)' }}>
