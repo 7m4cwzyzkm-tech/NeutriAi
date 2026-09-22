@@ -1,20 +1,32 @@
 /**
- * The camera flow. Four states in one screen: info, capture, analysing, results.
+ * The camera flow. Five states in one screen: info, live-capture, review,
+ * analysing, results.
  *
  * The results state is where the product earns trust, so it does two things
  * most calorie apps don't: it shows the gram *range* rather than a fake-precise
  * single number, and it colours each item by how confident the estimate is.
  * Everything is editable before it counts.
  *
- * The info state exists so the camera view itself can show nothing but the
- * camera and its guides -- meal slot and an optional food/plate description
- * are collected here, first, and submitted before the camera ever opens.
+ * The info state exists so the live-capture view itself can show nothing but
+ * the camera and its guides -- meal slot and an optional food/plate
+ * description are collected here, first, and submitted before the camera
+ * ever opens.
+ *
+ * Review is its own state, not a panel drawn on top of the still-live camera
+ * feed: once a photo is taken the camera unmounts and the thumbnails / add-
+ * another-angle / analyse controls get a plain screen of their own. "Add
+ * another angle" sends the user back to live-capture to take the next shot;
+ * live-capture returns to review the moment that shot lands.
+ *
+ * No library/photo-picker path exists here any more (Gil's call: a photo
+ * with no reliable distance/scale is bad data, not a convenience) --
+ * expo-image-picker is still a real dependency of the app, used by
+ * TrainScreen.tsx for equipment photos, just not by this file.
  */
 import React, { useState } from 'react';
 import { Alert, Image, LayoutChangeEvent, ScrollView, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { CameraGeometry, measureCameraGeometry } from '../native/depth';
-import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { confidenceColor, radius, space, type, useTheme } from '../theme';
@@ -59,6 +71,11 @@ export function ScanScreen() {
   const nav = useNavigation<any>();
   const [permission, requestPermission] = useCameraPermissions();
   const [shots, setShots] = useState<string[]>([]);
+  // Whether the review screen (thumbnails / add another angle / analyse) is
+  // showing instead of the live camera. Distinct from `shots.length > 0`:
+  // "Add another angle" sends the user back to live-capture with shots
+  // already non-empty, so shots.length alone cannot tell the two apart.
+  const [reviewing, setReviewing] = useState(false);
   const [slot, setSlot] = useState<(typeof SLOTS)[number] | null>(null);
   // Collected on the info state, before the camera opens -- see the top
   // comment. Neither is reset by a retake (below): the meal being logged
@@ -106,11 +123,12 @@ export function ScanScreen() {
     const { width, height } = e.nativeEvent.layout;
     setFrameSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
   }
-  // Only live while the capture view is actually showing -- see
-  // useTiltReading's own doc for why this can't just be "always call the
-  // hook and ignore the value" (it can, Rules of Hooks require the call
-  // either way; `enabled` stops the underlying subscription's battery cost).
-  const showingCapture = !result && !uploading && !scan.isPending;
+  // Only live while the LIVE camera view is actually showing -- not during
+  // review, which has no camera mounted. See useTiltReading's own doc for
+  // why this can't just be "always call the hook and ignore the value" (it
+  // can, Rules of Hooks require the call either way; `enabled` stops the
+  // underlying subscription's battery cost).
+  const showingCapture = !result && !uploading && !scan.isPending && !reviewing;
   const tiltDeg = useTiltReading(showingCapture);
 
   async function capture() {
@@ -123,6 +141,7 @@ export function ScanScreen() {
     ]);
     if (photo?.uri) {
       setShots((s) => [...s, photo.uri].slice(0, 3));
+      setReviewing(true);
       // The first shot is the one the estimator scales from.
       setGeometry((g) => (Object.keys(g).length ? g : measured));
       setCaptureExtras((prev) => {
@@ -146,14 +165,6 @@ export function ScanScreen() {
         return next;
       });
     }
-  }
-
-  async function pickFromLibrary() {
-    const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, mediaTypes: ['images'] });
-    // A photo from the library carries no distance we can trust -- it may be
-    // from another device, another day, another room. Leave geometry empty and
-    // let the estimator fall back honestly.
-    if (!res.canceled && res.assets[0]) setShots((s) => [...s, res.assets[0].uri].slice(0, 3));
   }
 
   async function analyse() {
@@ -267,7 +278,7 @@ export function ScanScreen() {
 
               <Row gap={space.md}>
                 <Button title="Try another photo" style={{ flex: 1 }}
-                        onPress={() => { setResult(null); setShots([]); setNeedCard(false); }} />
+                        onPress={() => { setResult(null); setShots([]); setReviewing(false); setNeedCard(false); }} />
               </Row>
             </ScrollView>
           </SafeAreaView>
@@ -312,7 +323,7 @@ export function ScanScreen() {
                   <Button
                     title="Retake with a card"
                     style={{ flex: 1 }}
-                    onPress={() => { setNeedCard(true); setResult(null); setShots([]); }}
+                    onPress={() => { setNeedCard(true); setResult(null); setShots([]); setReviewing(false); }}
                   />
                   <Button
                     title="Keep the estimate"
@@ -443,7 +454,44 @@ export function ScanScreen() {
             own private folder and are never public.
           </Body>
           <Button title="Allow camera" onPress={requestPermission} />
-          <Button title="Choose from library instead" variant="ghost" onPress={pickFromLibrary} />
+        </SafeAreaView>
+      </Screen>
+    );
+  }
+
+  // ----------------------------------------------------------------- review
+  // No CameraView mounted here at all -- this used to be a panel drawn on
+  // top of the still-live camera feed; Gil wants the live feed showing
+  // nothing but itself and its guides once a photo exists. "Add another
+  // angle" is a plain state change back to live-capture, not a capture
+  // itself -- the next shot is taken from there.
+  if (reviewing) {
+    return (
+      <Screen>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1, padding: space.lg, gap: space.lg, justifyContent: 'center' }}>
+            <View>
+              <Label>Review</Label>
+              <H1>{shots.length} photo{shots.length > 1 ? 's' : ''} captured</H1>
+            </View>
+            <Row gap={space.sm}>
+              {shots.map((uri) => (
+                <Image key={uri} source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.sm }} />
+              ))}
+            </Row>
+            <Body dim>
+              {shots.length < 3 ? 'Add another angle for a better estimate' : 'Three angles — nice'}
+            </Body>
+            <Button
+              title="Add another angle"
+              variant="secondary"
+              onPress={() => setReviewing(false)}
+            />
+            <Button
+              title={`Analyse ${shots.length} photo${shots.length > 1 ? 's' : ''}`}
+              onPress={analyse}
+            />
+          </View>
         </SafeAreaView>
       </Screen>
     );
@@ -553,24 +601,19 @@ export function ScanScreen() {
           ) : null}
         </View>
 
-        <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%' }}>
-          <View style={{ padding: space.lg, gap: space.md, backgroundColor: 'rgba(0,0,0,0.55)' }}>
-            {shots.length > 0 ? (
-              <Row gap={space.sm}>
-                {shots.map((uri) => (
-                  <Image key={uri} source={{ uri }} style={{ width: 52, height: 52, borderRadius: radius.sm }} />
-                ))}
-                <Text style={[type.caption, { color: '#fff', flex: 1 }]}>
-                  {shots.length < 3 ? 'Add another angle for a better estimate' : 'Three angles — nice'}
-                </Text>
-              </Row>
-            ) : null}
-
-            <Row gap={space.md}>
-              <Button title="Library" variant="secondary" style={{ flex: 1 }} onPress={pickFromLibrary} />
-              <Button title={shots.length ? 'Another angle' : 'Capture'} style={{ flex: 1 }} onPress={capture} />
-            </Row>
-            {shots.length > 0 ? <Button title={`Analyse ${shots.length} photo${shots.length > 1 ? 's' : ''}`} onPress={analyse} /> : null}
+        {/* The one control this screen keeps: a small shutter button, low
+            enough that it cannot overlap the plate circle (centred well
+            above the middle of the frame) or the card box (its own bottom
+            edge sits at 34% up from here). Hardware-volume-button capture
+            is Gil's eventual preference but needs a native module and a
+            custom dev build outside Expo Go -- explicitly deferred, not
+            part of this task; a small on-screen button stands in for it.
+            Text over an icon: no icon library is used anywhere else in
+            this app, and adding one only for this button is exactly the
+            kind of new dependency this task rules out. */}
+        <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' }}>
+          <View style={{ paddingBottom: space.xl }}>
+            <Button title="Capture" style={{ paddingHorizontal: space.xxl }} onPress={capture} />
           </View>
         </SafeAreaView>
       </View>
