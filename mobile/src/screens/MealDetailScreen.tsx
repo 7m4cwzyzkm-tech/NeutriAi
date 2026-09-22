@@ -79,7 +79,7 @@ export function MealDetailScreen() {
         setSlot((found?.meal_slot as MealSlot) ?? 'snack');
         setTitle(found?.title ?? '');
         setItems(
-          ((found?.items ?? []) as any[]).map((i) => {
+          ((found?.items ?? []) as any[]).map((i, index) => {
             const g = Number(i.grams) || 1;
             return {
               id: i.id,
@@ -144,11 +144,18 @@ export function MealDetailScreen() {
       await api.nutrition.correctMeal(mealId, {
         title: title || meal?.title || 'Meal',
         meal_slot: slot,
-        // Sent back deliberately. The body carried no `notes` key, and the
-        // backend writes the field unconditionally -- so correcting a gram
-        // value erased whatever the person had written about the meal, with
-        // no way to get it back.
-        ...(meal ? { notes: meal.notes ?? null } : {}),
+        // No `notes` key here, deliberately -- this screen has nothing to
+        // send. `Meal` (api/types.ts) has no `notes` field because
+        // MealOut (backend/app/models/nutrition.py) never returns one, even
+        // though MealIn accepts it and the meals table stores it: a GET
+        // never round-trips it to this screen, so there is no existing
+        // value to preserve here, only one to avoid inventing.
+        // Omitting the key is also the CORRECT fix, not a gap: the backend's
+        // own `notes_update()` (routers/scans.py:27-39) uses
+        // `model_fields_set` to update notes only when the client's JSON
+        // body actually contains the key -- a body that never mentions it
+        // leaves the stored value untouched. Sending `notes: null` here
+        // would have cleared it on every correction instead.
         items: items
           .filter((i) => !i.removed && i.grams > 0)
           .map((i) => ({
