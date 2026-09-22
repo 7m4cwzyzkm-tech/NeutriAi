@@ -540,6 +540,16 @@ export function ScanScreen() {
           };
         })()
       : null;
+  // The card box's top edge, a fixed margin below the plate circle's own
+  // bottom edge on THIS device's screen -- not the fixed `bottom: '34%'`
+  // this replaces, which could land the card box inside or right at the
+  // circle's own bottom edge on some phones, visually telling the user to
+  // put the card ON the plate rather than beside it (backwards from "Lay a
+  // bank card flat beside it" below). space.lg (16pt): enough for the two
+  // shapes to read as clearly distinct rather than touching or merging
+  // into one silhouette, without eating much into the room a short screen
+  // has left for the capture button below.
+  const cardBoxTop = plateCircle ? plateCircle.top + plateCircle.size + space.lg : null;
 
   return (
     <Screen>
@@ -570,11 +580,11 @@ export function ScanScreen() {
             behind `needCard` any more. Gil's 3-week-trial design wants the
             card as the ruler on EVERY photo, not a rare fallback; see
             needCard's own comment above for why that gate came off. */}
-        {cardBox ? (
+        {cardBox && cardBoxTop !== null ? (
           <View
             pointerEvents="none"
             style={{
-              position: 'absolute', bottom: '34%', alignSelf: 'center',
+              position: 'absolute', top: cardBoxTop, alignSelf: 'center',
               width: cardBox.widthPoints, height: cardBox.heightPoints, borderRadius: 8,
               borderWidth: 2, borderStyle: 'dashed', borderColor: guideColor,
               alignItems: 'center', justifyContent: 'center',
@@ -601,16 +611,18 @@ export function ScanScreen() {
           ) : null}
         </View>
 
-        {/* The one control this screen keeps: a small shutter button, low
-            enough that it cannot overlap the plate circle (centred well
-            above the middle of the frame) or the card box (its own bottom
-            edge sits at 34% up from here). Hardware-volume-button capture
-            is Gil's eventual preference but needs a native module and a
-            custom dev build outside Expo Go -- explicitly deferred, not
-            part of this task; a small on-screen button stands in for it.
-            Text over an icon: no icon library is used anywhere else in
-            this app, and adding one only for this button is exactly the
-            kind of new dependency this task rules out. */}
+        {/* The one control this screen keeps: a small shutter button, pinned
+            to the very bottom. The card box's own bottom edge is now
+            cardBoxTop + cardBox.heightPoints (see cardBoxTop above), well
+            short of the bottom on a typical phone frame -- not checked
+            against every screen size; flagged in this task's report as a
+            possible tight fit on a short/small device. Hardware-volume-
+            button capture is Gil's eventual preference but needs a native
+            module and a custom dev build outside Expo Go -- explicitly
+            deferred, not part of this task; a small on-screen button
+            stands in for it. Text over an icon: no icon library is used
+            anywhere else in this app, and adding one only for this button
+            is exactly the kind of new dependency this task rules out. */}
         <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, width: '100%', alignItems: 'center' }}>
           <View style={{ paddingBottom: space.xl }}>
             <Button title="Capture" style={{ paddingHorizontal: space.xxl }} onPress={capture} />
