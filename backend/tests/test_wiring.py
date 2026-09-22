@@ -1244,8 +1244,18 @@ def test_no_module_is_built_and_left_unconnected():
             seen.add(nxt)
             queue.append(nxt)
 
-    ALLOWED_UNREACHED: set[str] = set()
-    orphans = {str(f.relative_to(app)) for f in files - seen} - ALLOWED_UNREACHED
+    ALLOWED_UNREACHED: set[str] = {
+        # The 12-inch card gauge: pure functions for the CAMERA SCREEN'S guide
+        # outline (a UI aid, never the measurement -- see the module
+        # docstring). Deliberately not called from any backend router: it is
+        # "a shared module Gil can port" to the mobile app's own code, kept
+        # here so it can reuse portion.DEFAULT_CAMERA_FOV_DEG and
+        # reference_cv.REFERENCE_RECTANGLES without duplicating either, and
+        # so it can be pytested with the rest of this suite. Branch
+        # camera-gauge-12in, 20 Sep 2026.
+        "services/ai/card_gauge.py",
+    }
+    orphans = {f.relative_to(app).as_posix() for f in files - seen} - ALLOWED_UNREACHED
     assert not orphans, (
         f"built and connected to nothing: {sorted(orphans)}. Either wire it in "
         f"or delete it -- a module the app cannot reach is a module whose tests "
