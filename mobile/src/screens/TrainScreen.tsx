@@ -1,6 +1,6 @@
 /** Workout logging, the AI plan, and equipment scanning. */
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { radius, space, type, useTheme } from '../theme';
@@ -18,6 +18,11 @@ const GOALS = [
   { id: 'endurance', label: 'Endurance' },
 ];
 
+// backend/app/models/fitness.py: EquipmentScanIn.image_paths is
+// Field(min_length=1, max_length=4) -- this is the real ceiling, not a
+// UI-chosen number, so it is named here rather than repeated as a literal.
+const MAX_EQUIPMENT_SHOTS = 4;
+
 export function TrainScreen() {
   const c = useTheme();
   const { data: plan, isLoading } = useCurrentPlan();
@@ -25,18 +30,37 @@ export function TrainScreen() {
   const createPlan = useCreatePlan();
   const [scanning, setScanning] = useState(false);
   const [equipment, setEquipment] = useState<EquipmentScan | null>(null);
+  // Shots taken but not yet submitted -- mirrors ScanScreen.tsx's `shots`
+  // array. There is no separate `reviewing` flag the way ScanScreen has one:
+  // that flag exists there to toggle its own embedded live CameraView on and
+  // off, and this screen has no live camera view to toggle -- it hands off to
+  // the system camera app (launchCameraAsync) and gets control back only once
+  // a photo exists or the user cancels. So `shots.length > 0` alone is enough
+  // to know a review is in progress; the review UI below is keyed on exactly
+  // that.
+  const [shots, setShots] = useState<string[]>([]);
   const [goal, setGoal] = useState('build_muscle');
   const [days, setDays] = useState(4);
   const [week, setWeek] = useState(1);
 
-  async function scanGym() {
+  // "Live capture" for this screen: hand off to the system camera and, on a
+  // real photo, add it to the shots collected so far. Used both for the
+  // first photo and for "Add another angle" -- same action either way, the
+  // only difference is whether `shots` already has something in it.
+  async function captureAngle() {
     const res = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (res.canceled || !res.assets[0]) return;
+    setShots((s) => [...s, res.assets[0].uri].slice(0, MAX_EQUIPMENT_SHOTS));
+  }
+
+  async function runScan() {
+    if (!shots.length) return;
     setScanning(true);
     try {
-      const path = await uploadImage('equipment-photos', res.assets[0].uri);
-      const detected = await api.fitness.scanEquipment([path]);
+      const paths = await Promise.all(shots.map((uri) => uploadImage('equipment-photos', uri)));
+      const detected = await api.fitness.scanEquipment(paths);
       setEquipment(detected);
+      setShots([]);
       if (detected.fallback_to_calisthenics) {
         Alert.alert(
           'No equipment spotted',
@@ -44,6 +68,9 @@ export function TrainScreen() {
         );
       }
     } catch (e: any) {
+      // Shots are kept on failure (not reset), the same as ScanScreen's
+      // analyse() -- a failed upload or scan call should not force a retake
+      // of photos that are still sitting right there.
       if (!e?.needsUpgrade) Alert.alert('Scan failed', e?.message ?? 'Try again.');
     } finally {
       setScanning(false);
@@ -85,12 +112,44 @@ export function TrainScreen() {
                   writes a programme around it. No equipment at all is a perfectly good answer —
                   you'll get a real calisthenics progression, not a consolation prize.
                 </Body>
-                <Button
-                  title={equipment ? 'Rescan equipment' : 'Scan my equipment'}
-                  variant="secondary"
-                  loading={scanning}
-                  onPress={scanGym}
-                />
+                {shots.length === 0 ? (
+                  <Button
+                    title={equipment ? 'Rescan equipment' : 'Scan my equipment'}
+                    variant="secondary"
+                    loading={scanning}
+                    onPress={captureAngle}
+                  />
+                ) : (
+                  <View style={{ gap: space.sm }}>
+                    <Row gap={space.sm}>
+                      {shots.map((uri) => (
+                        <Image key={uri} source={{ uri }} style={{ width: 64, height: 64, borderRadius: radius.sm }} />
+                      ))}
+                    </Row>
+                    <Body dim>
+                      {shots.length < MAX_EQUIPMENT_SHOTS
+                        ? `${shots.length} photo${shots.length > 1 ? 's' : ''} captured — add another angle or scan now`
+                        : `${MAX_EQUIPMENT_SHOTS} photos captured, the most a scan can use`}
+                    </Body>
+                    <Row gap={space.md}>
+                      {shots.length < MAX_EQUIPMENT_SHOTS ? (
+                        <Button
+                          title="Add another angle"
+                          variant="secondary"
+                          disabled={scanning}
+                          style={{ flex: 1 }}
+                          onPress={captureAngle}
+                        />
+                      ) : null}
+                      <Button
+                        title={`Scan ${shots.length} photo${shots.length > 1 ? 's' : ''}`}
+                        loading={scanning}
+                        style={{ flex: 1 }}
+                        onPress={runScan}
+                      />
+                    </Row>
+                  </View>
+                )}
                 {equipment ? (
                   <View style={{ gap: space.sm }}>
                     <Divider />
