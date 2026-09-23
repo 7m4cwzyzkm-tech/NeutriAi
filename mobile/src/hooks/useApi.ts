@@ -10,6 +10,7 @@ export const keys = {
   targets: ['targets'] as const,
   meals: (day?: string) => ['meals', day ?? 'today'] as const,
   water: (day?: string) => ['water', day ?? 'today'] as const,
+  hydrationSettings: ['water', 'settings'] as const,
   fast: ['fast', 'current'] as const,
   workouts: ['workouts'] as const,
   plan: ['plan', 'current'] as const,
@@ -46,6 +47,13 @@ export const useTargets = () =>
 
 export const useWater = (day?: string) =>
   useQuery({ queryKey: keys.water(day), queryFn: () => api.water.day(day), staleTime: 15_000 });
+
+export const useHydrationSettings = () =>
+  useQuery({
+    queryKey: keys.hydrationSettings,
+    queryFn: api.water.getSettings,
+    staleTime: 300_000,
+  });
 
 export const useCurrentFast = () =>
   useQuery({
@@ -110,6 +118,17 @@ export function useLogWater() {
       qc.invalidateQueries({ queryKey: keys.water() });
       qc.invalidateQueries({ queryKey: keys.dashboard() });
     },
+  });
+}
+
+export function useUpdateHydrationSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<{
+      daily_goal_ml: number; reminder_enabled: boolean; reminder_start: string;
+      reminder_end: string; reminder_every_min: number; sync_apple_health: boolean;
+    }>) => api.water.settings(patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.hydrationSettings }),
   });
 }
 

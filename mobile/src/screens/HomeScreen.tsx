@@ -110,6 +110,16 @@ export function HomeScreen() {
                 <Chip label={`+${GLASS_ML}`} onPress={() => logWater.mutate({ ml: GLASS_ML, container: 'glass' })} />
                 <Chip label={`+${BOTTLE_ML}`} onPress={() => logWater.mutate({ ml: BOTTLE_ML, container: 'bottle' })} />
               </Row>
+              {/* This card already does today's progress + quick log; the new
+                  Water screen's real value is reminders/settings, so a small
+                  link reads better here than making the whole card (which
+                  contains its own tappable Chips) a second press target. */}
+              <Text
+                onPress={() => nav.navigate('Water')}
+                style={[type.caption, { color: c.accent, fontWeight: '600' }]}
+              >
+                Reminders & more →
+              </Text>
             </Card>
 
             <Card style={{ flex: 1, gap: space.md, justifyContent: 'space-between' }}>

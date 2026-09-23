@@ -124,6 +124,17 @@ async def delete_water(log_id: str, user: CurrentUserDep):
     return Ok(message="Removed.")
 
 
+@router.get("/water/settings")
+async def hydration_settings(user: CurrentUserDep):
+    return maybe_one(
+        user.sb.table("hydration_settings").select("*").eq("user_id", user.id).limit(1).execute()
+    ) or {
+        "user_id": user.id, "daily_goal_ml": GALLON_ML, "reminder_enabled": True,
+        "reminder_start": "08:00", "reminder_end": "21:00", "reminder_every_min": 90,
+        "sync_apple_health": False,
+    }
+
+
 @router.patch("/water/settings")
 async def update_hydration(body: HydrationSettingsIn, user: CurrentUserDep):
     patch = body.model_dump(exclude_none=True)

@@ -12,6 +12,7 @@ import { useTheme } from '../theme';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { FastingScreen } from '../screens/FastingScreen';
+import { WaterScreen } from '../screens/WaterScreen';
 import { TrainScreen } from '../screens/TrainScreen';
 import { FeedScreen } from '../screens/FeedScreen';
 import { RecipesScreen } from '../screens/RecipesScreen';
@@ -70,6 +71,7 @@ const linking = {
         },
       },
       Fasting: 'fasting',
+      Water: 'water',
       Onboarding: 'onboarding',
       MealDetail: 'meal/:mealId',
       DeleteAccount: 'account/delete',
@@ -101,6 +103,9 @@ export function RootNavigator() {
     switch (target.kind) {
       case 'fasting':
         navRef.navigate('Fasting');
+        break;
+      case 'water':
+        navRef.navigate('Water');
         break;
       // Home/Train/Scan/Recipes are tabs INSIDE Main, not top-level routes.
       // Navigating to them by bare name is what the old `as never` cast was
@@ -150,6 +155,11 @@ export function RootNavigator() {
             <Stack.Screen
               name="Fasting"
               component={FastingScreen}
+              options={{ presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="Water"
+              component={WaterScreen}
               options={{ presentation: 'modal' }}
             />
             {/* Onboarding is a stack screen, not a tab: it is a one-time flow

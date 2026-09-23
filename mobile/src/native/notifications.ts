@@ -104,6 +104,15 @@ export async function registerForPush(): Promise<string | null> {
  *   neutriai://post/{id}       likes, comments, mentions
  *   neutriai://profile/{id}    new follower
  *
+ * Plus one the backend does NOT emit: neutriai://water. It only ever arrives
+ * on a LOCAL notification scheduled on-device by localReminders.ts (see that
+ * file for why -- there is no EAS projectId, so server push cannot reach this
+ * device at all today). This listener does not distinguish local from remote
+ * taps -- expo-notifications delivers both through the same
+ * addNotificationResponseReceivedListener -- so reusing this exact function
+ * and switch, rather than a second parallel handler, is what keeps a local
+ * reminder tap and a real push tap landing the same way.
+ *
  * Returning null for anything else is the point: an old build receiving a link
  * a newer server invented should do nothing, not navigate somewhere arbitrary.
  */
@@ -115,6 +124,7 @@ export function targetForDeepLink(link: string): PushTarget | null {
     case 'scan':     return { kind: 'tab', tab: 'Scan' };
     case 'recipes':  return { kind: 'tab', tab: 'Recipes' };
     case 'fasting':  return { kind: 'fasting' };
+    case 'water':    return { kind: 'water' };
     case 'billing':  return { kind: 'paywall' };
     case 'post':     return { kind: 'feed', postId: id || undefined };
     case 'profile':  return { kind: 'profile', userId: id || undefined };
