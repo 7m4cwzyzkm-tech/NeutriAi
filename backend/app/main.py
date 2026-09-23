@@ -35,6 +35,15 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(f"Missing required configuration: {', '.join(missing)}")
     if missing:
         log.warning("config_incomplete", missing=missing)
+    # cors_origins defaults to ["*"] so local dev works with no setup. In
+    # production that default means any site can call the API with
+    # credentials allowed (see CORSMiddleware below) — a deploy that simply
+    # forgets to set CORS_ORIGINS boots fine, wide open, silently.
+    if settings.is_prod and "*" in settings.cors_origins:
+        raise RuntimeError(
+            "cors_origins is still the wildcard default in production. "
+            "Set CORS_ORIGINS to the real origin(s) allowed to call this API."
+        )
     yield
     log.info("neutriai_stopping")
 
