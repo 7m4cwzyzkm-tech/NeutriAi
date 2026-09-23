@@ -56,18 +56,25 @@ const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 // that build and asked for a real resize, not a nudge: roughly one third of
 // the screen's height (25 Sep 2026).
 const PLATE_CIRCLE_HEIGHT_FRACTION = 1 / 3;
-// Where the circle's own centre sits, as a fraction of the frame's height.
-// Previously 0.43 (biased just above the geometric middle). Gil tested that
+// Where the LABEL ("Center your plate, keep it in frame") sits, as a
+// fraction of the frame's height. Previously 0.43, then 0.72 (Gil tested a
 // build and asked for the circle moved down substantially, close to the
-// Capture button, with only a modest margin between them -- explicitly at
-// the cost of leaving more empty space between the card guide and the
-// circle than before, which is expected and fine (25 Sep 2026). 0.72 puts
-// the circle's bottom edge (0.72 + HEIGHT_FRACTION/2 = 0.72 + 1/6 = 0.887)
-// at roughly 89% down the frame, leaving the remaining ~11% for the
-// Capture button's own padding and the bottom safe-area inset -- a modest
-// gap, not a collision, on the phone sizes this could reasonably run on.
-// Not verified on a real device; see this task's report.
-const PLATE_CIRCLE_VERTICAL_CENTER_FRACTION = 0.72;
+// Capture button -- 25 Sep 2026). The number 0.72 is UNCHANGED again
+// tonight -- what changed is what it anchors: it used to be the CIRCLE's
+// own vertical centre (top = frac*H - size/2), with the label pinned
+// space.md below that. Gil then asked for the opposite relationship: the
+// label must not move, and the circle should be repositioned so the label
+// bisects it (label sits at the circle's vertical centre, roughly half the
+// circle above the label and half below), rather than the circle sitting
+// almost entirely below the label the way "label = circle.top + space.md"
+// produced. So this constant now anchors the LABEL directly, at exactly
+// the same pixel position the old formula put it (frac*H - size/2 +
+// space.md is the same expression the old circle.top + space.md worked out
+// to), and the circle's own top is derived FROM the label's position below,
+// not the other way around. Renamed from
+// PLATE_CIRCLE_VERTICAL_CENTER_FRACTION to PLATE_LABEL_TOP_FRACTION to
+// match what it actually anchors now.
+const PLATE_LABEL_TOP_FRACTION = 0.72;
 
 export function ScanScreen() {
   const c = useTheme();
@@ -125,6 +132,21 @@ export function ScanScreen() {
   function onCameraLayout(e: LayoutChangeEvent) {
     const { width, height } = e.nativeEvent.layout;
     setFrameSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+  }
+  // The plate label's own rendered height -- needed to find ITS vertical
+  // centre so the circle can be centred on that, not just on the label's
+  // top-left corner. RN gives no way to know a Text's rendered height ahead
+  // of layout (font scaling, accessibility text-size settings, and the
+  // device's own font metrics all affect it), so this is measured the same
+  // way frameSize above is: via onLayout, since there is no other way.
+  // Starts at 0, which places the circle's centre at the label's TOP edge
+  // for one frame until the real measurement lands -- the same
+  // measure-then-correct pattern frameSize and tiltDeg already use in this
+  // file, not a new kind of approximation.
+  const [labelHeight, setLabelHeight] = useState(0);
+  function onLabelLayout(e: LayoutChangeEvent) {
+    const h = e.nativeEvent.layout.height;
+    setLabelHeight((prev) => (prev === h ? prev : h));
   }
   // Only live while the LIVE camera view is actually showing -- not during
   // review, which has no camera mounted. See useTiltReading's own doc for
@@ -527,19 +549,31 @@ export function ScanScreen() {
 
   // A TRUE circle (equal width and height, so it is never a squashed oval on
   // a screen whose width and height differ), sized off frameSize.height only
-  // -- see PLATE_CIRCLE_HEIGHT_FRACTION and
-  // PLATE_CIRCLE_VERTICAL_CENTER_FRACTION above for the current size/position
-  // and why. Null, like cardBox, until a real layout arrives. The card guide
-  // below is explicitly NOT part of this: it keeps its own size, position
-  // and text unchanged no matter where this circle ends up.
+  // -- see PLATE_CIRCLE_HEIGHT_FRACTION above for the diameter, unchanged by
+  // tonight's task. Null, like cardBox, until a real layout arrives. The
+  // card guide below is explicitly NOT part of this: it keeps its own size,
+  // position and text unchanged no matter where this circle ends up.
+  //
+  // `labelTop` is the label's position, computed with the exact same
+  // expression the OLD circle-first layout worked out to
+  // (frac*H - size/2 + space.md) -- so the label's on-screen position is
+  // bit-for-bit unchanged by this task. The circle's own `top` is now
+  // derived FROM the label instead: its vertical centre
+  // (top + size/2) is set equal to the label's vertical centre
+  // (labelTop + labelHeight/2), so the label bisects the circle -- roughly
+  // half the circle above the label, half below -- rather than the circle
+  // sitting almost entirely below it.
   const plateCircle =
     frameSize.width > 0 && frameSize.height > 0
       ? (() => {
           const size = frameSize.height * PLATE_CIRCLE_HEIGHT_FRACTION;
+          const labelTop = frameSize.height * PLATE_LABEL_TOP_FRACTION - size / 2 + space.md;
+          const labelCenterY = labelTop + labelHeight / 2;
           return {
             size,
             left: (frameSize.width - size) / 2,
-            top: frameSize.height * PLATE_CIRCLE_VERTICAL_CENTER_FRACTION - size / 2,
+            top: labelCenterY - size / 2,
+            labelTop,
           };
         })()
       : null;
@@ -571,8 +605,9 @@ export function ScanScreen() {
             />
             <View
               pointerEvents="none"
+              onLayout={onLabelLayout}
               style={{
-                position: 'absolute', top: plateCircle.top + space.md, left: plateCircle.left,
+                position: 'absolute', top: plateCircle.labelTop, left: plateCircle.left,
                 width: plateCircle.size, alignItems: 'center',
               }}
             >
