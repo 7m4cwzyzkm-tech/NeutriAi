@@ -501,6 +501,30 @@ def _num(value, default: float | None = None) -> float | None:
     return out
 
 
+def _explicit_density(fact: dict) -> float | None:
+    """The nutrition row's own density, but ONLY when it is not an
+    ``ai_estimate`` row's guess.
+
+    ``food_facts.source`` distinguishes ``usda``/``edamam``/``nutritionix``/
+    ``user`` from ``ai_estimate`` -- a reasoning-model guess, cached from a
+    moment a real provider failed or found nothing. This used to be passed
+    through on presence alone (a comment right above the call site already
+    claimed "ONLY a real measured density is passed as explicit", but the
+    code never checked `source` to back that up), and `density_for` puts an
+    explicit density at precedence rank 1, above its own dish-match table --
+    so whenever USDA missed, an LLM's guess silently outranked the real
+    table. Documented in HANDOFF.md ("LAUNCH BLOCKER: GRAMS DEPEND ON USDA
+    UPTIME"): the identical cached photo logged 350g one time and 98g
+    another for the same caesar salad, purely on a third party's uptime at
+    scan time. Blocking `ai_estimate` here sends it through the exact same
+    path as a food with no explicit density at all -- `density_for` falls
+    through to its own dish/group table, rank 2 onward, unchanged.
+    """
+    if fact.get("source") == "ai_estimate":
+        return None
+    return _num(fact.get("density_g_ml"))
+
+
 def _plate_ellipse(detection: dict, aspect: float | None) -> tuple[float, float] | None:
     """The vessel's apparent (w, h) as PER-AXIS fractions: w of the image's
     width, h of its height. That is what every consumer reads.
@@ -1113,6 +1137,29 @@ async def build_items(
     for det, name, measured_area, piece_share, measured_height in zip(
             detections, names, measured, pieces, heights):
         fact = facts.get(name) or {}
+        # ONLY a real measured/provider/user density is passed as explicit --
+        # see _explicit_density's own comment for why an ai_estimate row's
+        # density must not reach here. Logged before the call, not after:
+        # density_for (portion.py) is untouched by this fix -- its ranking
+        # order and internals are out of scope -- but its own documented
+        # rank-1 entry condition (`explicit and 0.05 < explicit < 3.0`) is
+        # fully decided by what reaches it, which is exactly what this logs.
+        explicit_density = _explicit_density(fact)
+        raw_density = _num(fact.get("density_g_ml"))
+        log.info(
+            "density_provenance",
+            food=name,
+            explicit_reached=explicit_density is not None,
+            density_source=(
+                "ai_estimate_blocked" if raw_density is not None and fact.get("source") == "ai_estimate"
+                else "provider_or_user" if raw_density is not None
+                else "none"
+            ),
+            precedence_rank=(
+                1 if explicit_density is not None and 0.05 < explicit_density < 3.0
+                else "table"
+            ),
+        )
         est = estimate_grams(
             name=name,
             area_ratio=_num(det.get("area_ratio"), 0.0) or 0.0,
@@ -1134,7 +1181,7 @@ async def build_items(
             # per-food table was never reached -- refried beans kept the
             # density of whole beans in broth. The group is now passed as the
             # group, so it acts as the fallback it was meant to be.
-            density=_num(fact.get("density_g_ml")) or None,
+            density=explicit_density or None,
             food_group=det.get("food_group"),
             ai_prior_grams=_num(det.get("typical_serving_g")) or None,
             detection_confidence=max(0.0, min(1.0, _num(det.get("confidence"), 0.6) or 0.6)),
