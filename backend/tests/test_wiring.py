@@ -40,6 +40,19 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 APP = ROOT / "app"
 
+# The two bench-photo tests below need Gil's actual weighed photographs on
+# disk (the same directory scripts/bench_all.py's PHOTOS constant points at:
+# repo_root/photos). They are not committed -- too large, and not meant to
+# be -- so every checkout without them fails identically. Skipping them
+# cleanly here, instead of letting them fail, is the point of this check:
+# a real regression should never be able to hide behind two failures that
+# are actually just "this machine has no photos".
+_BENCH_PHOTOS_DIR = ROOT.parent / "photos"
+_BENCH_PHOTOS_PRESENT = _BENCH_PHOTOS_DIR.is_dir()
+_NO_BENCH_PHOTOS_REASON = (
+    f"bench photos not present in this checkout (expected at {_BENCH_PHOTOS_DIR})"
+)
+
 
 # OUR source, and nothing else.
 #
@@ -1295,6 +1308,7 @@ def test_the_segmenter_cannot_be_wired_up_without_being_used():
         "colour mask can reach the grams")
 
 
+@pytest.mark.skipif(not _BENCH_PHOTOS_PRESENT, reason=_NO_BENCH_PHOTOS_REASON)
 def test_every_bench_case_has_a_photo_and_a_weight():
     """A case naming a photo that is not there fails mid-run, after the model
     has already been paid for the cases before it."""
@@ -1424,6 +1438,7 @@ def test_the_bench_survives_every_shape_of_failure_it_can_get():
     assert "out of scans" in describe_failure(402, {"error": {"message": "x"}})
 
 
+@pytest.mark.skipif(not _BENCH_PHOTOS_PRESENT, reason=_NO_BENCH_PHOTOS_REASON)
 def test_the_bench_checks_what_is_free_before_spending_anything():
     """Three runs were burned in a row on things that cost nothing to detect.
 
