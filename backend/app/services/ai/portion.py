@@ -1526,6 +1526,47 @@ MEASURED_OVER_PLATE_LIMIT = 1.15
 # the whole weight. Worth refitting when more weighed photographs exist.
 MEASURED_UNDER_BOX_LIMIT = 5.0
 
+# THE TOPOLOGY INVERSION (docs/HANDOFF.md) -- the two gates stop being
+# independent, one way, on purpose.
+#
+# food_seg.largest_piece_share measures the UNION MASK'S connectivity, not
+# the food's -- it answers "did the segmenter return one blob or several",
+# and a mask can fail to be either COMPLETE or CORRECTLY SEPARATED, in
+# opposite directions the measure cannot tell apart (HANDOFF.md's photo 35:
+# a burger's fragmented bun mask reads 0.5185, "separate", when it is one
+# mass; fries that are genuinely separate but merge on touching read 0.85+,
+# "one mass", when they are not). Moving ONE_PIECE_SHARE cannot fix this --
+# both real cases sit on the wrong side of any single cut -- and this
+# constant does not try to. It answers a narrower, already-open question
+# instead: once a footprint has cleared MEASURED_UNDER_BOX_LIMIT (so its
+# AREA is trusted), how much room is left before its CONNECTIVITY should
+# be trusted too?
+#
+# Not much, on the one calibration this project has. MEASURED_UNDER_BOX_
+# LIMIT's own comment records exactly one correct high-shrink case in this
+# range -- carrots at 3.3x, genuinely scattered pieces, not a broken mask --
+# and no case at all between 3.3x and the 5.0x limit itself. So this is set
+# at 80% of that limit (4.0x): above carrots, so it is not known to exclude
+# any case this project has actually measured; below the limit itself, so
+# it closes SOME of the gap HANDOFF.md calls out -- "a mask fragmented
+# enough to be suspicious, but not fragmented enough to trip the area
+# guard" -- without inventing a second independently-tuned number the way
+# ONE_PIECE_SHARE was. It is a margin on an existing, already-calibrated
+# signal, not a fresh guess.
+#
+# WHAT THIS DOES NOT FIX, STATED PLAINLY: photo 35's own documented burger
+# and fries never reach this margin. The burger's 6.7x shrink is already
+# excluded by MEASURED_UNDER_BOX_LIMIT itself, before this constant is ever
+# consulted. The fries' shrink -- reconstructed offline from the cached
+# production masks, docs/evidence/2026-09-12-photo35-production-masks.npz,
+# since this is the only real signal actually wrong for them -- is about
+# 1.3x, nowhere near either limit: their mask is COMPLETE, not fragmented,
+# which is exactly the "measure describes the wrong object" failure mode
+# (direction 1) that no reuse of the area guard's signal can reach. See
+# this task's own report for the full reasoning and the before/after
+# numbers this constant does and does not move.
+TOPOLOGY_TRUST_SHRINK_LIMIT = MEASURED_UNDER_BOX_LIMIT * 0.8
+
 # A BOX-RATIO GUARD WAS TRIED HERE AND IS REFUTED. Do not re-add it.
 #
 # The bench published 58 g of scattered baby carrots as 686 g: the segmenter
@@ -1939,6 +1980,10 @@ def estimate_grams(
     # known vessel are both exempt, for the same reason: the box is a claim
     # about a thing we have already sized by other means.
     rail_exempt = False
+    # The area guard's own fragmentation read, kept around past this block --
+    # see TOPOLOGY_TRUST_SHRINK_LIMIT below for why the topology branch reads
+    # it too, and only this one signal, not a second independent judgment.
+    area_shrink: float | None = None
     if measured_area_ratio is not None:
         ok, why = measured_area_plausible(measured_area_ratio, hint)
         # A footprint far smaller than the item's own box is a fragment of the
@@ -1946,6 +1991,7 @@ def estimate_grams(
         own_box = _bbox_area_ratio(bbox)
         if ok and own_box > 0:
             shrink = own_box / max(float(measured_area_ratio), 1e-9)
+            area_shrink = shrink
             if shrink > MEASURED_UNDER_BOX_LIMIT:
                 ok = False
                 why = (f"{float(measured_area_ratio):.1%} of the frame inside a "
@@ -2118,9 +2164,16 @@ def estimate_grams(
     # matches the measurement. Swapping these into the railed path would make
     # every estimate lighter and the bench worse; the pair only works together,
     # which is why this is conditional and not a replacement.
+    # The two gates stop being independent: a footprint the area guard only
+    # just let through (own_box/measured_area_ratio still elevated, even if
+    # under MEASURED_UNDER_BOX_LIMIT) does not also get a confident,
+    # unchecked topology call -- see TOPOLOGY_TRUST_SHRINK_LIMIT's own
+    # comment for why this margin, and this task's report for what it does
+    # and does not fix.
+    topology_trusted = area_shrink is None or area_shrink <= TOPOLOGY_TRUST_SHRINK_LIMIT
     if soup_in_a_bowl:
         base_height = SOUP_DEPTH_MM
-    elif measured_used and largest_piece_share is not None:
+    elif measured_used and largest_piece_share is not None and topology_trusted:
         from .food_seg import ONE_PIECE_SHARE
         one_mass = float(largest_piece_share) >= ONE_PIECE_SHARE
         base_height = (CONNECTED_PILE_HEIGHT_MM if one_mass
@@ -2130,6 +2183,16 @@ def estimate_grams(
                 f"{name}: measured as separate pieces rather than one mass, so "
                 f"it is a single layer — pieces on a plate cannot stack."
             )
+    elif measured_used and largest_piece_share is not None and not topology_trusted:
+        from .food_seg import MEASURED_HEIGHTS_MM
+        base_height = MEASURED_HEIGHTS_MM.get(shape, MEASURED_HEIGHTS_MM["default"])
+        notes.append(
+            f"{name}: the footprint's own area guard already discounted it "
+            f"({area_shrink:.1f}x smaller than its box) — not fragmented "
+            f"enough to refuse outright, but too fragmented to trust its "
+            f"shape as well as its size, so no separate/connected pile call "
+            f"was made from it."
+        )
     elif measured_used:
         from .food_seg import MEASURED_HEIGHTS_MM
         base_height = MEASURED_HEIGHTS_MM.get(shape, MEASURED_HEIGHTS_MM["default"])
