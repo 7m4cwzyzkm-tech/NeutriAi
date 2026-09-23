@@ -109,22 +109,19 @@ export function ProfileScreen() {
                 ))}
               </Row>
               <Divider />
-              {/* Showing the working matters: users trust a number they can
-                  interrogate, and it stops "why did my target change?" tickets. */}
+              {/* The BMR/TDEE math (and the goal/macro-method lines that
+                  explained it) is gone -- Gil's call, nobody needs to see the
+                  calculation here. An estimated BMI, computed client-side
+                  from the profile fields the app already has, stands in its
+                  place. The calorie-floor warning stays: it's a real
+                  exception a user might otherwise wonder about, not "the
+                  calculation." */}
               <View style={{ gap: 4 }}>
-                <Text style={[type.caption, { color: c.textDim }]}>
-                  BMR {targets.bmr_kcal} kcal ({String(r.bmr_method ?? '').replace(/_/g, '-')}) ×{' '}
-                  {String(r.activity_multiplier ?? '')} activity = TDEE {targets.tdee_kcal} kcal
-                </Text>
-                <Text style={[type.caption, { color: c.textDim }]}>
-                  {Number(r.goal_delta_pct ?? 0) === 0
-                    ? 'Maintenance — no calorie adjustment.'
-                    : `${Number(r.goal_delta_pct) > 0 ? '+' : ''}${r.goal_delta_pct}% for your ${profile?.goal} goal.`}
-                </Text>
-                <Text style={[type.caption, { color: c.textDim }]}>
-                  Protein at {String(r.protein_g_per_kg ?? '')} g/kg; fat at{' '}
-                  {String(r.fat_pct_of_kcal ?? '')}% of calories; carbs take the remainder.
-                </Text>
+                {profile?.height_cm && profile?.weight_kg ? (
+                  <Text style={[type.caption, { color: c.textDim }]}>
+                    Estimated BMI: {(profile.weight_kg / (profile.height_cm / 100) ** 2).toFixed(1)}
+                  </Text>
+                ) : null}
                 {r.calorie_floor_applied ? (
                   <Text style={[type.caption, { color: c.warn }]}>
                     A minimum-calorie floor was applied — we won't prescribe below it.
