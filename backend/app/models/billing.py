@@ -38,6 +38,11 @@ class SubscriptionOut(Base):
     ai_scans_used_today: int = 0
     ai_scans_quota: int = 0
     manage_url: str | None = None
+    # settings.free_launch_mode, carried through so the client can tell "no
+    # real limit right now" apart from "really on the free tier" without a
+    # second endpoint -- this response is already fetched wherever that
+    # distinction matters (ProfileScreen's Plan card).
+    free_launch_mode: bool = False
 
 
 class PricingPlan(Base):

@@ -5,6 +5,7 @@ import structlog
 from fastapi import APIRouter, Header, Request, Response, status
 from fastapi.responses import JSONResponse
 
+from ..config import settings
 from ..db import maybe_one
 from ..deps import CurrentUserDep, EntitlementDep
 from ..models.billing import (
@@ -42,6 +43,7 @@ async def subscription(user: CurrentUserDep, ent: EntitlementDep):
         promo_code=(sub or {}).get("promo_code"),
         ai_scans_used_today=int(ent.get("ai_scans_used_today") or 0),
         ai_scans_quota=int(ent.get("ai_scans_quota") or 0),
+        free_launch_mode=settings.free_launch_mode,
     )
 
 

@@ -174,6 +174,9 @@ export interface Subscription {
   trial_end?: string | null; current_period_end?: string | null;
   cancel_at_period_end: boolean; promo_code?: string | null;
   ai_scans_used_today: number; ai_scans_quota: number;
+  // NeutriAI is free for everyone right now -- see backend/app/config.py's
+  // free_launch_mode. True means there is no real scan limit to show.
+  free_launch_mode: boolean;
 }
 
 export interface PricingPlan {
