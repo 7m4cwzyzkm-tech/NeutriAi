@@ -44,6 +44,11 @@ export function FastingScreen() {
     : 0;
   const livePct = fast ? Math.min(100, (liveElapsed / fast.target_minutes) * 100) : 0;
   const remaining = fast ? fast.target_minutes - liveElapsed : 0;
+  // Red while a fast is running, green when there is none (the eating window).
+  // This follows `fast` presence only: nothing tracks the eating window's own
+  // end, so green never counts down or flips to red by itself -- it turns red
+  // when the user starts the next fast.
+  const stateColor = fast ? c.danger : c.success;
 
   return (
     <Screen>
@@ -52,12 +57,18 @@ export function FastingScreen() {
           <View>
             <Label>Intermittent fasting</Label>
             <H1>{fast ? 'Fasting' : 'Ready when you are'}</H1>
+            <Row gap={6} style={{ marginTop: 4 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: stateColor }} />
+              <Text style={[type.caption, { color: stateColor }]}>
+                {fast ? 'Fast in progress' : 'Not fasting — eating window'}
+              </Text>
+            </Row>
           </View>
 
           {fast ? (
             <>
               <Card style={{ alignItems: 'center', gap: space.lg }}>
-                <ProgressRing size={220} stroke={18} pct={livePct} color={c.accent}>
+                <ProgressRing size={220} stroke={18} pct={livePct} color={stateColor}>
                   <View style={{ alignItems: 'center' }}>
                     <Text style={[type.hero, { color: c.text }]}>{fmt(liveElapsed)}</Text>
                     <Text style={[type.caption, { color: c.textDim }]}>
@@ -67,7 +78,7 @@ export function FastingScreen() {
                 </ProgressRing>
 
                 <View style={{ alignItems: 'center', gap: 4 }}>
-                  <Text style={[type.h2, { color: c.accent }]}>{fast.phase}</Text>
+                  <Text style={[type.h2, { color: stateColor }]}>{fast.phase}</Text>
                   <Text style={[type.body, { color: c.textDim, textAlign: 'center' }]}>
                     {fast.phase_note}
                   </Text>
