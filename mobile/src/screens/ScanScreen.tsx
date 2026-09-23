@@ -47,25 +47,27 @@ import {
 
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 
-// The plate-framing circle's diameter, as a fraction of the frame's SHORTER
-// side. The original box used top:18%/bottom:32% (50% of height) with
-// left:8%/right:8% (84% of width) -- two different fractions of two
-// different dimensions with a large borderRadius applied, which is a
-// squashed oval on any screen whose width and height differ (every phone),
-// clipping a plate that actually fills the frame. No comment or commit
-// message (checked git log/blame on this file) explains why those two
-// fractions were chosen independently; 0.84 is kept here only because it
-// was the more generous (less clipping) of the two original margins, now
-// applied to BOTH dimensions via the shorter side, so the result is an
-// actual circle that fits inside the frame on any aspect ratio.
-const PLATE_CIRCLE_FRAME_FRACTION = 0.84;
+// The plate-framing circle's diameter, as a fraction of the frame's HEIGHT
+// (frameSize.height -- the CameraView's own onLayout size, which is the only
+// on-screen size this component has; there is no Dimensions/useWindowDimensions
+// import here and none was added for this). Previously 0.84 of the frame's
+// SHORTER side, which on a typical phone made the circle roughly two thirds
+// of the screen -- far larger than a centering aid needs to be. Gil tested
+// that build and asked for a real resize, not a nudge: roughly one third of
+// the screen's height (25 Sep 2026).
+const PLATE_CIRCLE_HEIGHT_FRACTION = 1 / 3;
 // Where the circle's own centre sits, as a fraction of the frame's height.
-// The original box's vertical centre was at (18% + 68%) / 2 = 43% (its own
-// span was 18% to 100%-32%=68%) -- biased above the geometric middle to
-// leave room below for the card guide and the bottom control panel. Kept at
-// the same 43% so the overall layout does not shift now that the box is
-// square instead of tall.
-const PLATE_CIRCLE_VERTICAL_CENTER_FRACTION = 0.43;
+// Previously 0.43 (biased just above the geometric middle). Gil tested that
+// build and asked for the circle moved down substantially, close to the
+// Capture button, with only a modest margin between them -- explicitly at
+// the cost of leaving more empty space between the card guide and the
+// circle than before, which is expected and fine (25 Sep 2026). 0.72 puts
+// the circle's bottom edge (0.72 + HEIGHT_FRACTION/2 = 0.72 + 1/6 = 0.887)
+// at roughly 89% down the frame, leaving the remaining ~11% for the
+// Capture button's own padding and the bottom safe-area inset -- a modest
+// gap, not a collision, on the phone sizes this could reasonably run on.
+// Not verified on a real device; see this task's report.
+const PLATE_CIRCLE_VERTICAL_CENTER_FRACTION = 0.72;
 
 export function ScanScreen() {
   const c = useTheme();
@@ -523,19 +525,17 @@ export function ScanScreen() {
   const guideLabel =
     guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
 
-  // A TRUE circle, computed from this device's own frame size -- not the
-  // fixed top:18%/left:8%/bottom:32%/right:8% percentages this replaces
-  // (two different fractions of two different dimensions, which is a
-  // squashed oval on any screen whose width and height differ, clipping a
-  // plate that fills the frame; see PLATE_CIRCLE_FRAME_FRACTION's own
-  // comment above for why 0.84 and no other reason was found for the
-  // original split). Null, like cardBox, until a real layout arrives.
-  // Position and size unchanged by this task -- Gil wants it exactly where
-  // it already is; only the card guide moved away from it.
+  // A TRUE circle (equal width and height, so it is never a squashed oval on
+  // a screen whose width and height differ), sized off frameSize.height only
+  // -- see PLATE_CIRCLE_HEIGHT_FRACTION and
+  // PLATE_CIRCLE_VERTICAL_CENTER_FRACTION above for the current size/position
+  // and why. Null, like cardBox, until a real layout arrives. The card guide
+  // below is explicitly NOT part of this: it keeps its own size, position
+  // and text unchanged no matter where this circle ends up.
   const plateCircle =
     frameSize.width > 0 && frameSize.height > 0
       ? (() => {
-          const size = Math.min(frameSize.width, frameSize.height) * PLATE_CIRCLE_FRAME_FRACTION;
+          const size = frameSize.height * PLATE_CIRCLE_HEIGHT_FRACTION;
           return {
             size,
             left: (frameSize.width - size) / 2,
