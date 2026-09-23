@@ -134,7 +134,7 @@ export function TrainScreen() {
                     <Row gap={space.md}>
                       {shots.length < MAX_EQUIPMENT_SHOTS ? (
                         <Button
-                          title="Add another angle"
+                          title="More equipment"
                           variant="secondary"
                           disabled={scanning}
                           style={{ flex: 1 }}
