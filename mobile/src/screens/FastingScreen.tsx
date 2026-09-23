@@ -1,11 +1,20 @@
 /** Intermittent fasting timer with live phase feedback. */
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
 import { ProgressRing } from '../components/Rings';
 import { useCurrentFast, useEndFast, useStartFast } from '../hooks/useApi';
+import { api } from '../api/client';
+import type { Fast, FastingSettings } from '../api/types';
+import {
+  cancelRemindersOfKind, ensureNotificationPermission, scheduleLocalReminder,
+} from '../native/localReminders';
+
+// Tags the local notifications this screen schedules, so ending a fast early
+// cancels exactly these and nothing else (water reminders, celebrations...).
+const FAST_REMINDER_KIND = 'fast_reminder';
 
 const PROTOCOLS = [
   { id: '16:8', label: '16:8', note: 'The default. 16 hours fasting, 8 eating.' },
@@ -19,6 +28,79 @@ function fmt(mins: number): string {
   const h = Math.floor(Math.abs(mins) / 60);
   const m = Math.abs(mins) % 60;
   return `${h}h ${String(m).padStart(2, '0')}m`;
+}
+
+function clock(d: Date): string {
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+/**
+ * The user said yes to a reminder for this fast. Records the preference
+ * (notify_end, and notify_halfway if asked) -- only turning flags ON, never
+ * off -- then schedules one-shot local notifications for this fast.
+ *
+ * Local, not server push: the server's fasting_notifications() job cannot
+ * reach this device (no EAS projectId, so no push token). A one-shot DATE
+ * notification is held by the OS and fires with the app closed; see
+ * scheduleLocalReminder.
+ */
+async function enableFastReminders(fast: Fast, halfway: boolean): Promise<void> {
+  try {
+    const current: FastingSettings = await api.fasting.settings();
+    const patch: Partial<FastingSettings> = {};
+    if (current.notify_end !== true) patch.notify_end = true;
+    if (halfway && current.notify_halfway !== true) patch.notify_halfway = true;
+    if (Object.keys(patch).length) await api.fasting.updateSettings(patch);
+  } catch {
+    // The saved preference is a nice-to-have; the local reminder below is
+    // what actually reaches the phone, so don't let a settings hiccup block it.
+  }
+
+  if (!(await ensureNotificationPermission())) {
+    Alert.alert(
+      'Notifications are off',
+      'Turn on notifications for NeutriAI in your phone settings to get fasting reminders.',
+    );
+    return;
+  }
+
+  await cancelRemindersOfKind(FAST_REMINDER_KIND);
+  const startedMs = new Date(fast.started_at).getTime();
+  const targetMs = fast.target_minutes * 60_000;
+  const data = { deep_link: 'neutriai://fasting', fast_id: fast.id };
+  await scheduleLocalReminder({
+    kind: FAST_REMINDER_KIND,
+    title: 'Your eating window is open',
+    body: `You hit your ${fast.protocol} target. Break the fast with something with protein.`,
+    date: new Date(startedMs + targetMs),
+    data,
+  });
+  if (halfway) {
+    await scheduleLocalReminder({
+      kind: FAST_REMINDER_KIND,
+      title: 'Halfway there',
+      body: `Your ${fast.protocol} fast is half done. Water helps.`,
+      date: new Date(startedMs + targetMs / 2),
+      data,
+    });
+  }
+}
+
+function askAboutReminder(fast: Fast) {
+  const enable = (halfway: boolean) =>
+    enableFastReminders(fast, halfway).catch(() =>
+      Alert.alert("Couldn't set the reminder", 'Your fast is still running — only the reminder failed.'),
+    );
+  const opensAt = new Date(new Date(fast.started_at).getTime() + fast.target_minutes * 60_000);
+  Alert.alert(
+    'Remind you when you can eat?',
+    `Your eating window opens at ${clock(opensAt)}. We can send a notification then.`,
+    [
+      { text: 'No thanks', style: 'cancel' },
+      { text: 'Also at halfway', onPress: () => void enable(true) },
+      { text: 'Remind me', onPress: () => void enable(false) },
+    ],
+  );
 }
 
 export function FastingScreen() {
@@ -95,7 +177,7 @@ export function FastingScreen() {
                   </View>
                   <View style={{ alignItems: 'center' }}>
                     <Text style={[type.h2, { color: c.text }]}>
-                      {new Date(fast.started_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      {clock(new Date(fast.started_at))}
                     </Text>
                     <Text style={[type.caption, { color: c.textFaint }]}>started</Text>
                   </View>
@@ -106,7 +188,13 @@ export function FastingScreen() {
                 title={remaining > 0 ? 'End fast early' : 'Complete fast'}
                 variant={remaining > 0 ? 'secondary' : 'primary'}
                 loading={end.isPending}
-                onPress={() => end.mutate(fast.id)}
+                onPress={() =>
+                  end.mutate(fast.id, {
+                    // A "your window is open" alert for a fast that already
+                    // ended makes no sense -- drop any pending one.
+                    onSuccess: () => void cancelRemindersOfKind(FAST_REMINDER_KIND),
+                  })
+                }
               />
               {remaining > 0 ? (
                 <Body dim>
@@ -130,7 +218,12 @@ export function FastingScreen() {
               <Button
                 title="Start fasting now"
                 loading={start.isPending}
-                onPress={() => start.mutate({ protocol, hours: protocol === 'custom' ? 14 : undefined })}
+                onPress={() =>
+                  start.mutate(
+                    { protocol, hours: protocol === 'custom' ? 14 : undefined },
+                    { onSuccess: askAboutReminder },
+                  )
+                }
               />
 
               <Card style={{ gap: space.sm }}>

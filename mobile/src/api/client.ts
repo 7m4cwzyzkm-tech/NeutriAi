@@ -8,8 +8,8 @@
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import type {
-  AdaptedRecipe, Dashboard, EquipmentScan, Fast, HydrationSettings, Integration, Meal, Plan,
-  PersonalRecord, Post, PricingPlan, Profile, Recipe, ScanResult, Subscription,
+  AdaptedRecipe, Dashboard, EquipmentScan, Fast, FastingSettings, HydrationSettings, Integration,
+  Meal, Plan, PersonalRecord, Post, PricingPlan, Profile, Recipe, ScanResult, Subscription,
   Targets, WaterDay, Workout, WorkoutSetInput,
 } from './types';
 import { ApiError } from './types';
@@ -163,8 +163,8 @@ export const api = {
     end: (id: string, breakMealId?: string) =>
       request<Fast>(`/fasts/${id}/end`, { method: 'POST', query: { break_meal_id: breakMealId } }),
     list: () => request<Fast[]>('/fasts'),
-    settings: () => request<unknown>('/fasts/settings'),
-    updateSettings: (patch: unknown) =>
+    settings: () => request<FastingSettings>('/fasts/settings'),
+    updateSettings: (patch: Partial<FastingSettings>) =>
       request('/fasts/settings', { method: 'PATCH', body: patch }),
   },
 
