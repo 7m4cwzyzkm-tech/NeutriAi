@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Request, Response, status
 
 from ..db import maybe_one, one, rows, service
-from ..deps import AiScanDep, CurrentUserDep, ProDep
+from ..deps import AiReasoningDep, AiScanDep, CurrentUserDep, ProDep
 from ..errors import AppError, NotFound
 from ..models.common import Ok
 from ..models.fitness import (
@@ -178,7 +178,9 @@ async def scan_equipment(body: EquipmentScanIn, user: CurrentUserDep, _q: AiScan
 
 
 @router.post("/plans", response_model=PlanOut, status_code=201)
-async def create_plan(body: PlanRequest, user: CurrentUserDep, _pro: ProDep):
+async def create_plan(
+    body: PlanRequest, user: CurrentUserDep, _pro: ProDep, _q: AiReasoningDep,
+):
     equipment = body.equipment
     if body.equipment_scan_id and not equipment:
         scan = maybe_one(
