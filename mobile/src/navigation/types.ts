@@ -32,6 +32,7 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: NavigatorScreenParams<TabParamList> | undefined;
   Fasting: undefined;
+  Water: undefined;
   Onboarding: undefined;
   PlateCalibration: undefined;
   // `edit` is passed by ScanScreen to open straight into correction mode.
@@ -52,6 +53,7 @@ export type RootStackParamList = {
 export type PushTarget =
   | { kind: 'paywall' }
   | { kind: 'fasting' }
+  | { kind: 'water' }
   | { kind: 'tab'; tab: 'Home' | 'Train' | 'Scan' | 'Recipes' }
   | { kind: 'feed'; postId?: string }
   | { kind: 'profile'; userId?: string };

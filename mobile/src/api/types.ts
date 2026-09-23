@@ -98,6 +98,17 @@ export interface WaterDay {
   streak: number; on_pace: boolean;
 }
 
+export interface HydrationSettings {
+  daily_goal_ml: number;
+  reminder_enabled: boolean;
+  // "HH:MM" or "HH:MM:SS", as Postgres's `time` type serializes -- see
+  // GET/PATCH /water/settings.
+  reminder_start: string;
+  reminder_end: string;
+  reminder_every_min: number;
+  sync_apple_health: boolean;
+}
+
 export interface Celebration {
   id: string; kind: string; title: string; subtitle: string;
   animation: 'confetti' | 'fireworks' | 'rings' | 'flame' | 'trophy' | 'wave';

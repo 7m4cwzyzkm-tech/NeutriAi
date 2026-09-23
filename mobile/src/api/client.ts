@@ -8,7 +8,7 @@
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import type {
-  AdaptedRecipe, Dashboard, EquipmentScan, Fast, Integration, Meal, Plan,
+  AdaptedRecipe, Dashboard, EquipmentScan, Fast, HydrationSettings, Integration, Meal, Plan,
   PersonalRecord, Post, PricingPlan, Profile, Recipe, ScanResult, Subscription,
   Targets, WaterDay, Workout, WorkoutSetInput,
 } from './types';
@@ -152,6 +152,7 @@ export const api = {
     log: (amount_ml: number, container?: string) =>
       request('/water', { method: 'POST', body: { amount_ml, container } }),
     remove: (id: string) => request(`/water/${id}`, { method: 'DELETE' }),
+    getSettings: () => request<HydrationSettings>('/water/settings'),
     settings: (patch: unknown) => request('/water/settings', { method: 'PATCH', body: patch }),
   },
 
