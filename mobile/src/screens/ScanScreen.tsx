@@ -8,8 +8,9 @@
  * Everything is editable before it counts.
  *
  * The info state exists so the live-capture view itself can show nothing but
- * the camera and its guides -- meal slot and an optional food/plate
- * description are collected here, first, and submitted before the camera
+ * the camera and its guides -- meal slot and a food/plate description (both
+ * required -- the description is real data for perception/depth work, not
+ * just a nicety) are collected here, first, and submitted before the camera
  * ever opens.
  *
  * Review is its own state, not a panel drawn on top of the still-live camera
@@ -211,7 +212,7 @@ export function ScanScreen() {
                   <Chip key={s} label={s} active={slot === s} onPress={() => setSlot(s)} />
                 ))}
               </Row>
-              <Label>What is it? (optional)</Label>
+              <Label>What is it?</Label>
               <TextInput
                 value={note}
                 onChangeText={setNote}
@@ -223,7 +224,7 @@ export function ScanScreen() {
                 }}
               />
             </Card>
-            <Button title="Continue to camera" disabled={!slot} onPress={() => setInfoSubmitted(true)} />
+            <Button title="Continue to camera" disabled={!slot || !note.trim()} onPress={() => setInfoSubmitted(true)} />
           </View>
         </SafeAreaView>
       </Screen>
