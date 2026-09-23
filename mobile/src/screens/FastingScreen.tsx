@@ -5,9 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
 import { ProgressRing } from '../components/Rings';
-import { useCurrentFast, useEndFast, useStartFast } from '../hooks/useApi';
+import { useCurrentFast, useEndFast, useProfile, useStartFast } from '../hooks/useApi';
 import { api } from '../api/client';
-import type { Fast, FastingSettings } from '../api/types';
+import type { Fast, FastingSettings, Goal } from '../api/types';
 import {
   cancelRemindersOfKind, ensureNotificationPermission, scheduleLocalReminder,
 } from '../native/localReminders';
@@ -28,6 +28,43 @@ function fmt(mins: number): string {
   const h = Math.floor(Math.abs(mins) / 60);
   const m = Math.abs(mins) % 60;
   return `${h}h ${String(m).padStart(2, '0')}m`;
+}
+
+/**
+ * Plain conditional copy keyed on the profile's goal and the chosen protocol.
+ * No model call: this is the same four goals the targets math already uses.
+ */
+function adviceFor(goal: Goal, protocol: string): string {
+  const shortWindow = protocol === '20:4' || protocol === 'omad';
+  switch (goal) {
+    case 'lose':
+      return (
+        "You're aiming to lose weight. A fasting window can make a calorie deficit easier to " +
+        'stick to, but the deficit does the work, not the hours. Open your window with protein ' +
+        'so what you lose is mostly fat, not muscle.'
+      );
+    case 'gain':
+      return (
+        "You're aiming to gain. Fasting works against that: fewer hours to eat means bigger " +
+        'meals. ' +
+        (shortWindow
+          ? 'A window this short makes a surplus hard to reach — 16:8 is a gentler start.'
+          : "If you keep missing your calories, fast less — that's the right call, not a failure.")
+      );
+    case 'recomp':
+      return (
+        "You're recomposing — building muscle while losing fat. Protein and training matter more " +
+        'than fast length: put a protein-rich meal after training inside your window, and ease ' +
+        'off the fast if lifting on an empty stomach hurts your sessions.'
+      );
+    case 'maintain':
+    default:
+      return (
+        "You're maintaining. Here fasting is about routine, not a deficit — eat your usual " +
+        "amount inside the window, and watch that a shorter window doesn't turn into eating less " +
+        'than you mean to.'
+      );
+  }
 }
 
 function clock(d: Date): string {
@@ -108,6 +145,7 @@ export function FastingScreen() {
   const { data: fast, isLoading } = useCurrentFast();
   const start = useStartFast();
   const end = useEndFast();
+  const { data: profile } = useProfile();
   const [protocol, setProtocol] = useState('16:8');
   const [, forceTick] = useState(0);
 
@@ -215,6 +253,15 @@ export function FastingScreen() {
                 <Body dim>{PROTOCOLS.find((p) => p.id === protocol)?.note}</Body>
               </Card>
 
+              <Card style={{ gap: space.xs, borderColor: c.warn, borderWidth: 1 }}>
+                <Label style={{ color: c.warn }}>Before you start</Label>
+                <Body>
+                  Always check with your healthcare provider before starting a fast, especially if
+                  you have a medical condition, take medication, are pregnant or nursing, or have a
+                  history of disordered eating.
+                </Body>
+              </Card>
+
               <Button
                 title="Start fasting now"
                 loading={start.isPending}
@@ -234,6 +281,12 @@ export function FastingScreen() {
                   fasts because the schedule helps some people eat consistently — not because
                   longer is better.
                 </Body>
+                {profile ? (
+                  <>
+                    <Label style={{ marginTop: space.sm }}>For your goal</Label>
+                    <Body dim>{adviceFor(profile.goal, protocol)}</Body>
+                  </>
+                ) : null}
               </Card>
             </>
           )}
