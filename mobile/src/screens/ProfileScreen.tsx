@@ -70,12 +70,23 @@ export function ProfileScreen() {
                 </H2>
               </View>
               <Text style={{ color: c.accent, fontSize: 15, fontWeight: '600' }}>
-                {sub?.is_active ? 'Manage' : 'Upgrade'}
+                {sub?.is_active ? 'Manage' : sub?.free_launch_mode ? 'See plans' : 'Upgrade'}
               </Text>
             </Row>
+            {/* free_launch_mode (settings.free_launch_mode, via GET
+                /billing/subscription -- already fetched here, no new
+                endpoint) means there is no real scan limit right now, so
+                "X of 3 free scans" and "Upgrade" would both be lying to
+                someone who is not actually blocked by anything. The card
+                stays tappable either way -- opening the paywall is a
+                voluntary look at plans, never a forced gate, and the
+                purchase flow still needs to work for anyone who wants to
+                support the app early. */}
             {!sub?.is_active ? (
               <Body dim>
-                {sub?.ai_scans_used_today ?? 0} of {sub?.ai_scans_quota ?? 3} free AI scans used today.
+                {sub?.free_launch_mode
+                  ? 'NeutriAI is free right now — no limits.'
+                  : `${sub?.ai_scans_used_today ?? 0} of ${sub?.ai_scans_quota ?? 3} free AI scans used today.`}
               </Body>
             ) : null}
           </Card>

@@ -129,6 +129,12 @@ class Settings(BaseSettings):
     # subscription does not cover. High enough that no real person meets it,
     # low enough that a script does.
     pro_daily_scan_ceiling: int = 200
+    # NeutriAI launches free for everyone while it collects real corrected
+    # usage data, with no way to actually collect payment set up yet -- ON
+    # by default because that is the current state of the product, not a
+    # maybe; flip to False (env FREE_LAUNCH_MODE=false) the day Gil turns
+    # billing on for real, with no other code change needed.
+    free_launch_mode: bool = True
     rate_limit_per_minute: int = 120
     # Is there a load balancer in front of this?
     #

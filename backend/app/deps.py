@@ -89,6 +89,13 @@ EntitlementDep = Annotated[dict, Depends(get_entitlement)]
 
 async def require_pro(ent: EntitlementDep) -> dict:
     """Hard paywall. Trialing counts as Pro — that is the point of a trial."""
+    # free_launch_mode: the product is free for everyone right now, with no
+    # way to actually collect payment set up yet -- see config.py. This is
+    # the only line that changes when it is off; ent.get("is_active") below,
+    # and everywhere else in the codebase, is untouched, so billing status
+    # displays and account logic keep reporting the real subscription state.
+    if settings.free_launch_mode:
+        return ent
     if not ent.get("is_active"):
         raise PaymentRequired(
             "This feature needs an active NeutriAI subscription.",
@@ -105,8 +112,16 @@ async def consume_ai_scan(user: CurrentUserDep, ent: EntitlementDep) -> dict:
 
     Free users get a small daily allowance so the app is usable before they
     pay; Pro users are unmetered but still counted for cost observability.
+
+    free_launch_mode folds into `is_active` here, not just the RPC call --
+    everyone gets the Pro-tier ceiling (settings.pro_daily_scan_ceiling)
+    instead of the free tier's daily cap while it's on, and the "used your
+    free scans, upgrade" message below only makes sense for someone who
+    could actually upgrade right now. `ent` itself, returned unchanged, is
+    still the real entitlement row -- this is what GATES a scan, not what
+    the account's subscription state is reported as.
     """
-    is_active = bool(ent.get("is_active"))
+    is_active = bool(ent.get("is_active")) or settings.free_launch_mode
     try:
         # Counted in the DATABASE, in one statement.
         #
