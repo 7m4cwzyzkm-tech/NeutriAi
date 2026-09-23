@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Query, status
 
 from ..db import maybe_one, one, rows, service
-from ..deps import CurrentUserDep, ProDep
+from ..deps import AiReasoningDep, CurrentUserDep, ProDep
 from ..errors import NotFound
 from ..models.common import Macros, Ok
 from ..models.recipes import AdaptedRecipe, AdaptRequest, RecipeIn, RecipeOut
@@ -152,7 +152,8 @@ async def unsave_recipe(recipe_id: str, user: CurrentUserDep):
 
 @router.post("/{recipe_id}/adapt", response_model=AdaptedRecipe)
 async def adapt_recipe(
-    recipe_id: str, body: AdaptRequest, user: CurrentUserDep, _pro: ProDep
+    recipe_id: str, body: AdaptRequest, user: CurrentUserDep,
+    _pro: ProDep, _q: AiReasoningDep,
 ):
     """Rewrite a recipe for this user's allergies, diet, macros and schedule."""
     recipe = maybe_one(

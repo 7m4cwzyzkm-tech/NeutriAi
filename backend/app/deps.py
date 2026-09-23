@@ -67,16 +67,23 @@ async def get_entitlement(user: CurrentUserDep) -> dict:
                     "tier": "free",
                     "is_active": False,
                     "ai_scans_quota": settings.free_tier_daily_scans,
+                    "ai_reasoning_quota": settings.free_tier_daily_reasoning_calls,
                 }
             )
             .execute()
             .data[0]
         )
-    # Roll the daily AI quota over at first touch of a new day.
+    # Roll the daily AI quotas over at first touch of a new day. Scans and
+    # reasoning calls share one quota_reset_on column deliberately -- both
+    # reset on the same daily cadence, and a second reset-date column would
+    # just be two dates that must always agree.
     if str(row.get("quota_reset_on")) != date.today().isoformat():
         row = (
             sb.table("entitlements")
-            .update({"ai_scans_used_today": 0, "quota_reset_on": date.today().isoformat()})
+            .update({
+                "ai_scans_used_today": 0, "ai_reasoning_used_today": 0,
+                "quota_reset_on": date.today().isoformat(),
+            })
             .eq("user_id", user.id)
             .execute()
             .data[0]
@@ -155,6 +162,51 @@ async def consume_ai_scan(user: CurrentUserDep, ent: EntitlementDep) -> dict:
 
 
 AiScanDep = Annotated[dict, Depends(consume_ai_scan)]
+
+
+async def consume_ai_reasoning(user: CurrentUserDep, ent: EntitlementDep) -> dict:
+    """Metered gate for expensive reasoning calls (recipe adaptation, plan
+    generation) -- the equivalent of consume_ai_scan for a gap that had no
+    counter at all.
+
+    POST /recipes/{id}/adapt and POST /plans were gated by ProDep alone --
+    require_pro only checks is_active (and free_launch_mode skips even that
+    check for everyone right now), so nothing ever counted how many times a
+    user called either route in a day. This mirrors consume_ai_scan exactly,
+    down to the free_launch_mode handling: everyone gets the Pro-tier
+    ceiling (settings.pro_daily_reasoning_ceiling) instead of the free
+    tier's daily cap while it's on, for the same reason -- the "used your
+    free calls, upgrade" message only makes sense for someone who could
+    actually upgrade right now. `ent`, returned unchanged, is still the real
+    entitlement row; this is what GATES a call, not what the account's
+    subscription state is reported as.
+    """
+    is_active = bool(ent.get("is_active")) or settings.free_launch_mode
+    try:
+        # Same atomic, race-safe shape as consume_ai_scan's RPC call -- see
+        # 0027_atomic_reasoning_quota.sql for why this has to be one
+        # statement rather than read-modify-write.
+        result = service().rpc("consume_ai_reasoning", {
+            "p_user_id": str(user.id),
+            "p_is_active": is_active,
+            "p_pro_ceiling": int(settings.pro_daily_reasoning_ceiling),
+        }).execute()
+        row = (getattr(result, "data", None) or [{}])[0]
+    except Exception as exc:  # noqa: BLE001
+        log.warning("reasoning_quota_unavailable", error=str(exc)[:200])
+        raise UpstreamError("Could not check your call allowance. Try again.") from exc
+
+    if not row.get("allowed", False):
+        raise QuotaExceeded(
+            "You have used today's AI calls."
+            if is_active else "You have used today's free AI calls.",
+            detail={"used": row.get("used"), "quota": row.get("quota"),
+                    "upgrade": not is_active},
+        )
+    return ent
+
+
+AiReasoningDep = Annotated[dict, Depends(consume_ai_reasoning)]
 
 
 def request_id(request: Request) -> str:

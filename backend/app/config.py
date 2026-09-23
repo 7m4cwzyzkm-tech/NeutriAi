@@ -129,6 +129,23 @@ class Settings(BaseSettings):
     # subscription does not cover. High enough that no real person meets it,
     # low enough that a script does.
     pro_daily_scan_ceiling: int = 200
+    # Recipe adaptation and plan generation call the same reasoning model as
+    # everything else, but had no counter at all before this -- ProDep only
+    # checks subscription status, not call volume. Not a copy of the scan
+    # numbers above: a recipe adaptation runs to 4000 output tokens and a
+    # full plan generation to 8000 (recipe_ai.py / coach.py), 3-6x a vision
+    # scan's 1400-token budget, and both are naturally occasional actions
+    # (you adapt a specific recipe before cooking it, you generate a plan
+    # once and rarely regenerate it) rather than something done several
+    # times per meal the way scanning is. So both numbers below are set
+    # LOWER than their scan equivalents, not equal to them -- 2/day free
+    # (enough to try adapting one recipe and generating one plan without
+    # being a wall) and a 40/day ceiling that keeps the worst-case daily
+    # spend for one account in the same order of magnitude as the scan
+    # ceiling's, despite each call costing several times more: high enough
+    # that no real person meets it, low enough that a script does.
+    free_tier_daily_reasoning_calls: int = 2
+    pro_daily_reasoning_ceiling: int = 40
     # NeutriAI launches free for everyone while it collects real corrected
     # usage data, with no way to actually collect payment set up yet -- ON
     # by default because that is the current state of the product, not a
