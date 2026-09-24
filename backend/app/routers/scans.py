@@ -17,7 +17,9 @@ from ..models.nutrition import (
 )
 from ..services.ai import vision
 from ..services.ai.portion import _key
-from ..services import calibration, food_identity, portion_learning, scale_learning
+from ..services import (
+    accuracy_checks, calibration, food_identity, portion_learning, scale_learning,
+)
 from ..services.nutrition import resolver
 
 log = structlog.get_logger()
@@ -326,10 +328,15 @@ async def correct_meal(meal_id: str, body: MealIn, user: CurrentUserDep):
     fresh = one(
         user.sb.table("meals").select("*, meal_items(*)").eq("id", meal_id).limit(1).execute()
     )
+    # A tester read these numbers off a kitchen scale; anyone else typed a
+    # guess. Only tagged and logged for now -- nothing learns differently.
+    tester = accuracy_checks.is_tester(user.sb, user.id)
+    source = "weighed" if tester else "typed"
+
     # Only after the correction is safely stored. Learning is a bonus and
     # must never be able to fail a user's edit.
     calibration.learn_from_correction(
-        user.id, existing.get("scan_id"), original_items, body.items
+        user.id, existing.get("scan_id"), original_items, body.items, source=source
     )
     # The other half of the same correction. These two are deliberately
     # disjoint: calibration takes corrections on VESSEL-scaled photos and learns
@@ -337,7 +344,7 @@ async def correct_meal(meal_id: str, body: MealIn, user: CurrentUserDep):
     # fixed the scale, and learns how tall the food stood. Attributing a
     # correction to the wrong term moves a value that was not at fault.
     portion_learning.learn_from_correction(
-        existing.get("scan_id"), original_items, body.items
+        existing.get("scan_id"), original_items, body.items, source=source
     )
     # And the third thing a correction can carry: what the food ACTUALLY is.
     #
@@ -346,8 +353,55 @@ async def correct_meal(meal_id: str, body: MealIn, user: CurrentUserDep):
     # nutrition lookup together -- one plate of rajas called "creamy chicken"
     # instead of "creamy mushroom sauce" moved the meal from 186 g to 315 g and
     # its energy by 40%, on geometry that was within 12% both times.
-    food_identity.learn_from_correction(user.id, original_items, body.items)
+    food_identity.learn_from_correction(user.id, original_items, body.items, source=source)
 
+    # A tester's correction is also a prediction check: what the scan said
+    # against what their scale said, per item they changed. Logged only; a
+    # failure here must not fail the correction they just saved.
+    if tester:
+        try:
+            accuracy_checks.record(accuracy_checks.corrected_rows(
+                user.id, existing.get("scan_id"), meal_id, original_items, body.items,
+            ))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("accuracy_check_log_failed", meal_id=meal_id, error=str(exc)[:200])
+
+    return MealOut(**{**fresh, "items": fresh.pop("meal_items", [])})
+
+
+@router.post("/meals/{meal_id}/verify", response_model=MealOut)
+async def verify_meal(meal_id: str, user: CurrentUserDep):
+    """A tester's "matches what I weighed": the scan already equals their
+    kitchen scale, so there is nothing to type and nothing to learn.
+
+    Items are left exactly as they are and no learn_from_correction runs. One
+    scan_accuracy_checks row per item records predicted == actual, and the
+    meal is marked verified, as a correction does. Testers only -- checked
+    here, not just by hiding the button.
+    """
+    existing = maybe_one(
+        user.sb.table("meals").select("id, scan_id").eq("id", meal_id)
+        .eq("user_id", user.id).limit(1).execute()
+    )
+    if not existing:
+        raise NotFound("Meal not found.")
+    if not accuracy_checks.is_tester(user.sb, user.id):
+        raise Forbidden("Only invited testers can verify a scan against a scale.")
+
+    items = rows(
+        user.sb.table("meal_items").select("name, grams").eq("meal_id", meal_id).execute()
+    )
+    # Recorded BEFORE the meal is marked verified: this row is the whole point
+    # of the action, so if it cannot be written the tester should see a
+    # failure and retry, not a verified meal with no check behind it.
+    accuracy_checks.record(
+        accuracy_checks.matched_rows(user.id, existing.get("scan_id"), meal_id, items)
+    )
+    user.sb.table("meals").update({"is_verified": True, "confidence": 1.0}) \
+        .eq("id", meal_id).execute()
+    fresh = one(
+        user.sb.table("meals").select("*, meal_items(*)").eq("id", meal_id).limit(1).execute()
+    )
     return MealOut(**{**fresh, "items": fresh.pop("meal_items", [])})
 
 @router.delete("/meals/{meal_id}", response_model=Ok)

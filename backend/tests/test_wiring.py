@@ -146,6 +146,11 @@ WRITE_ONLY_TABLES_ALLOWED = {
     # the event id is the read: a duplicate webhook fails the insert, which is
     # precisely the check. Reading it first would be a race.
     "stripe_events",
+    # Tester weighed-verification (0028): predicted vs. kitchen-scale grams.
+    # Read by humans in SQL to compute the real bias across testers; the app
+    # deliberately does not act on it yet -- weighting learning by it is a
+    # separate, later decision. Remove from here when something reads it.
+    "scan_accuracy_checks",
 }
 
 
