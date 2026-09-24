@@ -330,7 +330,11 @@ async def correct_meal(meal_id: str, body: MealIn, user: CurrentUserDep):
     )
     # A tester read these numbers off a kitchen scale; anyone else typed a
     # guess. Only tagged and logged for now -- nothing learns differently.
-    tester = accuracy_checks.is_tester(user.sb, user.id)
+    # Read with the service role: since 0029 the client role may SELECT only
+    # the five public profile columns, so through user.sb this read is
+    # refused and is_tester() would quietly answer False for every tester.
+    # Filtered to the verified user.id, so access is unchanged.
+    tester = accuracy_checks.is_tester(service(), user.id)
     source = "weighed" if tester else "typed"
 
     # Only after the correction is safely stored. Learning is a bonus and
@@ -385,7 +389,8 @@ async def verify_meal(meal_id: str, user: CurrentUserDep):
     )
     if not existing:
         raise NotFound("Meal not found.")
-    if not accuracy_checks.is_tester(user.sb, user.id):
+    # Service role, as in correct_meal -- via user.sb this is refused under 0029.
+    if not accuracy_checks.is_tester(service(), user.id):
         raise Forbidden("Only invited testers can verify a scan against a scale.")
 
     items = rows(

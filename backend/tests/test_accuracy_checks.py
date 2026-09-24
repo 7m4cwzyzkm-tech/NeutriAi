@@ -57,8 +57,15 @@ def test_matched_rows_record_predicted_equal_to_actual():
 class _Query:
     def __init__(self, db, table):
         self.db, self.table, self.filters, self.update_with = db, table, {}, None
+        self.client_role = False
 
-    def select(self, *_a):
+    def select(self, cols="*", *_a):
+        # The client role under 0029: only the five public profile columns.
+        if self.client_role and self.table == "profiles" and not (
+            {c.strip() for c in cols.split(",")}
+            <= {"id", "handle", "display_name", "avatar_url", "bio"}
+        ):
+            raise RuntimeError("permission denied for table profiles")
         return self
 
     def eq(self, col, val):
@@ -85,11 +92,22 @@ class _Query:
 
 
 class _SB:
-    def __init__(self, db):
-        self.db = db
+    """client_role=True behaves like user.sb under 0029; False like service()."""
+
+    def __init__(self, db, client_role=False):
+        self.db, self.client_role = db, client_role
 
     def table(self, name):
-        return _Query(self.db, name)
+        q = _Query(self.db, name)
+        q.client_role = self.client_role
+        return q
+
+
+def _as_user(monkeypatch, db):
+    """A caller whose own client cannot read is_tester (0029), with the
+    route's service() pointed at the same data -- where the flag lives."""
+    monkeypatch.setattr(scans, "service", lambda: _SB(db))
+    return SimpleNamespace(id="u1", sb=_SB(db, client_role=True))
 
 
 def _db(tester: bool):
@@ -108,7 +126,7 @@ def test_verify_is_refused_for_a_non_tester(monkeypatch):
     recorded = []
     monkeypatch.setattr(AC, "record", recorded.extend)
     db = _db(tester=False)
-    user = SimpleNamespace(id="u1", sb=_SB(db))
+    user = _as_user(monkeypatch, db)
     with pytest.raises(Forbidden):
         asyncio.run(scans.verify_meal("m1", user))
     assert recorded == [] and db["meals"][0]["is_verified"] is False
@@ -118,7 +136,7 @@ def test_verify_records_a_match_and_marks_the_meal_verified(monkeypatch):
     recorded = []
     monkeypatch.setattr(AC, "record", recorded.extend)
     db = _db(tester=True)
-    user = SimpleNamespace(id="u1", sb=_SB(db))
+    user = _as_user(monkeypatch, db)
     asyncio.run(scans.verify_meal("m1", user))
     assert [(r["outcome"], r["item_name"], r["predicted_grams"], r["actual_grams"])
             for r in recorded] == [("matched", "rice", 150.0, 150.0)]
@@ -132,3 +150,13 @@ def test_is_tester_is_false_when_the_column_is_not_there_yet():
         def table(self, _name):
             raise RuntimeError('column profiles.is_tester does not exist')
     assert AC.is_tester(Broken(), "u1") is False
+
+
+def test_is_tester_must_be_read_with_the_service_role():
+    """The bug this locks down: under 0029 the caller's own client cannot read
+    is_tester, and is_tester() turns that refusal into False -- so reading it
+    through user.sb silently demoted every tester (verify -> 403). The routes
+    pass service(); this shows why they must."""
+    db = _db(tester=True)
+    assert AC.is_tester(_SB(db, client_role=True), "u1") is False   # refused
+    assert AC.is_tester(_SB(db), "u1") is True                       # service role

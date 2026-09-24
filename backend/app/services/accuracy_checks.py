@@ -25,6 +25,11 @@ def is_tester(sb: Any, user_id: str) -> bool:
 
     False on any failure -- including the column not existing yet because
     0028 has not been applied -- so an ordinary correction never breaks.
+
+    Pass the SERVICE-role client. is_tester is a private column: from 0029 on
+    the client role cannot read it, even on its own row, and because a failed
+    read returns False here, a user.sb client would silently demote every
+    tester instead of raising.
     """
     try:
         row = maybe_one(
