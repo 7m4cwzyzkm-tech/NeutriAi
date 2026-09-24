@@ -1,6 +1,6 @@
 /** Recipe browsing, posting, and one-tap AI personalization. */
 import React, { useState } from 'react';
-import { Alert, FlatList, Modal, ScrollView, Text, View } from 'react-native';
+import { FlatList, Modal, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { radius, space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, Divider, Empty, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
@@ -44,8 +44,9 @@ export function RecipesScreen() {
         },
       });
       setAdapted(result);
-    } catch (e: any) {
-      if (!e?.needsUpgrade) Alert.alert('Could not adapt', e?.message ?? 'Try again.');
+    } catch {
+      // useAdaptRecipe's onError already opened the paywall or showed the
+      // alert; alerting here too would show it twice.
     }
   }
 

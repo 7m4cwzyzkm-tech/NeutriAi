@@ -1,4 +1,5 @@
 /** React Query hooks. Keys are centralized so invalidation is never guesswork. */
+import { Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { ApiError } from '../api/types';
@@ -22,13 +23,46 @@ export const keys = {
   notifications: ['notifications'] as const,
 };
 
-/** Any 402/quota error anywhere opens the paywall exactly once. */
-function usePaywallOnError() {
+const GENERIC_ERROR = 'Something went wrong. Please try again.';
+
+/**
+ * What to tell a person about a failed request. The backend's own message is
+ * used when it was written for people: AppError subclasses (4xx with a real
+ * code), the unhandled-500 text ("Something went wrong on our side."), and
+ * the client's own network/timeout text (status 0). Not used when it can be
+ * technical: upstream_error can embed a provider's raw exception text,
+ * validation_error is "Request body failed validation.", and a bare
+ * http_404-style code carries Starlette's "Not Found".
+ */
+export function userMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) return GENERIC_ERROR;
+  if (
+    error.code === 'upstream_error' ||
+    error.code === 'validation_error' ||
+    error.code.startsWith('http_') ||
+    !error.message
+  ) {
+    return GENERIC_ERROR;
+  }
+  return error.message;
+}
+
+/**
+ * onError for mutations that call a paid AI endpoint. A 402/quota error opens
+ * the paywall -- exactly as before, and ONLY that, no second alert. Every
+ * other failure (network, timeout, 5xx, a 4xx) gets a plain alert: before
+ * this, those failed silently, and "couldn't create a workout plan" showed
+ * nothing at all. The screens using these mutations leave the alert to this
+ * handler, so it is shown once.
+ */
+function useApiErrorHandler(title: string) {
   const openPaywall = useApp((s) => s.openPaywall);
   return (error: unknown) => {
     if (error instanceof ApiError && error.needsUpgrade) {
       openPaywall(error.message);
+      return;
     }
+    Alert.alert(title, userMessage(error));
   };
 }
 
@@ -134,7 +168,7 @@ export function useUpdateHydrationSettings() {
 
 export function useScanMeal() {
   const qc = useQueryClient();
-  const onError = usePaywallOnError();
+  const onError = useApiErrorHandler('Could not analyse that');
   return useMutation({
     mutationFn: api.nutrition.scan,
     onError,
@@ -181,7 +215,7 @@ export function useEndFast() {
 }
 
 export function useAdaptRecipe() {
-  const onError = usePaywallOnError();
+  const onError = useApiErrorHandler('Could not adapt');
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: unknown }) => api.recipes.adapt(id, body),
     onError,
@@ -190,7 +224,7 @@ export function useAdaptRecipe() {
 
 export function useCreatePlan() {
   const qc = useQueryClient();
-  const onError = usePaywallOnError();
+  const onError = useApiErrorHandler("Couldn't build your plan");
   return useMutation({
     mutationFn: api.fitness.createPlan,
     onError,
