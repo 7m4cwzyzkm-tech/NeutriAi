@@ -33,8 +33,11 @@ async def log_workout(body: WorkoutIn, user: CurrentUserDep):
     ended = body.ended_at
     duration = body.duration_s or (int((ended - started).total_seconds()) if ended else None)
 
+    # The caller's own profile, read with the service role: since 0029 the client
+    # role may SELECT only the five public columns of any profile, its own
+    # included. Filtered to the verified user.id, so access is unchanged.
     profile = maybe_one(
-        user.sb.table("profiles").select("birth_date,weight_kg").eq("id", user.id)
+        service().table("profiles").select("birth_date,weight_kg").eq("id", user.id)
         .limit(1).execute()
     ) or {}
 
@@ -192,8 +195,11 @@ async def create_plan(
         equipment = scan["equipment"]
     equipment = equipment or ["none"]
 
+    # The caller's own profile, read with the service role: since 0029 the client
+    # role may SELECT only the five public columns of any profile, its own
+    # included. Filtered to the verified user.id, so access is unchanged.
     profile = maybe_one(
-        user.sb.table("profiles").select("*").eq("id", user.id).limit(1).execute()
+        service().table("profiles").select("*").eq("id", user.id).limit(1).execute()
     ) or {}
     history = rows(
         user.sb.table("workouts").select("id,kind,started_at").eq("user_id", user.id)
