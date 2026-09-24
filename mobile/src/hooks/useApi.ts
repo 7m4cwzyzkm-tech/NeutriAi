@@ -150,6 +150,9 @@ export function useLogWorkout() {
   return useMutation({
     mutationFn: api.fitness.logWorkout,
     onSuccess: () => {
+      // A workout logged against a plan day sets that day's completed_at
+      // server-side, so the plan has to refetch for its "Done" pill to show.
+      qc.invalidateQueries({ queryKey: keys.plan });
       qc.invalidateQueries({ queryKey: keys.workouts });
       qc.invalidateQueries({ queryKey: keys.prs });
       qc.invalidateQueries({ queryKey: keys.dashboard() });

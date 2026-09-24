@@ -9,6 +9,7 @@ import { api } from '../api/client';
 import { uploadImage } from '../api/supabase';
 import { useCreatePlan, useCurrentPlan, usePRs } from '../hooks/useApi';
 import type { EquipmentScan } from '../api/types';
+import { WorkoutDayLogger, type LoggedSummary } from '../components/WorkoutDayLogger';
 
 const GOALS = [
   { id: 'build_muscle', label: 'Build muscle' },
@@ -60,6 +61,12 @@ export function TrainScreen() {
   const [continuedPlanId, setContinuedPlanId] = useState<string | null>(null);
   const [days, setDays] = useState(4);
   const [week, setWeek] = useState(1);
+  // Which plan day's log form is open (one at a time), and what was logged
+  // this session. The summary is session-only: GET /workouts does not return
+  // plan_day_id, so a logged workout cannot be matched back to its day after
+  // a reload -- the "Done" pill (from plan_days.completed_at) is what persists.
+  const [loggingDayId, setLoggingDayId] = useState<string | null>(null);
+  const [logged, setLogged] = useState<Record<string, LoggedSummary>>({});
 
   // "Live capture" for this screen: hand off to the system camera and, on a
   // real photo, add it to the shots collected so far. Used both for the
@@ -326,7 +333,16 @@ export function TrainScreen() {
                       </View>
                     ) : null}
                   </Row>
-                  {d.blocks.map((b, i) => (
+                  {loggingDayId === d.id ? (
+                    <WorkoutDayLogger
+                      day={d}
+                      onCancel={() => setLoggingDayId(null)}
+                      onDone={(summary) => {
+                        setLoggingDayId(null);
+                        setLogged((l) => ({ ...l, [d.id]: summary }));
+                      }}
+                    />
+                  ) : d.blocks.map((b, i) => (
                     <View key={i} style={{ gap: 2 }}>
                       <Row style={{ justifyContent: 'space-between' }}>
                         <Text style={[type.body, { color: c.text }]}>{b.name}</Text>
@@ -339,6 +355,27 @@ export function TrainScreen() {
                       ) : null}
                     </View>
                   ))}
+                  {logged[d.id] ? (
+                    <View style={{ gap: 2 }}>
+                      <Text style={[type.caption, { color: c.textDim }]}>
+                        Logged {logged[d.id].exercises} exercise{logged[d.id].exercises === 1 ? '' : 's'},{' '}
+                        {logged[d.id].sets} set{logged[d.id].sets === 1 ? '' : 's'}.
+                      </Text>
+                      {logged[d.id].prs.map((pr, i) => (
+                        <Text key={i} style={[type.caption, { color: c.accent, fontWeight: '600' }]}>
+                          New PR: {pr.exercise_slug.replace(/-/g, ' ')} {pr.value}{pr.unit}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                  {!d.completed_at && !logged[d.id] && loggingDayId !== d.id ? (
+                    <Button
+                      title="Log this workout"
+                      variant="secondary"
+                      disabled={loggingDayId !== null}
+                      onPress={() => setLoggingDayId(d.id)}
+                    />
+                  ) : null}
                 </Card>
               ))}
             </>
