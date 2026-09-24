@@ -29,11 +29,13 @@ import { Alert, Image, LayoutChangeEvent, ScrollView, Text, TextInput, View } fr
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { CameraGeometry, measureCameraGeometry } from '../native/depth';
 import { useNavigation } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { confidenceColor, radius, space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
+import { api } from '../api/client';
 import { uploadImage } from '../api/supabase';
-import { useScanMeal } from '../hooks/useApi';
+import { keys, useScanMeal } from '../hooks/useApi';
 import { useTiltReading } from '../hooks/useTiltReading';
 import type { ScanResult } from '../api/types';
 import { methodLabel } from '../lib/method';
@@ -66,6 +68,7 @@ export function ScanScreen() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const scan = useScanMeal();
+  const qc = useQueryClient();
   const cameraRef = React.useRef<CameraView>(null);
   // Geometry belongs to the moment the shutter fired -- by the time the
   // user taps Analyse the phone has moved and any distance is stale.
@@ -178,6 +181,48 @@ export function ScanScreen() {
     }
   }
 
+  /**
+   * Every "retake" goes through here: the failed scan's "Try another photo",
+   * the unmeasured scan's "Retake with a card", and the ordinary result's
+   * "Retake photo". The accept paths ("Looks right", "Keep the estimate")
+   * never do.
+   *
+   * The backend writes the meal the moment the scan finishes, before this
+   * screen has shown it (vision.py, "persist meal"), so a retake that only
+   * reset local state left that meal in the food log and in the day's totals
+   * -- once per retake, without the user ever saying "log this". A retake is
+   * a discard, so the meal it discards is deleted.
+   *
+   * Best-effort: the delete is started first but never awaited, so a slow or
+   * failed request cannot hold the user on this screen. A failure is logged,
+   * not alerted -- there is nothing the user can do about it here. A scan
+   * that failed before anything was persisted has no meal_id; nothing is
+   * deleted then.
+   *
+   * Geometry and capture extras are cleared too: capture() keeps them from
+   * the FIRST shot only, so without this the new photo was sent with the
+   * discarded photo's size and tilt.
+   */
+  function discardAndRetake(opts: { needCard?: boolean } = {}) {
+    const mealId = result?.meal_id;
+    if (mealId) {
+      api.nutrition.deleteMeal(mealId)
+        .then(() => {
+          qc.invalidateQueries({ queryKey: keys.dashboard() });
+          qc.invalidateQueries({ queryKey: keys.meals() });
+        })
+        .catch((e: any) => {
+          console.warn('Could not delete the discarded scan meal', mealId, e?.message ?? e);
+        });
+    }
+    setNeedCard(!!opts.needCard);
+    setResult(null);
+    setShots([]);
+    setReviewing(false);
+    setGeometry({});
+    setCaptureExtras({});
+  }
+
   // -------------------------------------------------------------------- info
   // Shown once per scan, before the camera opens. `infoSubmitted` is never
   // reset by a retake (see the failed-scan and not-measured buttons below),
@@ -264,8 +309,7 @@ export function ScanScreen() {
               </Card>
 
               <Row gap={space.md}>
-                <Button title="Try another photo" style={{ flex: 1 }}
-                        onPress={() => { setResult(null); setShots([]); setReviewing(false); setNeedCard(false); }} />
+                <Button title="Try another photo" style={{ flex: 1 }} onPress={() => discardAndRetake()} />
               </Row>
             </ScrollView>
           </SafeAreaView>
@@ -327,7 +371,7 @@ export function ScanScreen() {
                   <Button
                     title="Retake with a card"
                     style={{ flex: 1 }}
-                    onPress={() => { setNeedCard(true); setResult(null); setShots([]); setReviewing(false); }}
+                    onPress={() => discardAndRetake({ needCard: true })}
                   />
                   <Button
                     title="Keep the estimate"
@@ -426,6 +470,13 @@ export function ScanScreen() {
               />
               <Button title="Looks right" style={{ flex: 1 }} onPress={() => nav.navigate('Home')} />
             </Row>
+            {/* The way out of a result that looks fine but is wrong -- the
+                wrong foods, or one missed. Below the two accept-side actions
+                and quieter than them, so it is there when needed and not the
+                first thing a thumb lands on. Discards this meal (see
+                discardAndRetake) and goes straight back to the camera; the
+                meal slot and description are kept. */}
+            <Button title="Retake photo" variant="ghost" onPress={() => discardAndRetake()} />
           </ScrollView>
         </SafeAreaView>
       </Screen>
