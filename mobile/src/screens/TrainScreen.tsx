@@ -1,5 +1,5 @@
 /** Workout logging, the AI plan, and equipment scanning. */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { api } from '../api/client';
 import { uploadImage } from '../api/supabase';
 import { useCreatePlan, useCurrentPlan, usePRs } from '../hooks/useApi';
 import type { EquipmentScan } from '../api/types';
+import { EquipmentEditor } from '../components/EquipmentEditor';
+import { editableEquipment, equipmentForRequest, equipmentLabel } from '../lib/equipment';
 import { WorkoutDayLogger, type LoggedSummary } from '../components/WorkoutDayLogger';
 
 const GOALS = [
@@ -54,6 +56,17 @@ export function TrainScreen() {
   // to know a review is in progress; the review UI below is keyed on exactly
   // that.
   const [shots, setShots] = useState<string[]>([]);
+  // The scan's equipment as the user has corrected it -- a scan can name
+  // something that isn't there (a medicine ball Gil doesn't own). Reset from
+  // each new scan result; this, not the raw scan, is what the plan is built
+  // around.
+  const [scanEquipment, setScanEquipment] = useState<string[]>([]);
+  useEffect(() => {
+    setScanEquipment(editableEquipment(equipment?.equipment));
+  }, [equipment?.id]);
+  // The same correction for the NEXT block: null means "unchanged, use the
+  // current plan's list"; the editor opens on request.
+  const [blockEquipment, setBlockEquipment] = useState<string[] | null>(null);
   const [goal, setGoal] = useState('build_muscle');
   const [experience, setExperience] = useState('intermediate');
   // "Continue with this plan" hides the block-finished prompt for that plan
@@ -109,7 +122,9 @@ export function TrainScreen() {
       weeks: BLOCK_WEEKS,
       session_minutes: 45,
       equipment_scan_id: equipment?.id,
-      equipment: equipment?.equipment,
+      // The user-corrected list, never the raw scan. Without a scan nothing
+      // is sent and the server uses its bodyweight default, as before.
+      equipment: equipment ? equipmentForRequest(scanEquipment) : undefined,
       experience,
       limitations: [],
     });
@@ -129,11 +144,11 @@ export function TrainScreen() {
         days_per_week: plan.days_per_week,
         weeks: BLOCK_WEEKS,
         session_minutes: 45,
-        equipment: plan.equipment,
+        equipment: blockEquipment ? equipmentForRequest(blockEquipment) : plan.equipment,
         experience,
         limitations: [],
       },
-      { onSuccess: () => setWeek(1) },
+      { onSuccess: () => { setWeek(1); setBlockEquipment(null); } },
     );
   }
 
@@ -213,12 +228,12 @@ export function TrainScreen() {
                 {equipment ? (
                   <View style={{ gap: space.sm }}>
                     <Divider />
-                    <Label>Detected</Label>
-                    <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
-                      {equipment.equipment.map((e) => (
-                        <Chip key={e} label={e.replace(/_/g, ' ')} active />
-                      ))}
-                    </Row>
+                    <EquipmentEditor
+                      title="Detected — check it's right"
+                      value={scanEquipment}
+                      onChange={setScanEquipment}
+                    />
+                    {equipment.detected.length ? <Label>What the scan saw</Label> : null}
                     {equipment.detected.map((d, i) => (
                       <Text key={i} style={[type.caption, { color: c.textFaint }]}>
                         • {d.detail}
@@ -297,6 +312,26 @@ export function TrainScreen() {
                     A new block picks up where this one's last week left off and pushes further.
                     Or keep going with this plan as it is.
                   </Body>
+                  {blockEquipment ? (
+                    <EquipmentEditor
+                      title="Equipment for the next block"
+                      value={blockEquipment}
+                      onChange={setBlockEquipment}
+                    />
+                  ) : (
+                    <Row style={{ justifyContent: 'space-between' }}>
+                      <Text style={[type.caption, { color: c.textDim, flex: 1 }]}>
+                        Equipment:{' '}
+                        {editableEquipment(plan.equipment).map(equipmentLabel).join(', ') || 'none (bodyweight)'}
+                      </Text>
+                      <Button
+                        title="Change"
+                        variant="ghost"
+                        disabled={createPlan.isPending}
+                        onPress={() => setBlockEquipment(editableEquipment(plan.equipment))}
+                      />
+                    </Row>
+                  )}
                   <Row gap={space.md}>
                     <Button
                       title="Continue this plan"
