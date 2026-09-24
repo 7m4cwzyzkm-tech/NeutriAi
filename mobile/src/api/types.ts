@@ -92,6 +92,16 @@ export interface Fast {
   pct: number; phase: string; phase_note: string; streak: number;
 }
 
+// GET /fasts/settings returns the fasting_settings row, or a two-field default
+// when the user has never saved one -- so every notify_* flag may be absent.
+export interface FastingSettings {
+  protocol?: string;
+  eating_window_start?: string;
+  notify_start?: boolean;
+  notify_end?: boolean;
+  notify_halfway?: boolean;
+}
+
 export interface WaterDay {
   day: string; goal_ml: number; total_ml: number; pct: number;
   remaining_ml: number; logs: { id: string; amount_ml: number; logged_at: string }[];

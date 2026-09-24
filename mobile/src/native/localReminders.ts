@@ -1,5 +1,6 @@
 /**
- * Local, on-device water reminders.
+ * Local, on-device reminders: water (repeating slots, refreshed on
+ * foreground) and fasting (one-shot, see scheduleLocalReminder below).
  *
  * Server push cannot reach this device today: registerForPush() in
  * notifications.ts skips registration entirely because this project has no
@@ -62,13 +63,48 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   return status === 'granted';
 }
 
-async function cancelWaterReminders(): Promise<void> {
+/** Cancel every pending local notification this app tagged with `kind`. */
+export async function cancelRemindersOfKind(kind: string): Promise<void> {
   const pending = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     pending
-      .filter((n) => n.content.data?.kind === WATER_REMINDER_KIND)
+      .filter((n) => n.content.data?.kind === kind)
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
+}
+
+async function cancelWaterReminders(): Promise<void> {
+  await cancelRemindersOfKind(WATER_REMINDER_KIND);
+}
+
+/**
+ * Schedule ONE local notification at a fixed future date, tagged with `kind`
+ * so cancelRemindersOfKind() can find it again. A date in the past (or less
+ * than a few seconds out) schedules nothing rather than firing immediately.
+ *
+ * A one-shot DATE trigger is handed to the OS, not kept by the app: iOS gets
+ * a UNTimeIntervalNotificationTrigger registered with UNUserNotificationCenter,
+ * Android an AlarmManager setExactAndAllowWhileIdle alarm (inexact
+ * setAndAllowWhileIdle if the exact-alarm permission is off on Android 12+),
+ * which expo-notifications re-arms on BOOT_COMPLETED. So it fires with the app
+ * backgrounded or swiped away -- the app does NOT need to be reopened. It will
+ * not fire if the user force-stops the app on Android (that clears its alarms)
+ * or has notifications turned off.
+ */
+export async function scheduleLocalReminder({
+  kind, title, body, date, data = {},
+}: {
+  kind: string;
+  title: string;
+  body: string;
+  date: Date;
+  data?: Record<string, unknown>;
+}): Promise<string | null> {
+  if (!Device.isDevice || date.getTime() <= Date.now() + 5_000) return null;
+  return Notifications.scheduleNotificationAsync({
+    content: { title, body, data: { ...data, kind } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
+  });
 }
 
 /**
@@ -120,13 +156,12 @@ export async function refreshWaterReminders(
 
   await Promise.all(
     slots.map((date) =>
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Time for water',
-          body: "Log what you've had, or tap to catch up.",
-          data: { kind: WATER_REMINDER_KIND, deep_link: 'neutriai://water' },
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date },
+      scheduleLocalReminder({
+        kind: WATER_REMINDER_KIND,
+        title: 'Time for water',
+        body: "Log what you've had, or tap to catch up.",
+        date,
+        data: { deep_link: 'neutriai://water' },
       }),
     ),
   );
