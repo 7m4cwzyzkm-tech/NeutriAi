@@ -16,6 +16,8 @@ export interface Profile {
   activity_level: string; goal: Goal; diet_mode: string;
   unit_system: 'metric' | 'imperial'; timezone: string;
   is_private: boolean; onboarded_at?: string | null;
+  // Weighed-verification tester. Read-only: set by hand in Supabase.
+  is_tester?: boolean;
 }
 
 export interface Targets {

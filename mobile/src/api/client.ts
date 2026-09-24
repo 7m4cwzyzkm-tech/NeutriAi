@@ -139,6 +139,9 @@ export const api = {
     correctMeal: (id: string, body: unknown) =>
       request<Meal>(`/meals/${id}`, { method: 'PATCH', body }),
     deleteMeal: (id: string) => request(`/meals/${id}`, { method: 'DELETE' }),
+    // Testers only: the scan already equals their kitchen scale. 403 for
+    // anyone else -- the server checks, not just this screen.
+    verifyMeal: (id: string) => request<Meal>(`/meals/${id}/verify`, { method: 'POST' }),
     assessments: (day?: string) => request<unknown[]>('/assessments', { query: { day } }),
     searchFoods: (q: string) => request<unknown[]>('/foods/search', { query: { q } }),
     calibrations: {

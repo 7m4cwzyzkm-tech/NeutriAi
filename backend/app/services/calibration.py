@@ -112,10 +112,16 @@ def _implied_ratio(original: list[dict], corrected: list[dict]) -> float | None:
 
 
 def learn_from_correction(user_id: str, scan_id: str | None,
-                          original_items: list[dict], corrected_items: list) -> None:
+                          original_items: list[dict], corrected_items: list,
+                          source: str = "typed") -> None:
     """Update the user's size for whichever vessel was in this photo.
 
     Never raises: a failure to learn must not fail the user's correction.
+
+    `source` says where the corrected numbers came from: "typed" (the default,
+    every ordinary correction) or "weighed" (a tester read them off a kitchen
+    scale). It is recorded in the log line only; it does not change what is
+    learned -- weighting by it is a separate, later decision.
     """
     try:
         if not scan_id:
@@ -179,7 +185,7 @@ def learn_from_correction(user_id: str, scan_id: str | None,
 
         log.info("calibration_learned", vessel=vessel, user_id=user_id,
                  ratio=round(ratio, 3), was=round(current, 1),
-                 now=round(updated, 1), samples=samples)
+                 now=round(updated, 1), samples=samples, source=source)
     except Exception as exc:  # noqa: BLE001
         # Learning is a bonus. A user's correction must save regardless.
         log.warning("calibration_learning_failed", error=str(exc)[:200])

@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { confidenceColor, radius, space, type, useTheme } from '../theme';
 import { Body, Button, Card, Chip, Divider, H1, H2, Label, Loading, Row, Screen } from '../components/Primitives';
 import { api } from '../api/client';
-import { keys } from '../hooks/useApi';
+import { keys, useProfile } from '../hooks/useApi';
 import type { Meal, MealSlot } from '../api/types';
 import { methodLabel } from '../lib/method';
 
@@ -68,6 +68,11 @@ export function MealDetailScreen() {
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  // Same cached profile query the rest of the app uses; is_tester is set by
+  // hand in Supabase for invited weighed-verification testers.
+  const { data: profile } = useProfile();
+  const isTester = !!profile?.is_tester;
 
   useEffect(() => {
     if (!mealId) { setLoading(false); return; }
@@ -184,6 +189,25 @@ export function MealDetailScreen() {
       Alert.alert('Could not save', e?.message ?? 'Please try again.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  // "Matches what I weighed": the tester weighed each food before plating it
+  // and the scan already equals their scale, so there is nothing to type.
+  // Records the match for the bias figure and marks the meal verified; it
+  // changes no item. The server refuses this for non-testers too.
+  async function verify() {
+    if (!mealId) return;
+    setVerifying(true);
+    try {
+      await api.nutrition.verifyMeal(mealId);
+      qc.invalidateQueries({ queryKey: keys.dashboard() });
+      qc.invalidateQueries({ queryKey: keys.meals() });
+      nav.goBack();
+    } catch (e: any) {
+      Alert.alert('Could not confirm', e?.message ?? 'Please try again.');
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -372,14 +396,21 @@ export function MealDetailScreen() {
           <Button title="Delete this meal" variant="ghost" onPress={confirmDelete} />
         </ScrollView>
 
-        {dirty ? (
+        {/* One bar, two tester outcomes: edited -> save the scale readings as
+            corrections; untouched -> confirm the scan matched the scale.
+            Non-testers only ever see Save corrections, as before. */}
+        {dirty || (isTester && meal && !meal.is_verified) ? (
           <View style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             padding: space.lg, backgroundColor: c.surface,
             borderTopWidth: 1, borderTopColor: c.border,
           }}>
             <SafeAreaView edges={['bottom']}>
-              <Button title="Save corrections" loading={saving} onPress={save} />
+              {dirty ? (
+                <Button title="Save corrections" loading={saving} onPress={save} />
+              ) : (
+                <Button title="Matches what I weighed" loading={verifying} onPress={verify} />
+              )}
             </SafeAreaView>
           </View>
         ) : null}
