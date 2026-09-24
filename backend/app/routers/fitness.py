@@ -201,7 +201,23 @@ async def create_plan(
         .limit(60).execute()
     )
 
-    plan = await coach.generate_plan(user.id, body, equipment, profile, history)
+    # The plan about to be replaced, read BEFORE it is deactivated below, so a
+    # new block can build on where the last one ended. The client cannot send
+    # this (PlanRequest is unchanged); the server already has it. Prescribed
+    # numbers only -- see coach.previous_block_summary.
+    previous = maybe_one(
+        user.sb.table("training_plans").select("id,name,weeks,progression")
+        .eq("user_id", user.id).eq("is_active", True).limit(1).execute()
+    )
+    final_week = rows(
+        user.sb.table("plan_days").select("week_index,day_index,title,blocks")
+        .eq("plan_id", previous["id"]).eq("week_index", previous["weeks"]).execute()
+    ) if previous else []
+    previous_block = coach.previous_block_summary(previous, final_week)
+
+    plan = await coach.generate_plan(
+        user.id, body, equipment, profile, history, previous_block=previous_block,
+    )
 
     # Deactivate the previous plan so the app always has exactly one current one.
     service().table("training_plans").update({"is_active": False}).eq(

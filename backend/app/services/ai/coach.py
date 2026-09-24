@@ -199,7 +199,54 @@ def _validate(plan: dict, lib: list[dict]) -> tuple[dict, list[str]]:
     return plan, warnings[:8]
 
 
-async def generate_plan(user_id: str, req, equipment: list[str], profile: dict, history: list[dict]) -> dict:
+# How much of the previous block goes into the prompt. A final week is a
+# handful of days of 3-6 blocks each; the cap only stops a malformed plan
+# from turning into an unbounded prompt.
+PREVIOUS_BLOCK_MAX_CHARS = 2500
+
+
+def previous_block_summary(plan: dict | None, final_week_days: list[dict]) -> str | None:
+    """The plan being replaced, as the model should read it: its progression
+    rule and what its FINAL week prescribed, so a new block can start at or
+    above where that one ended rather than from a cold start.
+
+    These are PRESCRIBED numbers (what the old plan told the user to do), not
+    what the user actually lifted -- the plan row does not hold performance.
+    None when there is no previous plan to build on.
+    """
+    if not plan:
+        return None
+    progression = plan.get("progression") or {}
+    weeks = plan.get("weeks")
+    lines = [
+        f"Name: {plan.get('name') or 'Training plan'} ({weeks} weeks)",
+        f"Progression rule: {progression.get('rule') or 'not stated'}"
+        + (f" (model: {progression['model']})" if progression.get("model") else ""),
+    ]
+    if final_week_days:
+        lines.append(f"Its final week (week {weeks}) prescribed:")
+        for d in sorted(final_week_days, key=lambda d: d.get("day_index") or 0):
+            blocks = d.get("blocks") or []
+            if not blocks:
+                continue
+            parts = []
+            for b in blocks:
+                part = f"{b.get('name') or b.get('slug')} {b.get('sets')}x{b.get('reps')}"
+                if b.get("load_hint"):
+                    part += f" @ {b['load_hint']}"
+                parts.append(part)
+            lines.append(f"- {d.get('title') or 'Day'}: " + "; ".join(parts))
+    text = "\n".join(lines)
+    return text[:PREVIOUS_BLOCK_MAX_CHARS]
+
+
+async def generate_plan(
+    user_id: str, req, equipment: list[str], profile: dict, history: list[dict],
+    previous_block: str | None = None,
+) -> dict:
+    """`previous_block`, when given, is previous_block_summary() of the plan
+    this one replaces -- the only input that makes a new block continue from
+    the last one. Everything else is unchanged by it."""
     lib = library_for(equipment)
     is_fallback = equipment in ([], ["none"])
 
@@ -216,7 +263,13 @@ async def generate_plan(user_id: str, req, equipment: list[str], profile: dict, 
             f"Body: {profile.get('weight_kg')} kg, goal {profile.get('goal')}, "
             f"activity {profile.get('activity_level')}\n"
             f"Recent sessions: {len(history)} in the last 30 days\n\n"
-            "Exercise library (use these exact slugs only):\n"
+            + (
+                "Previous block (the plan this one replaces -- start at or above "
+                "where its final week left off):\n"
+                f"{previous_block}\n\n"
+                if previous_block else ""
+            )
+            + "Exercise library (use these exact slugs only):\n"
             + "\n".join(
                 f"- {e['slug']} | {e['name']} | {e['kind']} | {e.get('primary_muscle')} | "
                 f"diff {e.get('difficulty')}"
