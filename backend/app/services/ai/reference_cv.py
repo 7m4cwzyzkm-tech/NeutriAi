@@ -130,11 +130,13 @@ def _worst_corner_error(pts) -> float:
     return worst
 
 
-def _best_by_consensus(found: list[dict], width: int) -> tuple[int, dict] | None:
-    """The quad that the most edge settings independently agreed on.
+def _top_candidate(found: list[dict], width: int) -> tuple[int, dict] | None:
+    """The quad that the most edge settings independently agreed on, and how
+    many did -- BEFORE the MIN_SETTING_CONSENSUS bar is applied.
 
     A real object survives being looked at several ways; a coincidence of one
-    threshold does not. Ties break on the closest side ratio.
+    threshold does not. Ties break on the closest side ratio. The caller
+    applies the bar, so a rejection can still report how close it came.
     """
     if not found:
         return None
@@ -152,7 +154,7 @@ def _best_by_consensus(found: list[dict], width: int) -> tuple[int, dict] | None
         score = (len(settings), -candidate["miss"], candidate)
         if best is None or (score[0], score[1]) > (best[0], best[1]):
             best = score
-    if best is None or best[0] < MIN_SETTING_CONSENSUS:
+    if best is None:
         return None
     return best[0], best[2]
 
@@ -180,6 +182,10 @@ def find_reference(img) -> ReferenceFind | None:
         frame_area = float(w * h)
 
         found: list[dict] = []
+        # Why contours were turned away, counted across all six edge
+        # settings, so a "no card" answer can say WHERE the card was lost.
+        # Numbers only -- nothing from the image itself is logged.
+        rejected = {"area": 0, "not_quad": 0, "sides": 0, "corners": 0, "aspect": 0}
 
         # Several edge thresholds rather than one. A card can be dark on a pale
         # cloth or pale on a dark table, and no single Canny pair finds both.
@@ -198,10 +204,12 @@ def find_reference(img) -> ReferenceFind | None:
                 for contour in contours:
                     area = cv2.contourArea(contour)
                     if not (MIN_AREA_FRACTION * frame_area < area < MAX_AREA_FRACTION * frame_area):
+                        rejected["area"] += 1
                         continue
                     perimeter = cv2.arcLength(contour, True)
                     quad = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
                     if len(quad) != 4 or not cv2.isContourConvex(quad):
+                        rejected["not_quad"] += 1
                         continue
 
                     pts = quad.reshape(4, 2).astype(float)
@@ -210,18 +218,22 @@ def find_reference(img) -> ReferenceFind | None:
                         for i in range(4)
                     ]
                     if min(sides) < 1e-6:
+                        rejected["sides"] += 1
                         continue
                     # A rectangle's opposite sides stay close under mild
                     # perspective. A trapezoid is a place mat, not a card.
                     if abs(sides[0] - sides[2]) / max(sides[0], sides[2]) > OPPOSITE_SIDE_TOLERANCE:
+                        rejected["sides"] += 1
                         continue
                     if abs(sides[1] - sides[3]) / max(sides[1], sides[3]) > OPPOSITE_SIDE_TOLERANCE:
+                        rejected["sides"] += 1
                         continue
                     # ...and its corners stay near 90 degrees. This is the test
                     # that rejects a plate rim or a fold of paper with four
                     # corners: on the bench it removed most false candidates
                     # before consensus had to.
                     if _worst_corner_error(pts) > CORNER_ANGLE_TOLERANCE_DEG:
+                        rejected["corners"] += 1
                         continue
 
                     long_px = (sides[0] + sides[2]) / 2.0
@@ -230,11 +242,13 @@ def find_reference(img) -> ReferenceFind | None:
                         long_px, short_px = short_px, long_px
                     observed = long_px / short_px
 
+                    matched = False
                     for kind, (mm_long, mm_short) in REFERENCE_RECTANGLES.items():
                         true_r = mm_long / mm_short
                         miss = abs(observed - true_r) / true_r
                         if miss > ASPECT_TOLERANCE:
                             continue
+                        matched = True
                         cx, cy = pts.mean(axis=0)
                         found.append({
                             "kind": kind, "miss": miss, "pts": pts,
@@ -243,11 +257,38 @@ def find_reference(img) -> ReferenceFind | None:
                             "setting": (blur, lo, hi),
                             "mm_per_px": mm_long / long_px,
                         })
+                    if not matched:
+                        rejected["aspect"] += 1
 
-        best = _best_by_consensus(found, w)
-        if best is None:
+        top = _top_candidate(found, w)
+        if top is None or top[0] < MIN_SETTING_CONSENSUS:
+            # The ordinary "no card" answer used to return silently, so a real
+            # photo that should have measured could never be explained after
+            # the fact. This says how far it got: nothing passed the shape
+            # tests (see `rejected` for which test stopped them), or a quad
+            # passed but too few edge settings agreed on it.
+            best_fields = {}
+            if top is not None:
+                agreed_n, near = top
+                best_fields = {
+                    "best_kind": near["kind"],
+                    "best_consensus": agreed_n,
+                    "best_aspect_miss": round(near["miss"], 4),
+                    "best_observed_aspect": round(near["observed"], 3),
+                    "best_length_ratio": round(near["long_px"] / max(w, 1), 4),
+                }
+            log.info(
+                "reference_not_found",
+                reason="no_candidate" if top is None else "below_consensus",
+                candidates=len(found),
+                consensus_needed=MIN_SETTING_CONSENSUS,
+                image_w=w,
+                image_h=h,
+                **{f"rejected_{k}": v for k, v in rejected.items()},
+                **best_fields,
+            )
             return None
-        agreed, pick = best
+        agreed, pick = top
         found_ref = ReferenceFind(
             kind=pick["kind"],
             corners=pick["pts"].tolist(),
