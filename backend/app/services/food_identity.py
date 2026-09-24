@@ -193,7 +193,8 @@ def aliases_for(user_id: str) -> list[dict]:
         return []
 
 
-def remember(user_id: str, described_as: str, actual_name: str) -> None:
+def remember(user_id: str, described_as: str, actual_name: str,
+             source: str = "typed") -> None:
     """Keep what the person said this food is. Never raises.
 
     Saving the meal is the user's action; learning from it is ours. A failure
@@ -229,26 +230,29 @@ def remember(user_id: str, described_as: str, actual_name: str) -> None:
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", row.get("id")).execute()
             log.info("food_identity_learned", described=described[:40],
-                     actual=actual[:40], agreed=same)
+                     actual=actual[:40], agreed=same, source=source)
             return
         sb.table(TABLE).insert({
             "user_id": user_id, "described_as": described,
             "actual_name": actual, "samples": 1,
         }).execute()
         log.info("food_identity_learned", described=described[:40],
-                 actual=actual[:40], agreed=False)
+                 actual=actual[:40], agreed=False, source=source)
     except Exception as exc:  # noqa: BLE001
         log.warning("food_identity_write_failed", error=str(exc)[:200])
 
 
 def learn_from_correction(user_id: str, original_items: list[dict],
-                          corrected_items: list) -> None:
+                          corrected_items: list, source: str = "typed") -> None:
     """Record every rename in this correction. Never raises.
 
     Keyed on `source_index` -- which detected item this correction edits -- for
     the same reason portion_learning is: the name is exactly what changed, so it
     cannot also be the key, and list position cannot tell a rename from a food
     the user ADDED. An item without one is an addition and teaches nothing.
+
+    `source` ("typed" by default, "weighed" from a tester) is recorded in the
+    food_identity_learned log line only; it changes nothing that is learned.
     """
     try:
         originals = [o for o in (original_items or []) if isinstance(o, dict)]
@@ -259,6 +263,6 @@ def learn_from_correction(user_id: str, original_items: list[dict],
             was = str(originals[idx].get("name") or "")
             now = str(getattr(item, "name", "") or "")
             if was and now and was.strip().lower() != now.strip().lower():
-                remember(user_id, was, now)
+                remember(user_id, was, now, source=source)
     except Exception as exc:  # noqa: BLE001
         log.warning("food_identity_learning_failed", error=str(exc)[:200])

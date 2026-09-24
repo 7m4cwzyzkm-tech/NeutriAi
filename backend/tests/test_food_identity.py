@@ -152,7 +152,7 @@ def test_a_rename_teaches_only_when_the_client_says_what_it_renamed():
 
 def test_a_correction_records_what_the_food_actually_was(monkeypatch):
     seen = []
-    monkeypatch.setattr(FI, "remember", lambda u, d, a: seen.append((u, d, a)))
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **_k: seen.append((u, d, a)))
     FI.learn_from_correction("u1", [_det("creamy mushroom sauce"), _det("rice")], [
         _Corrected("rajas con crema", 98.0, source_index=0),
         _Corrected("rice", 77.0, source_index=1),          # unchanged
@@ -194,3 +194,14 @@ def test_the_rename_happens_before_the_nutrition_is_looked_up():
     assert rename < lookup, (
         "the alias is applied after the nutrition lookup, so a renamed food "
         "still gets the calories of whatever the camera guessed")
+
+
+def test_a_weighed_correction_is_tagged_as_such(monkeypatch):
+    """Tester corrections carry source="weighed" through to remember(); every
+    other caller still gets the default "typed". The tag changes no learning."""
+    seen = []
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **k: seen.append(k.get("source")))
+    FI.learn_from_correction("u1", [_det("x")], [_Corrected("y", 1.0, source_index=0)],
+                             source="weighed")
+    FI.learn_from_correction("u1", [_det("x")], [_Corrected("y", 1.0, source_index=0)])
+    assert seen == ["weighed", "typed"]

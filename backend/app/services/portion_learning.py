@@ -228,7 +228,8 @@ def blend(current_mm: float, ratio: float, samples: int = 0) -> float | None:
     return updated
 
 
-def _apply(sb, shape: str, food: str | None, ratio: float, priors: dict) -> None:
+def _apply(sb, shape: str, food: str | None, ratio: float, priors: dict,
+           source: str = "typed") -> None:
     """Fold one ratio into one row, creating it if this is the first."""
     q = sb.table("portion_learning").select("*").eq("shape", shape)
     q = q.is_("food_name", "null") if food is None else q.eq("food_name", food)
@@ -255,12 +256,19 @@ def _apply(sb, shape: str, food: str | None, ratio: float, priors: dict) -> None
     else:
         sb.table("portion_learning").insert(payload).execute()
     log.info("height_learned", shape=shape, food=food, was=round(current, 1),
-             now=round(updated, 1), ratio=round(ratio, 3), samples=samples)
+             now=round(updated, 1), ratio=round(ratio, 3), samples=samples,
+             source=source)
 
 
 def learn_from_correction(scan_id: str | None, original_items: list[dict],
-                          corrected_items: list) -> None:
-    """Fold this correction into the learned heights. Never raises."""
+                          corrected_items: list, source: str = "typed") -> None:
+    """Fold this correction into the learned heights. Never raises.
+
+    `source` says where the corrected numbers came from: "typed" (the default,
+    every ordinary correction) or "weighed" (a tester read them off a kitchen
+    scale). It is recorded in the log line only; it does not change what is
+    learned -- weighting by it is a separate, later decision.
+    """
     try:
         if not scan_id:
             return
@@ -277,10 +285,10 @@ def learn_from_correction(scan_id: str | None, original_items: list[dict],
         # and solved to 22 and 25 mm by hand, so the shape carries most of the
         # signal and the food refines it once it has enough of its own.
         for shape, ratio in shape_ratios(ratios).items():
-            _apply(sb, shape, None, ratio, HEIGHT_PRIORS_MM)
+            _apply(sb, shape, None, ratio, HEIGHT_PRIORS_MM, source)
         for (shape, food), ratio in ratios.items():
             if food:
-                _apply(sb, shape, food, ratio, HEIGHT_PRIORS_MM)
+                _apply(sb, shape, food, ratio, HEIGHT_PRIORS_MM, source)
     except Exception as exc:  # noqa: BLE001
         # Learning is a bonus. A user's correction must save regardless.
         log.warning("height_learning_failed", error=str(exc)[:200])
