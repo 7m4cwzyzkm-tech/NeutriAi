@@ -14,21 +14,55 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
-from supabase import Client, create_client
+import httpx
+from postgrest.constants import DEFAULT_POSTGREST_CLIENT_TIMEOUT
+from supabase import Client, ClientOptions, create_client
 
 from .config import settings
 from .errors import NotFound, UpstreamError
+
+
+def _options() -> ClientOptions:
+    """Client options carrying our own httpx client.
+
+    Without one, supabase-py builds its own httpx clients and passes
+    `timeout=`/`verify=` into postgrest and storage, which now warn that
+    those kwargs are deprecated in favour of configuring the http client.
+    This is that: the same settings the library used itself -- postgrest's
+    own default timeout, TLS verification on, redirects followed, HTTP/2 --
+    set on a client we hand in.
+
+    A NEW httpx client per Supabase client, never a shared one, so each
+    client stays exactly as isolated as before. Nothing is lost by it:
+    postgrest, storage, auth and functions send their URL and headers
+    (including the per-user JWT from `.auth()`) with each request, never on
+    the session. One behavioural note: storage and functions now share this
+    client's timeout (postgrest's default) instead of their own shorter
+    defaults.
+    """
+    return ClientOptions(
+        httpx_client=httpx.Client(
+            timeout=DEFAULT_POSTGREST_CLIENT_TIMEOUT,
+            verify=True,
+            follow_redirects=True,
+            http2=True,
+        ),
+    )
 
 
 @lru_cache(maxsize=1)
 def service() -> Client:
     if not settings.supabase_url or not settings.supabase_service_key:
         raise UpstreamError("Supabase service credentials are not configured.")
-    return create_client(settings.supabase_url, settings.supabase_service_key)
+    return create_client(
+        settings.supabase_url, settings.supabase_service_key, options=_options(),
+    )
 
 
 def as_user(jwt: str) -> Client:
-    client = create_client(settings.supabase_url, settings.supabase_anon_key)
+    client = create_client(
+        settings.supabase_url, settings.supabase_anon_key, options=_options(),
+    )
     client.postgrest.auth(jwt)
     return client
 
