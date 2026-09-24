@@ -12,6 +12,7 @@
  * - The original AI estimate stays visible next to the edited value, so the
  *   user can see what they changed and we can see it too.
  * - Deleting a mis-detected item is one tap.
+ * - A food the scan missed is added inline too: name, grams, done.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
@@ -26,6 +27,11 @@ import type { Meal, MealSlot } from '../api/types';
 import { methodLabel } from '../lib/method';
 
 const SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout'];
+
+/** Typed grams, clamped to what the backend accepts (0 < grams <= 5000). */
+function parseGrams(raw: string): number {
+  return Math.max(0, Math.min(5000, Number(raw.replace(/[^0-9.]/g, '')) || 0));
+}
 
 interface EditableItem {
   id?: string;
@@ -49,7 +55,13 @@ interface EditableItem {
   // Where this sat in the scan, fixed at load time. NOT its position in the
   // edited list: removing a row shifts everything below it, and a correction
   // paired against the wrong detection teaches the wrong food's height.
-  sourceIndex: number;
+  //
+  // Undefined for a food the user ADDED ("Add a food"): it is an edit of no
+  // detection. The backend's `source_index` is `ge=0`, so a sentinel like -1
+  // would be refused, and any real index would pair the new food with a
+  // detection it has nothing to do with. Undefined drops the key from the
+  // request, which is exactly "an edit of nothing".
+  sourceIndex?: number;
   confidence: number;
   method: string;
   removed: boolean;
@@ -129,17 +141,54 @@ export function MealDetailScreen() {
     [items],
   );
 
+  // An added row starts with grams === originalGrams, so the gram check
+  // alone would leave it unsaved and hide the Save button.
   const dirty = useMemo(
     () =>
-      items.some((i) => i.removed || Math.abs(i.grams - i.originalGrams) > 0.5) ||
+      items.some((i) => i.removed || i.sourceIndex === undefined || Math.abs(i.grams - i.originalGrams) > 0.5) ||
       slot !== meal?.meal_slot ||
       title !== meal?.title,
     [items, slot, title, meal],
   );
 
   function setGrams(index: number, raw: string) {
-    const value = Math.max(0, Math.min(5000, Number(raw.replace(/[^0-9.]/g, '')) || 0));
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, grams: value } : it)));
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, grams: parseGrams(raw) } : it)));
+  }
+
+  // "Add a food": the scan missed something entirely. Inline, like every
+  // other edit on this screen -- two fields and a button, no modal.
+  const [newName, setNewName] = useState('');
+  const [newGrams, setNewGrams] = useState('');
+  const canAdd = newName.trim().length > 0 && parseGrams(newGrams) > 0;
+
+  function addItem() {
+    if (!canAdd) return;
+    const g = parseGrams(newGrams);
+    setItems((prev) => [
+      ...prev,
+      {
+        name: newName.trim(),
+        grams: g,
+        // Equal, so it never reads "AI said X g" -- there was no AI estimate.
+        originalGrams: g,
+        // Unknown, not zero: this screen does not look foods up. The backend
+        // resolves the name on save (see save()), and those are the numbers
+        // stored. Until then this row shows no macros.
+        kcalPerGram: 0,
+        proteinPerGram: 0,
+        carbsPerGram: 0,
+        fatPerGram: 0,
+        fiberPerGram: 0,
+        sugarPerGram: 0,
+        sodiumPerGram: 0,
+        sourceIndex: undefined,
+        confidence: 1,
+        method: 'user_entered',
+        removed: false,
+      },
+    ]);
+    setNewName('');
+    setNewGrams('');
   }
 
   async function save() {
@@ -163,24 +212,33 @@ export function MealDetailScreen() {
         // would have cleared it on every correction instead.
         items: items
           .filter((i) => !i.removed && i.grams > 0)
-          .map((i) => ({
-            name: i.name,
-            grams: i.grams,
-            // Which detected item this edits. Without it a RENAME cannot be
-            // matched back to the scan -- the name is the thing that changed --
-            // so the app learned nothing from the single most useful
-            // correction a person can make.
-            source_index: i.sourceIndex,
-            macros: {
-              kcal: i.kcalPerGram * i.grams,
-              protein_g: i.proteinPerGram * i.grams,
-              carbs_g: i.carbsPerGram * i.grams,
-              fat_g: i.fatPerGram * i.grams,
-              fiber_g: i.fiberPerGram * i.grams,
-              sugar_g: i.sugarPerGram * i.grams,
-              sodium_mg: i.sodiumPerGram * i.grams,
-            },
-          })),
+          .map((i) =>
+            i.sourceIndex === undefined
+              // Added by the user: name and grams only. No source_index (an
+              // edit of no detection) and NO macros block -- correct_meal
+              // looks nutrition up only when `macros` is absent and stores any
+              // block it is sent as-is, so this row's unknown zeros would have
+              // been saved as a 0 kcal food.
+              ? { name: i.name, grams: i.grams }
+              : {
+                  name: i.name,
+                  grams: i.grams,
+                  // Which detected item this edits. Without it a RENAME cannot be
+                  // matched back to the scan -- the name is the thing that changed --
+                  // so the app learned nothing from the single most useful
+                  // correction a person can make.
+                  source_index: i.sourceIndex,
+                  macros: {
+                    kcal: i.kcalPerGram * i.grams,
+                    protein_g: i.proteinPerGram * i.grams,
+                    carbs_g: i.carbsPerGram * i.grams,
+                    fat_g: i.fatPerGram * i.grams,
+                    fiber_g: i.fiberPerGram * i.grams,
+                    sugar_g: i.sugarPerGram * i.grams,
+                    sodium_mg: i.sodiumPerGram * i.grams,
+                  },
+                },
+          ),
       });
       qc.invalidateQueries({ queryKey: keys.dashboard() });
       qc.invalidateQueries({ queryKey: keys.meals() });
@@ -296,100 +354,153 @@ export function MealDetailScreen() {
               learns. It’s the single most useful thing you can do here.
             </Body>
 
-            {items.map((item, i) => (
-              <Card
-                key={i}
-                style={{
-                  gap: space.md,
-                  opacity: item.removed ? 0.4 : 1,
-                  borderColor: item.removed ? c.danger : c.border,
-                }}
-              >
-                <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[type.body, { color: c.text, fontWeight: '600', textTransform: 'capitalize' }]}>
-                      {item.name}
-                    </Text>
-                    <Row gap={space.xs} style={{ marginTop: 4 }}>
-                      <View style={{
-                        width: 6, height: 6, borderRadius: 3,
-                        backgroundColor: confidenceColor(c, item.confidence),
-                      }} />
-                      <Text style={[type.caption, { color: c.textFaint }]}>
-                        {methodLabel(item.method)}
-                        {item.grams !== item.originalGrams
-                          ? `  ·  AI said ${Math.round(item.originalGrams)} g`
-                          : ''}
+            {items.map((item, i) => {
+              const added = item.sourceIndex === undefined;
+              return (
+                <Card
+                  key={i}
+                  style={{
+                    gap: space.md,
+                    opacity: item.removed ? 0.4 : 1,
+                    borderColor: item.removed ? c.danger : c.border,
+                  }}
+                >
+                  <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[type.body, { color: c.text, fontWeight: '600', textTransform: 'capitalize' }]}>
+                        {item.name}
                       </Text>
-                    </Row>
-                  </View>
-                  <Text style={[type.h2, { color: c.text }]}>
-                    {Math.round(item.kcalPerGram * item.grams)}
-                  </Text>
-                </Row>
+                      <Row gap={space.xs} style={{ marginTop: 4 }}>
+                        <View style={{
+                          width: 6, height: 6, borderRadius: 3,
+                          backgroundColor: confidenceColor(c, item.confidence),
+                        }} />
+                        <Text style={[type.caption, { color: c.textFaint }]}>
+                          {methodLabel(item.method)}
+                          {!added && item.grams !== item.originalGrams
+                            ? `  ·  AI said ${Math.round(item.originalGrams)} g`
+                            : ''}
+                        </Text>
+                      </Row>
+                    </View>
+                    {/* An added food's nutrition is unknown until the backend
+                        looks it up on save; a dash, not a made-up 0. */}
+                    <Text style={[type.h2, { color: added ? c.textFaint : c.text }]}>
+                      {added ? '—' : Math.round(item.kcalPerGram * item.grams)}
+                    </Text>
+                  </Row>
 
-                <Row gap={space.md}>
-                  <View style={{ flex: 1 }}>
-                    <Label>Grams</Label>
-                    <TextInput
-                      value={String(Math.round(item.grams))}
-                      onChangeText={(t) => setGrams(i, t)}
-                      keyboardType="number-pad"
-                      editable={!item.removed}
-                      style={{
-                        backgroundColor: c.surfaceAlt, borderRadius: radius.md,
-                        paddingHorizontal: space.md, paddingVertical: space.sm,
-                        color: c.text, fontSize: 17, marginTop: 4,
-                        fontVariant: ['tabular-nums'],
-                      }}
-                    />
-                  </View>
-                  <View style={{ flex: 2, gap: 4 }}>
-                    <Label>Quick adjust</Label>
-                    <Row gap={space.xs}>
-                      {[0.5, 0.75, 1.25, 1.5, 2].map((mult) => (
-                        <Chip
-                          key={mult}
-                          label={`${mult}×`}
-                          onPress={() =>
-                            setItems((prev) =>
-                              prev.map((it, idx) =>
-                                idx === i
-                                  ? { ...it, grams: Math.round(it.originalGrams * mult) }
-                                  : it,
-                              ),
-                            )
-                          }
-                        />
-                      ))}
-                    </Row>
-                  </View>
-                </Row>
+                  <Row gap={space.md}>
+                    <View style={{ flex: 1 }}>
+                      <Label>Grams</Label>
+                      <TextInput
+                        value={String(Math.round(item.grams))}
+                        onChangeText={(t) => setGrams(i, t)}
+                        keyboardType="number-pad"
+                        editable={!item.removed}
+                        style={{
+                          backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+                          paddingHorizontal: space.md, paddingVertical: space.sm,
+                          color: c.text, fontSize: 17, marginTop: 4,
+                          fontVariant: ['tabular-nums'],
+                        }}
+                      />
+                    </View>
+                    <View style={{ flex: 2, gap: 4 }}>
+                      <Label>Quick adjust</Label>
+                      <Row gap={space.xs}>
+                        {[0.5, 0.75, 1.25, 1.5, 2].map((mult) => (
+                          <Chip
+                            key={mult}
+                            label={`${mult}×`}
+                            onPress={() =>
+                              setItems((prev) =>
+                                prev.map((it, idx) =>
+                                  idx === i
+                                    ? { ...it, grams: Math.round(it.originalGrams * mult) }
+                                    : it,
+                                ),
+                              )
+                            }
+                          />
+                        ))}
+                      </Row>
+                    </View>
+                  </Row>
 
-                <Row gap={space.lg}>
-                  <Text style={[type.caption, { color: c.protein }]}>
-                    P {Math.round(item.proteinPerGram * item.grams)}g
-                  </Text>
-                  <Text style={[type.caption, { color: c.carbs }]}>
-                    C {Math.round(item.carbsPerGram * item.grams)}g
-                  </Text>
-                  <Text style={[type.caption, { color: c.fat }]}>
-                    F {Math.round(item.fatPerGram * item.grams)}g
-                  </Text>
-                  <View style={{ flex: 1 }} />
-                  <Text
-                    onPress={() =>
-                      setItems((prev) =>
-                        prev.map((it, idx) => (idx === i ? { ...it, removed: !it.removed } : it)),
-                      )
-                    }
-                    style={[type.caption, { color: item.removed ? c.accent : c.danger, fontWeight: '600' }]}
-                  >
-                    {item.removed ? 'Undo' : 'Not on my plate'}
-                  </Text>
-                </Row>
-              </Card>
-            ))}
+                  <Row gap={space.lg}>
+                    {added ? (
+                      <Text style={[type.caption, { color: c.textFaint }]}>
+                        Nutrition is looked up when you save
+                      </Text>
+                    ) : (
+                      <>
+                        <Text style={[type.caption, { color: c.protein }]}>
+                          P {Math.round(item.proteinPerGram * item.grams)}g
+                        </Text>
+                        <Text style={[type.caption, { color: c.carbs }]}>
+                          C {Math.round(item.carbsPerGram * item.grams)}g
+                        </Text>
+                        <Text style={[type.caption, { color: c.fat }]}>
+                          F {Math.round(item.fatPerGram * item.grams)}g
+                        </Text>
+                      </>
+                    )}
+                    <View style={{ flex: 1 }} />
+                    {/* A detection is struck through, with Undo, so the
+                        correction still says the scan saw it. A food the user
+                        added has nothing to undo against: it just goes. */}
+                    <Text
+                      onPress={() =>
+                        setItems((prev) =>
+                          added
+                            ? prev.filter((_, idx) => idx !== i)
+                            : prev.map((it, idx) => (idx === i ? { ...it, removed: !it.removed } : it)),
+                        )
+                      }
+                      style={[type.caption, { color: item.removed ? c.accent : c.danger, fontWeight: '600' }]}
+                    >
+                      {added ? 'Remove' : item.removed ? 'Undo' : 'Not on my plate'}
+                    </Text>
+                  </Row>
+                </Card>
+              );
+            })}
+
+            {/* The scan can only be corrected on what it found. This is the
+                way to log what it missed. */}
+            <Card style={{ gap: space.md }}>
+              <Label>Add a food the scan missed</Label>
+              <Row gap={space.md}>
+                <TextInput
+                  value={newName}
+                  onChangeText={setNewName}
+                  placeholder="e.g. garlic bread"
+                  placeholderTextColor={c.textFaint}
+                  maxLength={120}
+                  returnKeyType="done"
+                  style={{
+                    flex: 2, backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+                    paddingHorizontal: space.md, paddingVertical: space.sm,
+                    color: c.text, fontSize: 17,
+                  }}
+                />
+                <TextInput
+                  value={newGrams}
+                  onChangeText={setNewGrams}
+                  placeholder="grams"
+                  placeholderTextColor={c.textFaint}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  style={{
+                    flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.md,
+                    paddingHorizontal: space.md, paddingVertical: space.sm,
+                    color: c.text, fontSize: 17, fontVariant: ['tabular-nums'],
+                  }}
+                />
+              </Row>
+              <Button title="Add a food" variant="secondary" disabled={!canAdd} onPress={addItem} />
+            </Card>
           </View>
 
           <Divider />
