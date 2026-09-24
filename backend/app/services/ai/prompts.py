@@ -480,7 +480,16 @@ Rules that keep people safe and consistent:
 - Honour stated limitations by substituting, not by omitting the muscle group.
   A bad knee means split squats become hip thrusts, not "skip legs".
 - Generate ALL weeks requested, with real progression between them — not the same
-  week copy-pasted."""
+  week copy-pasted.
+- Progression must be measurable, not cosmetic. Every exercise that appears again
+  the next week must go up in at least one of: load (a heavier load_hint), reps,
+  or sets — or move one step up its progression (e.g. incline push-up to push-up).
+  Swapping exercises or changing tempo alone does not count. Stay within the
+  beginner/advanced rules above; only a deload week (progression.deload_week, if
+  it falls inside the weeks requested) may go down.
+- If a previous block is given, week 1 of this block starts at or above where
+  that block's final week left off for every movement carried over (same or
+  harder variation, same or more load/reps/sets), then progresses from there."""
 
 # ===========================================================================
 # 6. Recipe personalization (Claude)
