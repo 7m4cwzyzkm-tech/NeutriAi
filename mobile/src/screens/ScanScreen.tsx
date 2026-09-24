@@ -296,9 +296,26 @@ export function ScanScreen() {
             {result.portion_measured === false ? (
               <Card style={{ borderColor: c.warn, borderWidth: 2 }}>
                 <Label>Not measured</Label>
+                {/* Honest about two things the old copy got wrong (Gil, 24 Sep
+                    2026): it said "nothing in this photo sets a size" even
+                    when a card was plainly in the shot, and it never said
+                    that the green framing guide is not this check. The guide
+                    only reads the phone's tilt (see guideState above); the
+                    measurement is a separate check on the uploaded photo
+                    (reference_cv.find_reference), and it can say no to a
+                    card it cannot see clearly. The response carries no reason
+                    for the "no", so this copy covers both "nothing found"
+                    and "found but not confidently" without guessing which. */}
                 <Body style={{ marginTop: 4 }}>
-                  Nothing in this photo sets a size — no plate edge, no card, no distance — so
-                  these numbers are a typical serving, not your portion. They are usually light.
+                  We couldn't find a card or plate edge in this photo that we could measure with
+                  confidence — even if one was in the shot. So these numbers are a typical
+                  serving, not your portion. They are usually light.
+                </Body>
+                <Body dim style={{ marginTop: space.sm }}>
+                  The green guide while you framed the shot only checks that your phone is level.
+                  Measuring happens afterwards, on the photo itself, and it can still say no. A
+                  retake with the whole card lying flat and fully visible, all four corners in
+                  view, gives it the best chance.
                 </Body>
                 <Row gap={space.md} style={{ marginTop: space.md }}>
                   <Button

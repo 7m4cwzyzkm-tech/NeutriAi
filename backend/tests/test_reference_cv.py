@@ -14,7 +14,9 @@ import cv2
 import numpy as np
 import pytest
 from PIL import Image
+from structlog.testing import capture_logs
 
+from app.services.ai import reference_cv
 from app.services.ai.reference_cv import (
     MIN_SETTING_CONSENSUS, REFERENCE_RECTANGLES, find_reference,
 )
@@ -103,3 +105,52 @@ def test_a_detector_failure_never_takes_a_scan_down():
             raise RuntimeError("decode exploded")
 
     assert find_reference(NotAnImage()) is None
+
+
+def _not_found_events(img):
+    with capture_logs() as logs:
+        assert find_reference(img) is None
+    return [e for e in logs if e["event"] == "reference_not_found"]
+
+
+def test_a_photo_with_no_card_says_why_in_the_log():
+    """The ordinary "no card" answer used to return silently, so a real
+    photo that should have measured could never be explained afterwards."""
+    events = _not_found_events(_scene(card=False))
+    assert len(events) == 1
+    e = events[0]
+    assert e["reason"] == "no_candidate"
+    assert e["candidates"] == 0
+    assert e["consensus_needed"] == MIN_SETTING_CONSENSUS
+    assert (e["image_w"], e["image_h"]) == (900, 1200)
+    for stage in ("area", "not_quad", "sides", "corners", "aspect"):
+        assert e[f"rejected_{stage}"] >= 0
+    assert "best_consensus" not in e
+
+
+def test_a_wrong_shape_rectangle_is_logged_as_an_aspect_rejection():
+    """A 1:1 rectangle passes every shape test but the side ratio -- the log
+    has to say that, not just "no card"."""
+    e = _not_found_events(_scene(card_long_px=300.0, card_ratio=1.0))[0]
+    assert e["reason"] == "no_candidate"
+    assert e["rejected_aspect"] > 0
+
+
+def test_a_card_below_consensus_logs_how_close_it_came(monkeypatch):
+    """A real card that too few edge settings agreed on reports its own
+    consensus and side-ratio miss, so a near-miss can be told from a blank."""
+    monkeypatch.setattr(reference_cv, "MIN_SETTING_CONSENSUS", 99)
+    e = _not_found_events(_scene(card_long_px=300.0))[0]
+    assert e["reason"] == "below_consensus"
+    assert e["candidates"] > 0
+    assert e["consensus_needed"] == 99
+    assert e["best_kind"] == "credit_card"
+    assert 1 <= e["best_consensus"] <= 6
+    assert e["best_aspect_miss"] < 0.1
+    assert e["best_length_ratio"] == pytest.approx(1.0 / 3.0, rel=0.05)
+
+
+def test_a_found_card_does_not_log_not_found():
+    with capture_logs() as logs:
+        assert find_reference(_scene(card_long_px=300.0)) is not None
+    assert [e["event"] for e in logs].count("reference_not_found") == 0
