@@ -33,17 +33,35 @@ class FakeProfilesTable:
         self.row = dict(row)
         self.last_patch: dict | None = None
         self.patches: list[dict] = []          # every update(), in call order
+        self._pending: dict | None = None
+        self._minimal = False
 
-    def update(self, patch):
+    def update(self, patch, returning=None):
         self.last_patch = patch
+        self._pending = patch
+        # return=minimal: like PostgREST, the write sends no row back -- since
+        # 0029 the client role could not read it back if it asked.
+        self._minimal = str(returning) == "minimal"
+        return self
+
+    def select(self, *_a, **_k):
+        self._pending = None
         return self
 
     def eq(self, *_a, **_k):
         return self
 
+    def limit(self, *_a, **_k):
+        return self
+
     def execute(self):
-        self.row.update(self.last_patch or {})
-        self.patches.append(self.last_patch or {})
+        if self._pending is not None:
+            self.row.update(self._pending)
+            self.patches.append(self._pending)
+            self._pending = None
+            if self._minimal:
+                self._minimal = False
+                return FakeResp([])
         return FakeResp([dict(self.row)])
 
 
@@ -70,11 +88,12 @@ BASE_ROW = {
 }
 
 
-async def test_sex_and_birth_date_round_trip():
+async def test_sex_and_birth_date_round_trip(monkeypatch):
     """Exactly what the "About You" step sends: sex + birth_date, nothing
     else -- the two fields Gil reported as not saving."""
     table = FakeProfilesTable(BASE_ROW)
     user = FakeUser("u1", table)
+    monkeypatch.setattr(profiles, "service", lambda: FakeClient(table))
     body = ProfileIn(sex="male", birth_date="1990-03-04")
 
     out = await profiles.update_profile(body, user)  # type: ignore[arg-type]
@@ -119,11 +138,12 @@ async def test_partial_update_does_not_touch_other_fields(monkeypatch):
     assert table.row["weight_kg"] == 80.0
 
 
-async def test_sex_other_round_trips():
+async def test_sex_other_round_trips(monkeypatch):
     """"Prefer not to say" maps to sex=other on the wire, not a sentinel the
     backend does not recognise."""
     table = FakeProfilesTable(BASE_ROW)
     user = FakeUser("u1", table)
+    monkeypatch.setattr(profiles, "service", lambda: FakeClient(table))
     body = ProfileIn(sex="other")
 
     out = await profiles.update_profile(body, user)  # type: ignore[arg-type]

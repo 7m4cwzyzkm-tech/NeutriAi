@@ -5,6 +5,7 @@ from datetime import date
 
 import structlog
 from fastapi import APIRouter, Query
+from postgrest import ReturnMethod
 
 from ..db import maybe_one, one, rows, service
 from ..deps import CurrentUserDep
@@ -54,10 +55,18 @@ async def update_profile(body: ProfileIn, user: CurrentUserDep):
         raise AppError("Nothing to update.")
     if body.birth_date:
         patch["birth_date"] = body.birth_date.isoformat()
-    # First time the profile is complete enough to compute targets, mark onboarded.
+    # The write stays on the caller's own client, so profiles_self_write and
+    # 0028's is_tester trigger still apply to it. It asks for nothing back:
+    # since 0029 the client role can SELECT only the public columns, so
+    # PostgREST's default return=representation would be refused. The fresh
+    # row is read with the service role, filtered to the verified user.id.
+    user.sb.table("profiles").update(patch, returning=ReturnMethod.minimal) \
+        .eq("id", user.id).execute()
     updated = one(
-        user.sb.table("profiles").update(patch).eq("id", user.id).execute(), "profile"
+        service().table("profiles").select("*").eq("id", user.id).limit(1).execute(),
+        "profile",
     )
+    # First time the profile is complete enough to compute targets, mark onboarded.
     if all(updated.get(k) for k in ("weight_kg", "height_cm", "sex", "birth_date")):
         if not updated.get("onboarded_at"):
             updated = one(
@@ -73,14 +82,20 @@ async def update_profile(body: ProfileIn, user: CurrentUserDep):
 async def get_targets(user: CurrentUserDep, recompute: bool = Query(False)):
     sb = user.sb
     if recompute:
-        profile = one(sb.table("profiles").select("*").eq("id", user.id).limit(1).execute())
+        # Own profile via the service role (0029: the client role may read
+        # only public columns); filtered to the verified user.id.
+        profile = one(
+            service().table("profiles").select("*").eq("id", user.id).limit(1).execute()
+        )
         return TargetsOut(**_recompute_targets(user.id, profile))
     row = maybe_one(
         sb.table("nutrition_targets").select("*").eq("user_id", user.id)
         .order("effective_from", desc=True).limit(1).execute()
     )
     if not row:
-        profile = maybe_one(sb.table("profiles").select("*").eq("id", user.id).limit(1).execute())
+        profile = maybe_one(
+            service().table("profiles").select("*").eq("id", user.id).limit(1).execute()
+        )
         if not profile or not profile.get("weight_kg"):
             raise NotFound("Finish onboarding before targets can be calculated.")
         return TargetsOut(**_recompute_targets(user.id, profile))

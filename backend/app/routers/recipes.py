@@ -161,8 +161,11 @@ async def adapt_recipe(
     )
     if not recipe:
         raise NotFound("Recipe not found.")
+    # The caller's own profile, read with the service role: since 0029 the client
+    # role may SELECT only the five public columns of any profile, its own
+    # included. Filtered to the verified user.id, so access is unchanged.
     profile = maybe_one(
-        user.sb.table("profiles").select("*").eq("id", user.id).limit(1).execute()
+        service().table("profiles").select("*").eq("id", user.id).limit(1).execute()
     ) or {}
 
     result = await recipe_ai.adapt(user.id, recipe, body, profile)
