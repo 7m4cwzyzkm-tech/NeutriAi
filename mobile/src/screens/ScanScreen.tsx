@@ -151,8 +151,17 @@ export function ScanScreen() {
   async function analyse() {
     if (!shots.length) return;
     setUploading(true);
+    let paths: string[];
     try {
-      const paths = await Promise.all(shots.map((uri) => uploadImage('meal-photos', uri)));
+      paths = await Promise.all(shots.map((uri) => uploadImage('meal-photos', uri)));
+    } catch (e: any) {
+      // The upload is not the scan mutation, so its error handler never sees
+      // this -- it needs its own alert.
+      Alert.alert('Could not upload that photo', e?.message ?? 'Please try again.');
+      setUploading(false);
+      return;
+    }
+    try {
       const res = await scan.mutateAsync({
         image_paths: paths,
         meal_slot: slot ?? undefined,
@@ -161,12 +170,9 @@ export function ScanScreen() {
         ...captureExtras,
       });
       setResult(res);
-    } catch (e: any) {
-      // The paywall opens itself via the shared error handler; anything else
-      // deserves a plain explanation rather than a silent failure.
-      if (!e?.needsUpgrade) {
-        Alert.alert('Could not analyse that', e?.message ?? 'Please try again.');
-      }
+    } catch {
+      // useScanMeal's onError already opened the paywall or showed the
+      // alert; alerting here too would show it twice.
     } finally {
       setUploading(false);
     }
