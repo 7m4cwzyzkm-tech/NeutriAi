@@ -43,6 +43,10 @@ class ProfileOut(Base):
     timezone: str = "UTC"
     is_private: bool = False
     onboarded_at: str | None = None
+    # Weighed-verification tester. Read-only here: set by hand in Supabase,
+    # deliberately absent from ProfileIn, and pinned against client writes by
+    # the profiles_protect_is_tester trigger (0028).
+    is_tester: bool = False
 
 
 class RestrictionIn(InputBase):
