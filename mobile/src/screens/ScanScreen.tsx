@@ -47,35 +47,6 @@ import {
 
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 
-// The plate-framing circle's diameter, as a fraction of the frame's HEIGHT
-// (frameSize.height -- the CameraView's own onLayout size, which is the only
-// on-screen size this component has; there is no Dimensions/useWindowDimensions
-// import here and none was added for this). Previously 0.84 of the frame's
-// SHORTER side, which on a typical phone made the circle roughly two thirds
-// of the screen -- far larger than a centering aid needs to be. Gil tested
-// that build and asked for a real resize, not a nudge: roughly one third of
-// the screen's height (25 Sep 2026).
-const PLATE_CIRCLE_HEIGHT_FRACTION = 1 / 3;
-// Where the LABEL ("Center your plate, keep it in frame") sits, as a
-// fraction of the frame's height. Previously 0.43, then 0.72 (Gil tested a
-// build and asked for the circle moved down substantially, close to the
-// Capture button -- 25 Sep 2026). The number 0.72 is UNCHANGED again
-// tonight -- what changed is what it anchors: it used to be the CIRCLE's
-// own vertical centre (top = frac*H - size/2), with the label pinned
-// space.md below that. Gil then asked for the opposite relationship: the
-// label must not move, and the circle should be repositioned so the label
-// bisects it (label sits at the circle's vertical centre, roughly half the
-// circle above the label and half below), rather than the circle sitting
-// almost entirely below the label the way "label = circle.top + space.md"
-// produced. So this constant now anchors the LABEL directly, at exactly
-// the same pixel position the old formula put it (frac*H - size/2 +
-// space.md is the same expression the old circle.top + space.md worked out
-// to), and the circle's own top is derived FROM the label's position below,
-// not the other way around. Renamed from
-// PLATE_CIRCLE_VERTICAL_CENTER_FRACTION to PLATE_LABEL_TOP_FRACTION to
-// match what it actually anchors now.
-const PLATE_LABEL_TOP_FRACTION = 0.72;
-
 export function ScanScreen() {
   const c = useTheme();
   const nav = useNavigation<any>();
@@ -132,21 +103,6 @@ export function ScanScreen() {
   function onCameraLayout(e: LayoutChangeEvent) {
     const { width, height } = e.nativeEvent.layout;
     setFrameSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
-  }
-  // The plate label's own rendered height -- needed to find ITS vertical
-  // centre so the circle can be centred on that, not just on the label's
-  // top-left corner. RN gives no way to know a Text's rendered height ahead
-  // of layout (font scaling, accessibility text-size settings, and the
-  // device's own font metrics all affect it), so this is measured the same
-  // way frameSize above is: via onLayout, since there is no other way.
-  // Starts at 0, which places the circle's centre at the label's TOP edge
-  // for one frame until the real measurement lands -- the same
-  // measure-then-correct pattern frameSize and tiltDeg already use in this
-  // file, not a new kind of approximation.
-  const [labelHeight, setLabelHeight] = useState(0);
-  function onLabelLayout(e: LayoutChangeEvent) {
-    const h = e.nativeEvent.layout.height;
-    setLabelHeight((prev) => (prev === h ? prev : h));
   }
   // Only live while the LIVE camera view is actually showing -- not during
   // review, which has no camera mounted. See useTiltReading's own doc for
@@ -547,81 +503,21 @@ export function ScanScreen() {
   const guideLabel =
     guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
 
-  // A TRUE circle (equal width and height, so it is never a squashed oval on
-  // a screen whose width and height differ), sized off frameSize.height only
-  // -- see PLATE_CIRCLE_HEIGHT_FRACTION above for the diameter, unchanged by
-  // tonight's task. Null, like cardBox, until a real layout arrives. The
-  // card guide below is explicitly NOT part of this: it keeps its own size,
-  // position and text unchanged no matter where this circle ends up.
-  //
-  // `labelTop` is the label's position, computed with the exact same
-  // expression the OLD circle-first layout worked out to
-  // (frac*H - size/2 + space.md) -- so the label's on-screen position is
-  // bit-for-bit unchanged by this task. The circle's own `top` is now
-  // derived FROM the label instead: its vertical centre
-  // (top + size/2) is set equal to the label's vertical centre
-  // (labelTop + labelHeight/2), so the label bisects the circle -- roughly
-  // half the circle above the label, half below -- rather than the circle
-  // sitting almost entirely below it.
-  const plateCircle =
-    frameSize.width > 0 && frameSize.height > 0
-      ? (() => {
-          const size = frameSize.height * PLATE_CIRCLE_HEIGHT_FRACTION;
-          const labelTop = frameSize.height * PLATE_LABEL_TOP_FRACTION - size / 2 + space.md;
-          const labelCenterY = labelTop + labelHeight / 2;
-          return {
-            size,
-            left: (frameSize.width - size) / 2,
-            top: labelCenterY - size / 2,
-            labelTop,
-          };
-        })()
-      : null;
-
   return (
     <Screen>
       <View style={{ flex: 1 }}>
         <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" onLayout={onCameraLayout} />
 
-        {/* Framing guide, with its own caption now living right beside it
-            rather than in a shared block at a fixed 10% -- the card's
-            caption moved to the top (below), so this one no longer has to
-            share that spot. Wording (Gil, 22 Sep 2026): the circle is a
-            centering aid, not a boundary the plate must stay inside of --
-            the backend finds the plate in the full uploaded frame with its
-            own detection (food_seg.py's Hough-circle/color plate outline),
-            independent of this overlay, which is never applied to the
-            photo. What actually costs accuracy is the plate cut off by the
-            FRAME's own edges, not exceeding this drawn circle. */}
-        {plateCircle ? (
-          <>
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute', top: plateCircle.top, left: plateCircle.left,
-                width: plateCircle.size, height: plateCircle.size, borderRadius: plateCircle.size / 2,
-                borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-              }}
-            />
-            <View
-              pointerEvents="none"
-              onLayout={onLabelLayout}
-              style={{
-                position: 'absolute', top: plateCircle.labelTop, left: plateCircle.left,
-                width: plateCircle.size, alignItems: 'center',
-              }}
-            >
-              <Text style={[type.caption, { color: 'rgba(255,255,255,0.85)', textAlign: 'center' }]}>
-                Center your plate, keep it in frame
-              </Text>
-            </View>
-          </>
-        ) : null}
-
         {/* The card guide, moved to the TOP of the screen (Gil, 22 Sep
             2026): positioned just below the plate circle it still read as
             too close, which visually crowded the two guides together even
-            after fix-card-box-position separated them. Sitting inside a
+            after fix-card-box-position separated them. (The plate circle
+            was later removed entirely -- Gil, 24 Sep 2026 -- to make
+            capture faster. It was only a client-side centering aid: the
+            backend finds the plate in the full uploaded frame with its own
+            detection, food_seg.py's Hough/colour outline, which never used
+            the overlay. This guide's position never depended on it.)
+            Sitting inside a
             top-edge SafeAreaView rather than a frameSize-derived pixel
             offset, so it clears a notch/Dynamic Island on any device
             without a hardcoded guess -- the same pattern the capture
