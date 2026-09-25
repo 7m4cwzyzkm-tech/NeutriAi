@@ -7,6 +7,8 @@ times. The name picks the density, the height prior and the nutrition lookup.
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from app.services import food_identity as FI
@@ -283,6 +285,132 @@ def test_a_weighed_correction_is_tagged_as_such(monkeypatch):
     assert seen == ["weighed", "typed"]
 
 
+def test_a_grams_only_edit_teaches_nothing_even_if_the_camera_word_differs(monkeypatch):
+    """meal_items.name is the resolved database name, not the camera's raw
+    word, and the two routinely differ in wording ("Scallops, grilled" vs the
+    model's own "Scallops") for reasons that have nothing to do with a
+    correction. Editing only the grams sends the SAME name back unchanged, and
+    that must teach nothing -- the person never touched the name they were
+    shown, whatever detected_name happens to read."""
+    seen = []
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **_k: seen.append((u, d, a)))
+    original = [{**_det("Scallops, grilled"), "detected_name": "Scallops"}]
+    FI.learn_from_correction(
+        "u1", original, [_Corrected("Scallops, grilled", 205.0, source_index=0)])
+    assert seen == []
+
+
+def test_confirming_the_cameras_word_is_still_forwarded_to_remember(monkeypatch):
+    """The item on screen shows the ALIASED name (whatever apply_to renamed it
+    to), so typing the camera's own original word back IS a real edit to the
+    name the person was shown, even though it happens to equal detected_name.
+    remember() is what now decides that this means "undo", so
+    learn_from_correction must still call it rather than treating was == now
+    as nothing having changed."""
+    seen = []
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **_k: seen.append((u, d, a)))
+    original = [{**_det("teriyaki beef"), "detected_name": "scallops"}]
+    FI.learn_from_correction(
+        "u1", original, [_Corrected("scallops", 140.0, source_index=0)])
+    assert seen == [("u1", "scallops", "scallops")]
+
+
+# --- undoing a learned rename (remember() against a fake table) ---------------
+
+class _AliasQuery:
+    def __init__(self, rows):
+        self.rows, self.filters, self.op, self.payload = rows, {}, None, None
+
+    def select(self, *_a):
+        return self
+
+    def eq(self, col, val):
+        self.filters[col] = val
+        return self
+
+    def limit(self, _n):
+        return self
+
+    def delete(self):
+        self.op = "delete"
+        return self
+
+    def insert(self, payload):
+        self.op, self.payload = "insert", payload
+        return self
+
+    def update(self, patch):
+        self.op, self.payload = "update", patch
+        return self
+
+    def execute(self):
+        match = [r for r in self.rows
+                 if all(r.get(k) == v for k, v in self.filters.items())]
+        if self.op == "delete":
+            for r in match:
+                self.rows.remove(r)
+            return SimpleNamespace(data=match)
+        if self.op == "insert":
+            new = dict(self.payload)
+            new.setdefault("id", f"row{len(self.rows) + 1}")
+            self.rows.append(new)
+            return SimpleNamespace(data=[new])
+        if self.op == "update":
+            for r in match:
+                r.update(self.payload)
+        return SimpleNamespace(data=match)
+
+
+class _AliasSB:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def table(self, name):
+        assert name == FI.TABLE
+        return _AliasQuery(self.rows)
+
+
+def test_a_third_correction_to_a_different_food_resets_samples_to_one(monkeypatch):
+    rows = [{"id": "a1", "user_id": "u1", "described_as": "scallops",
+             "actual_name": "teriyaki beef", "samples": 2}]
+    monkeypatch.setattr(FI, "service", lambda: _AliasSB(rows))
+    FI.remember("u1", "scallops", "chicken")
+    assert len(rows) == 1
+    assert rows[0]["actual_name"] == "chicken"
+    assert rows[0]["samples"] == 1
+
+
+def test_confirming_the_cameras_word_clears_a_stored_alias(monkeypatch):
+    """Gil corrects "teriyaki beef" back to "scallops" -- the camera had it
+    right, and this rename was wrong. The alias that produced it must be
+    deleted outright, not reset to samples=1, so it does not fire once more
+    before it would reset."""
+    rows = [{"id": "a1", "user_id": "u1", "described_as": "scallops",
+             "actual_name": "teriyaki beef", "samples": 2}]
+    monkeypatch.setattr(FI, "service", lambda: _AliasSB(rows))
+    FI.remember("u1", "scallops", "scallops")
+    assert rows == []
+
+
+def test_confirming_a_word_with_nothing_stored_is_still_a_no_op(monkeypatch):
+    rows: list[dict] = []
+    monkeypatch.setattr(FI, "service", lambda: _AliasSB(rows))
+    FI.remember("u1", "scallops", "Scallops")
+    assert rows == []
+
+
+def test_after_clearing_an_alias_the_next_scan_is_not_renamed(monkeypatch):
+    rows = [{"id": "a1", "user_id": "u1", "described_as": "scallops",
+             "actual_name": "teriyaki beef", "samples": 2}]
+    monkeypatch.setattr(FI, "service", lambda: _AliasSB(rows))
+    FI.remember("u1", "scallops", "scallops")
+    learned = FI.aliases_for("u1")
+    assert learned == []
+    det = {"name": "scallops", "identification": "named"}
+    assert FI.apply_to(det, learned) is None
+    assert det["name"] == "scallops"
+
+
 def test_a_scanned_item_carries_the_models_word_past_the_database_rename(monkeypatch):
     """build_items end to end, stubbed lookup: the logged name is the database
     row's, detected_name is the model's -- without the preparation prefix
@@ -310,3 +438,37 @@ def test_a_scanned_item_carries_the_models_word_past_the_database_rename(monkeyp
     assert seen_keys == ["grilled scallops"]
     assert items[0].name == "Scallops, grilled"
     assert items[0].detected_name == "Scallops"
+
+
+def test_detected_name_is_captured_before_a_stored_alias_renames_it(monkeypatch):
+    """apply_to() mutates det["name"] in place when a twice-confirmed alias
+    fires. If detected_name were read after that, a correction against it
+    would create a new alias chained off the RENAMED word ("teriyaki beef")
+    rather than touching the alias that actually fired ("scallops"), and the
+    original alias would keep renaming every future scan forever. So the
+    camera's word has to be captured before apply_to() runs."""
+    import asyncio
+
+    from app.models.common import Macros
+    from app.services.ai import vision
+
+    async def resolve_many(names):
+        return {n: {"id": "f1", "display_name": "Teriyaki Beef",
+                    "density_g_ml": 1.0} for n in names}
+    monkeypatch.setattr(vision.resolver, "resolve_many", resolve_many)
+    monkeypatch.setattr(vision.resolver, "macros_for",
+                        lambda fact, grams: Macros(kcal=grams))
+    monkeypatch.setattr(
+        vision.food_identity, "aliases_for",
+        lambda user_id: [{"described_as": "scallops",
+                          "actual_name": "teriyaki beef", "samples": 2}])
+    det = {"name": "scallops", "identification": "named", "area_ratio": 0.09,
+           "confidence": 0.8, "food_group": "protein",
+           "bbox": {"x": 0.3, "y": 0.3, "w": 0.2, "h": 0.2}}
+    items, _ = asyncio.run(vision.build_items(
+        [det], vision.GeometryHint(plate_ellipse_area_ratio=0.5, plate_diameter_mm=254),
+        user_id="u1"))
+
+    assert det["name"] == "teriyaki beef", "the alias should still apply forward"
+    assert items[0].detected_name == "scallops", (
+        "detected_name must stay the pre-rename camera word")

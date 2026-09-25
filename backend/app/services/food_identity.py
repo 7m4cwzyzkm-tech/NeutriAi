@@ -33,6 +33,17 @@ WHEN IT OVERRIDES THE MODEL -- and why confidence is no longer a gate
   scans, and `remember` resets the count to 1 the moment they answer
   differently, so one further correction turns it back into an offer.
 
+  UNDOING A LEARNED RENAME. Answering differently turns an applied alias back
+  into an offer, but it does not by itself say the alias was WRONG -- it says
+  a different answer is now more likely. There has to be a way to say "no,
+  the camera had this one right, stop renaming it", and that way is to
+  correct the item back to exactly the camera's own word. `remember` treats
+  that specially: if nothing is stored for that word it is the ordinary
+  no-op it always was, but if an alias IS stored under it, confirming the
+  camera's word is a rejection of that alias, and the row is deleted outright
+  rather than left to fire once more before resetting. See `remember`'s own
+  docstring for why a delete and not a reset to samples=1.
+
 WHAT IT DELIBERATELY DOES NOT DO
 
   It is not a food catalogue. There is no curated list of dishes per cuisine,
@@ -211,19 +222,36 @@ def aliases_for(user_id: str) -> list[dict]:
 
 def remember(user_id: str, described_as: str, actual_name: str,
              source: str = "typed") -> None:
-    """Keep what the person said this food is. Never raises.
+    """Keep what the person said this food is, or undo it. Never raises.
 
     Saving the meal is the user's action; learning from it is ours. A failure
     here must not cost them the correction they just made.
+
+    Normally `described_as` and `actual_name` differ -- that is the whole
+    rename. When they are the SAME word, the person is confirming the
+    camera's own name for this food rather than correcting it, and there are
+    two cases: nothing is stored for that word, in which case this is the
+    ordinary no-op it has always been; or an alias IS stored under that word,
+    in which case they are explicitly rejecting a rename the app already
+    applied, and the stored row is deleted -- not reset to samples=1 -- so it
+    stops firing immediately rather than one more time before resetting.
     """
     described = str(described_as or "").strip().lower()
     actual = str(actual_name or "").strip()
     if not user_id or not described or not actual:
         return
-    if described == actual.lower():
-        return                      # they kept the name; there is nothing to learn
     try:
         sb = service()
+        if described == actual.lower():
+            existing = (sb.table(TABLE).select("id")
+                        .eq("user_id", user_id).eq("described_as", described)
+                        .limit(1).execute())
+            rows = getattr(existing, "data", None) or []
+            if rows:
+                sb.table(TABLE).delete().eq("id", rows[0].get("id")).execute()
+                log.info("food_identity_alias_cleared", described=described[:40],
+                         source=source)
+            return                  # nothing stored either way now
         existing = (sb.table(TABLE).select("id,actual_name,samples")
                     .eq("user_id", user_id).eq("described_as", described)
                     .limit(1).execute())
@@ -267,6 +295,16 @@ def learn_from_correction(user_id: str, original_items: list[dict],
     cannot also be the key, and list position cannot tell a rename from a food
     the user ADDED. An item without one is an addition and teaches nothing.
 
+    Whether anything was renamed at all is decided by comparing `now` against
+    the name the person was actually SHOWN on screen (`meal_items.name`), not
+    against the camera's own word. Those two routinely differ for reasons that
+    have nothing to do with a correction -- the database's display name is not
+    the word the vision model used -- so a grams-only edit that leaves the name
+    field untouched must not look like a rename just because detected_name and
+    the display name happen to read differently. Only once a real rename is
+    established does `remember` get called against the camera's word, because
+    that is the word a future scan's own output has to match.
+
     `source` ("typed" by default, "weighed" from a tester) is recorded in the
     food_identity_learned log line only; it changes nothing that is learned.
     """
@@ -276,14 +314,16 @@ def learn_from_correction(user_id: str, original_items: list[dict],
             idx = getattr(item, "source_index", None)
             if not isinstance(idx, int) or not (0 <= idx < len(originals)):
                 continue
+            shown = str(originals[idx].get("name") or "")
+            now = str(getattr(item, "name", "") or "")
+            if not shown or not now or shown.strip().lower() == now.strip().lower():
+                continue             # the name on screen was not touched
             # The camera's own word when the scan recorded it (0030); the
             # stored name is the nutrition database's row name, which the next
             # scan's model output does not match. Older rows have only `name`.
             detected = originals[idx].get("detected_name")
             was = str(detected if isinstance(detected, str) and detected.strip()
-                      else originals[idx].get("name") or "")
-            now = str(getattr(item, "name", "") or "")
-            if was and now and was.strip().lower() != now.strip().lower():
-                remember(user_id, was, now, source=source)
+                      else shown)
+            remember(user_id, was, now, source=source)
     except Exception as exc:  # noqa: BLE001
         log.warning("food_identity_learning_failed", error=str(exc)[:200])
