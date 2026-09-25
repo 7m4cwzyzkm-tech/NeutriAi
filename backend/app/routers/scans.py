@@ -90,6 +90,9 @@ async def create_scan(body: ScanRequest, user: CurrentUserDep, _quota: AiScanDep
         camera_fov_deg=body.camera_fov_deg,
         camera_aspect_ratio=body.camera_aspect_ratio,
         measure_footprints=body.measure_footprints,
+        # What the person typed about the plate before the camera opened.
+        # Required by the app and, until this line, read by nothing.
+        note=body.note,
     )
 
 

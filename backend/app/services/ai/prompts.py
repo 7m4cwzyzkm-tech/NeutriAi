@@ -240,7 +240,9 @@ Rules that matter:
 - If the photo is too blurry, dark, or is not food, return items: [] and explain
   in scene_notes."""
 
-FOOD_VISION_USER = """Analyse this meal photograph. {multi_note}
+# {user_note} is empty when the person typed nothing, so a scan without a
+# description sends exactly the text it always did. See vision.user_note_hint.
+FOOD_VISION_USER = """Analyse this meal photograph. {multi_note}{user_note}
 
 Report every distinct food you can see, with its share of the frame.
 Return only the JSON object."""
