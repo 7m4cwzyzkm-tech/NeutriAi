@@ -8,15 +8,32 @@ as "creamy chicken" and then "creamy mushroom sauce" -- 315 g against 186 g,
 energy 40% apart, on geometry that was within 12% both times. The name is not
 a label: it picks the density, the height prior and the nutrition lookup.
 
-So when the model cannot name a dish, the person is asked, and their answer is
-kept HERE, against whatever the model had called it. The next time the model
-describes that food the same way for that person, their name is used instead.
+So when the person corrects what a food is, their answer is kept HERE,
+against whatever the model had called it. The next time the model calls that
+food the same thing for that person, their name is used instead.
+
+WHEN IT OVERRIDES THE MODEL -- and why confidence is no longer a gate
+
+  It used to run only on dishes the model had admitted it could not name
+  ("described" / "unsure"), and never on one it NAMED. That bounded a bad
+  alias to zero confident identifications -- and it also meant a confident
+  WRONG identification could never be fixed. Gil corrected teriyaki beef that
+  the model kept calling scallops, and it came back as scallops every time,
+  because the model was sure (25 Sep 2026).
+
+  So the gate is now the person, not the model. A name they have given ONCE
+  is only offered, whatever the model said; a name they have given the same
+  way twice (MIN_SAMPLES_TO_APPLY) is applied, including over a confident
+  identification. The model's confidence is one look at one photo. The same
+  person, looking at their own plate, correcting the same mistake the same
+  way twice, is repeated first-hand evidence about food they cooked or
+  bought -- stronger than the model's self-report, and exactly the case the
+  old gate threw away. The cost, stated: a wrong alias entered twice now
+  renames a food the model had right. That is bounded to this person's own
+  scans, and `remember` resets the count to 1 the moment they answer
+  differently, so one further correction turns it back into an offer.
 
 WHAT IT DELIBERATELY DOES NOT DO
-
-  It never touches a dish the model NAMED. The substitution only runs when the
-  model has already said it does not know, which bounds the damage a bad alias
-  can do to zero confident identifications.
 
   It is not a food catalogue. There is no curated list of dishes per cuisine,
   because a fixed list works for the foods on it and quietly makes the app
@@ -124,17 +141,16 @@ def suggest(described_as: str, learned: list[dict]) -> dict | None:
 
 
 def apply_to(det: dict, learned: list[dict]) -> str | None:
-    """Rename a DESCRIBED item to what the person called it last time.
+    """Rename an item to what the person has called it before.
 
     Returns a note for the user, or None when nothing changed. Mutates `det`.
 
-    The guard that matters is the first line: an item the model NAMED is never
-    touched. Everything here runs only where the model has already admitted it
-    does not know what the food is.
+    Runs whatever the model's `identification` says -- a confidently named
+    item included (see the module docstring for why). The guard that matters
+    is the sample count further down: one answer is surfaced as an offer and
+    changes nothing; only the same answer given twice renames the food.
     """
     if not isinstance(det, dict):
-        return None
-    if str(det.get("identification") or "named") == "named":
         return None
     described = str(det.get("name") or "")
     hit = suggest(described, learned)

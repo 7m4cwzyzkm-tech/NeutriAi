@@ -186,7 +186,39 @@ async def fetch_images(bucket: str, paths: list[str]) -> list[PreparedImage]:
 # ---------------------------------------------------------------------------
 # Stage 1: recognition
 # ---------------------------------------------------------------------------
-async def detect_foods(images: list[str], user_id: str) -> dict:
+# Long enough for "leftover teriyaki beef with rice and broccoli from Tuesday";
+# anything past this is not a description of a plate.
+USER_NOTE_MAX_CHARS = 200
+
+
+def user_note_hint(note: str | None) -> str:
+    """The person's own description of the plate, as one prompt sentence.
+
+    The scan screen will not open the camera until they have typed one, and
+    for a long time it went no further than the request body: the model never
+    saw it. A person who typed "teriyaki beef" got "scallops".
+
+    It is a HINT. The model is told to report what it actually sees and to say
+    so in scene_notes when the two disagree, because a typo, a vague "dinner",
+    or a description of a different plate must not be turned into an
+    identification the photo does not support.
+
+    Returns "" for no description, so the prompt is then byte-identical to the
+    one sent before this existed. Quotes and line breaks are flattened so the
+    person's text stays inside its own quoted sentence.
+    """
+    text = " ".join(str(note or "").split()).replace('"', "'")[:USER_NOTE_MAX_CHARS].strip()
+    if not text:
+        return ""
+    return (
+        f' The person who took the photo describes this plate as: "{text}". '
+        "Use that as a hint about what to expect, but report what you actually "
+        "see: if the photo does not match the description, name what is really "
+        "there and say so in scene_notes rather than forcing a match."
+    )
+
+
+async def detect_foods(images: list[str], user_id: str, note: str | None = None) -> dict:
     multi = (
         f"There are {len(images)} photos of the SAME meal from different angles. "
         "Report the union of foods once, using the clearest view for each."
@@ -196,7 +228,7 @@ async def detect_foods(images: list[str], user_id: str) -> dict:
     call = await ask_vision(
         pipeline="food_recognition",
         system=FOOD_VISION_SYSTEM,
-        user_text=FOOD_VISION_USER.format(multi_note=multi),
+        user_text=FOOD_VISION_USER.format(multi_note=multi, user_note=user_note_hint(note)),
         images=images,
         max_tokens=2000,
     )
@@ -1674,6 +1706,7 @@ async def _run_scan(
     camera_fov_deg: float | None = None,
     camera_aspect_ratio: float | None = None,
     measure_footprints: bool = False,
+    note: str | None = None,
 ) -> ScanResult:
     t0 = time.perf_counter()
     sb = service()
@@ -1724,7 +1757,7 @@ async def _run_scan(
     if not images:
         return await _fail(scan_id, "Could not read the uploaded photo.", t0)
 
-    detection = await detect_foods(images, user_id)
+    detection = await detect_foods(images, user_id, note=note)
     raw_items = detection.get("items") or []
     second_look_notes: list[str] = []
     if raw_items and len(fetched) == 1:
