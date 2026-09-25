@@ -115,14 +115,52 @@ export function ScanScreen() {
   const showingCapture = !result && !uploading && !scan.isPending && !reviewing;
   const tiltDeg = useTiltReading(showingCapture);
 
+  // Two shutter gates on top of the level check, both from expo-camera
+  // 57.0.4's own native code (ios/Current/CameraView.swift and
+  // CameraPhotoCapture.swift):
+  //
+  // - cameraReady: the preview session has started (`onCameraReady`). Before
+  //   it, takePictureAsync throws "Wait for 'onCameraReady' callback".
+  // - capturing: a picture is already being taken. A second takePictureAsync
+  //   while the first is pending throws "Camera is not ready yet"
+  //   (CameraPhotoCapture.swift:66) -- the crash Gil hit on 25 Sep 2026, a
+  //   double tap, not a cold camera. The ref catches taps that land in the
+  //   same frame, before the state below has re-rendered the button.
+  //
+  // The CameraView only exists in the live-capture branch, so it unmounts
+  // on every trip to review/analysing/results and mounts fresh on return.
+  // Readiness belongs to one mount, so it is cleared whenever the capture
+  // view goes away and re-set only by the new mount's own onCameraReady.
+  const [cameraReady, setCameraReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const capturingRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!showingCapture) setCameraReady(false);
+  }, [showingCapture]);
+
   async function capture() {
+    if (capturingRef.current) return;
+    capturingRef.current = true;
+    setCapturing(true);
     // Measured alongside the capture, not before or after it, and never
     // awaited on its own -- measureCameraGeometry resolves to {} rather than
     // throwing or hanging, so a missing or slow sensor cannot block a photo.
-    const [photo, measured] = await Promise.all([
-      cameraRef.current?.takePictureAsync({ quality: 0.8, exif: true }),
-      measureCameraGeometry(),
-    ]);
+    let photo: Awaited<ReturnType<CameraView['takePictureAsync']>> | undefined;
+    let measured: CameraGeometry;
+    try {
+      [photo, measured] = await Promise.all([
+        cameraRef.current?.takePictureAsync({ quality: 0.8, exif: true }),
+        measureCameraGeometry(),
+      ]);
+    } catch (e: any) {
+      // The shot did not happen. Leave the screen exactly as it was -- no
+      // shot added, still on the live camera -- so another tap just works.
+      console.warn('[camera] capture failed', e?.message ?? e);
+      return;
+    } finally {
+      capturingRef.current = false;
+      setCapturing(false);
+    }
     if (photo?.uri) {
       setShots((s) => [...s, photo.uri].slice(0, 3));
       setReviewing(true);
@@ -573,14 +611,24 @@ export function ScanScreen() {
   // precedence is exactly what makes reporting just that safe to do through
   // the real function rather than a hand-rolled shortcut.
   const guideState = cardBox ? gaugeState(cardBox.widthPoints, cardBox.widthPoints, tiltDeg ?? 0) : null;
-  const guideColor = guideState === 'ok' ? c.success : c.warn;
-  const guideLabel =
-    guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
+  // Camera first: until it is running, "card here" in green would invite a
+  // tap the disabled shutter then ignores.
+  const guideColor = cameraReady && guideState === 'ok' ? c.success : c.warn;
+  const guideLabel = !cameraReady
+    ? 'starting camera…'
+    : guideState === 'tilted' ? 'hold the phone level' : guideState === 'ok' ? 'card here' : 'finding level…';
 
   return (
     <Screen>
       <View style={{ flex: 1 }}>
-        <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" onLayout={onCameraLayout} />
+        <CameraView
+          ref={cameraRef}
+          style={{ flex: 1 }}
+          facing="back"
+          onLayout={onCameraLayout}
+          onCameraReady={() => setCameraReady(true)}
+          onMountError={(e) => console.warn('[camera] preview could not start', e.message)}
+        />
 
         {/* The card guide, moved to the TOP of the screen (Gil, 22 Sep
             2026): positioned just below the plate circle it still read as
@@ -645,7 +693,10 @@ export function ScanScreen() {
             detection feature that does not exist -- disabled also covers
             the initial null state before the first layout/tilt reading
             arrives, so the button cannot be tapped before guideState has
-            a real value. Hardware-volume-button capture is Gil's eventual
+            a real value. Also gated on cameraReady, and busy while a
+            capture is in flight (see cameraReady/capturing above) -- level
+            says nothing about whether the camera can take a picture.
+            Hardware-volume-button capture is Gil's eventual
             preference but needs a native module and a custom dev build
             outside Expo Go -- explicitly deferred, not part of this task;
             a small on-screen button stands in for it. Text over an icon:
@@ -656,7 +707,8 @@ export function ScanScreen() {
           <View style={{ paddingBottom: space.xl }}>
             <Button
               title="Capture"
-              disabled={guideState !== 'ok'}
+              disabled={guideState !== 'ok' || !cameraReady}
+              loading={capturing}
               style={{ paddingHorizontal: space.xxl }}
               onPress={capture}
             />
