@@ -80,6 +80,12 @@ class DetectedItem(Base):
     # "creamy mushroom sauce"; that alone moved the meal from 186 g to 315 g
     # and its energy by 40%, on geometry that was within 12% both times.
     identification: str = "named"
+    # What the vision model called this item, before the nutrition database
+    # renamed it to its own row's name (`name` above, e.g. "Scallops, grilled").
+    # After any alias food_identity.apply_to() already applied, so it is the
+    # exact string apply_to compares against next time. Persisted to
+    # meal_items.detected_name (0030) so a rename learns the camera's word.
+    detected_name: str | None = None
     bbox: dict | None = None
     macros: Macros = Macros()
     food_fact_id: str | None = None

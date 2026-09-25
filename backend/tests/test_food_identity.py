@@ -200,6 +200,43 @@ def test_a_correction_records_what_the_food_actually_was(monkeypatch):
     assert seen == [("u1", "creamy mushroom sauce", "rajas con crema")]
 
 
+def test_a_rename_is_learned_against_the_cameras_word_not_the_databases(monkeypatch):
+    """meal_items.name is the nutrition database's row name. Learned under it,
+    "scallops, grilled" shares one identity word with the next scan's
+    "scallops" and never matches again, so the alias was kept and never used.
+    The scan now records what the model said (0030) and that is the key."""
+    seen = []
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **_k: seen.append((u, d, a)))
+    was = [{**_det("scallops, cooked"), "detected_name": "scallops"}]
+    FI.learn_from_correction("u1", was, [_Corrected("beef", 140.0, source_index=0)])
+    assert seen == [("u1", "scallops", "beef")]
+    # ...and that key is one the next scan's model output actually finds.
+    assert FI.looks_like("scallops", "scallops")
+    assert not FI.looks_like("scallops, grilled", "scallops")
+
+
+def test_a_row_without_a_recorded_camera_word_still_learns_from_its_name(monkeypatch):
+    """Rows from before 0030 have detected_name null (or no key at all)."""
+    seen = []
+    monkeypatch.setattr(FI, "remember", lambda u, d, a, **_k: seen.append((u, d, a)))
+    for blank in (None, "", "   "):
+        FI.learn_from_correction(
+            "u1", [{**_det("scallops, cooked"), "detected_name": blank}],
+            [_Corrected("beef", 140.0, source_index=0)])
+    assert seen == [("u1", "scallops, cooked", "beef")] * 3
+
+
+def test_the_cameras_word_is_stored_and_read_back_for_learning():
+    """Write and read, both halves: a column the scan writes and the
+    correction never selects is the portion_learning failure again."""
+    import inspect
+    from app.routers import scans
+    from app.services.ai import vision
+    assert '"detected_name": it.detected_name' in inspect.getsource(vision)
+    assert "detected_name=" in inspect.getsource(vision)
+    assert "detected_name" in inspect.getsource(scans.correct_meal)
+
+
 def test_learning_never_fails_a_users_edit(monkeypatch):
     """Saving the correction is the user's action. Learning from it is ours,
     and ours must not be able to lose theirs."""
@@ -244,3 +281,32 @@ def test_a_weighed_correction_is_tagged_as_such(monkeypatch):
                              source="weighed")
     FI.learn_from_correction("u1", [_det("x")], [_Corrected("y", 1.0, source_index=0)])
     assert seen == ["weighed", "typed"]
+
+
+def test_a_scanned_item_carries_the_models_word_past_the_database_rename(monkeypatch):
+    """build_items end to end, stubbed lookup: the logged name is the database
+    row's, detected_name is the model's -- without the preparation prefix
+    _lookup_name adds, because apply_to() compares det["name"] alone."""
+    import asyncio
+
+    from app.models.common import Macros
+    from app.services.ai import vision
+
+    seen_keys = []
+
+    async def resolve_many(names):
+        seen_keys.extend(names)
+        return {n: {"id": "f1", "display_name": "Scallops, grilled",
+                    "density_g_ml": 1.0} for n in names}
+    monkeypatch.setattr(vision.resolver, "resolve_many", resolve_many)
+    monkeypatch.setattr(vision.resolver, "macros_for",
+                        lambda fact, grams: Macros(kcal=grams))
+    det = {"name": "Scallops", "preparation": "grilled", "area_ratio": 0.09,
+           "confidence": 0.8, "food_group": "protein",
+           "bbox": {"x": 0.3, "y": 0.3, "w": 0.2, "h": 0.2}}
+    items, _ = asyncio.run(vision.build_items(
+        [det], vision.GeometryHint(plate_ellipse_area_ratio=0.5, plate_diameter_mm=254)))
+
+    assert seen_keys == ["grilled scallops"]
+    assert items[0].name == "Scallops, grilled"
+    assert items[0].detected_name == "Scallops"

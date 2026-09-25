@@ -276,7 +276,12 @@ def learn_from_correction(user_id: str, original_items: list[dict],
             idx = getattr(item, "source_index", None)
             if not isinstance(idx, int) or not (0 <= idx < len(originals)):
                 continue
-            was = str(originals[idx].get("name") or "")
+            # The camera's own word when the scan recorded it (0030); the
+            # stored name is the nutrition database's row name, which the next
+            # scan's model output does not match. Older rows have only `name`.
+            detected = originals[idx].get("detected_name")
+            was = str(detected if isinstance(detected, str) and detected.strip()
+                      else originals[idx].get("name") or "")
             now = str(getattr(item, "name", "") or "")
             if was and now and was.strip().lower() != now.strip().lower():
                 remember(user_id, was, now, source=source)
