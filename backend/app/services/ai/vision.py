@@ -1338,6 +1338,11 @@ async def build_items(
         items.append(
             DetectedItem(
                 name=(fact.get("display_name") or name)[:120],
+                # det["name"], not `name`: `name` is _lookup_name's key, which
+                # may carry a preparation prefix ("seared scallops" for a
+                # model's "scallops" + "seared"), and apply_to() on the next
+                # scan compares against det["name"] alone.
+                detected_name=(str(det.get("name") or "").strip()[:120] or None),
                 # A list here raises ValidationError -> 500 on a good photo.
                 # Same defence as normalize_bbox, for the same reason.
                 cuisine=_text(det.get("cuisine")) or _text(fact.get("cuisine")),
@@ -1911,6 +1916,7 @@ async def _run_scan(
                 "meal_id": meal["id"],
                 "food_fact_id": it.food_fact_id,
                 "name": it.name,
+                "detected_name": it.detected_name,
                 "cuisine": it.cuisine,
                 "grams": it.grams,
                 "grams_low": it.grams_low,

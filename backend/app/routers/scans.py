@@ -279,7 +279,7 @@ async def correct_meal(meal_id: str, body: MealIn, user: CurrentUserDep):
     # this and what the user just typed is the only ground truth the app ever
     # gets, and it is what teaches the estimator their vessel sizes.
     original_items = rows(
-        user.sb.table("meal_items").select("name, grams, estimation_method")
+        user.sb.table("meal_items").select("name, grams, estimation_method, detected_name")
         .eq("meal_id", meal_id).execute()
     )
 
