@@ -1060,6 +1060,19 @@ async def build_items(
     # mushroom sauce". The feature existed to fix exactly that and did not.
     #
     # Last, so the user's own answer beats the surface tie-break above.
+    #
+    # The camera's own word for each item, on THIS scan -- captured HERE,
+    # before apply_to() below gets a chance to rewrite det["name"] to a
+    # stored alias. detected_name is compared against what the user types in
+    # learn_from_correction, and if it were read AFTER apply_to a
+    # twice-confirmed alias could never be corrected again: the comparison
+    # would be against the alias's own TARGET name, not what the model
+    # actually said, so every later correction would create a new alias
+    # chained off the wrong one instead of touching the one actually firing.
+    # See food_identity.py's module docstring for the alias this broke.
+    camera_names = [str(d.get("name") or "").strip()[:120] or None
+                    for d in detections]
+
     for det in detections:
         renamed = food_identity.apply_to(det, learned_names)
         if renamed:
@@ -1166,8 +1179,8 @@ async def build_items(
                       else None)
 
     items: list[DetectedItem] = []
-    for det, name, measured_area, piece_share, measured_height in zip(
-            detections, names, measured, pieces, heights):
+    for det, name, measured_area, piece_share, measured_height, camera_name in zip(
+            detections, names, measured, pieces, heights, camera_names):
         fact = facts.get(name) or {}
         # ONLY a real measured/provider/user density is passed as explicit --
         # see _explicit_density's own comment for why an ai_estimate row's
@@ -1338,11 +1351,15 @@ async def build_items(
         items.append(
             DetectedItem(
                 name=(fact.get("display_name") or name)[:120],
-                # det["name"], not `name`: `name` is _lookup_name's key, which
-                # may carry a preparation prefix ("seared scallops" for a
-                # model's "scallops" + "seared"), and apply_to() on the next
-                # scan compares against det["name"] alone.
-                detected_name=(str(det.get("name") or "").strip()[:120] or None),
+                # camera_name, not det["name"] and not `name`: `name` is
+                # _lookup_name's key, which may carry a preparation prefix
+                # ("seared scallops" for a model's "scallops" + "seared"), and
+                # det["name"] may already have been rewritten by apply_to()
+                # above to a stored alias's target. camera_name was captured
+                # before that rewrite, so it is what the model actually said
+                # about this item on this scan -- what apply_to() and a future
+                # correction both need to compare against.
+                detected_name=camera_name,
                 # A list here raises ValidationError -> 500 on a good photo.
                 # Same defence as normalize_bbox, for the same reason.
                 cuisine=_text(det.get("cuisine")) or _text(fact.get("cuisine")),
