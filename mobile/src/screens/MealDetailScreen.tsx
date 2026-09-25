@@ -12,6 +12,10 @@
  * - The original AI estimate stays visible next to the edited value, so the
  *   user can see what they changed and we can see it too.
  * - Deleting a mis-detected item is one tap.
+ * - A mis-named item is renamed in place, on its own row. Removing it and
+ *   adding the right food instead logs the same meal but teaches nothing: the
+ *   added row edits no detection, so the backend cannot tell what the camera
+ *   had called it.
  * - A food the scan missed is added inline too: name, grams, done.
  */
 import React, { useEffect, useMemo, useState } from 'react';
@@ -33,9 +37,19 @@ function parseGrams(raw: string): number {
   return Math.max(0, Math.min(5000, Number(raw.replace(/[^0-9.]/g, '')) || 0));
 }
 
+/** Is this detected item now a different food? Case alone is not a new food. */
+function isRenamed(i: EditableItem): boolean {
+  return i.sourceIndex !== undefined
+    && i.name.trim().toLowerCase() !== i.originalName.trim().toLowerCase();
+}
+
 interface EditableItem {
   id?: string;
   name: string;
+  // What the scan called it, fixed at load time -- the rename counterpart of
+  // originalGrams. Equal to `name` for an added food, so it never reads as
+  // renamed.
+  originalName: string;
   grams: number;
   originalGrams: number;
   kcalPerGram: number;
@@ -101,6 +115,7 @@ export function MealDetailScreen() {
             return {
               id: i.id,
               name: i.name,
+              originalName: i.name,
               grams: g,
               originalGrams: g,
               // Store per-gram rates so edits rescale macros without another
@@ -129,7 +144,9 @@ export function MealDetailScreen() {
 
   const totals = useMemo(
     () =>
-      items.filter((i) => !i.removed).reduce(
+      // A renamed row's per-gram rates are the OLD food's, so it counts as
+      // unknown until save, exactly like an added one.
+      items.filter((i) => !i.removed && !isRenamed(i)).reduce(
         (acc, i) => ({
           kcal: acc.kcal + i.kcalPerGram * i.grams,
           protein: acc.protein + i.proteinPerGram * i.grams,
@@ -142,17 +159,29 @@ export function MealDetailScreen() {
   );
 
   // An added row starts with grams === originalGrams, so the gram check
-  // alone would leave it unsaved and hide the Save button.
+  // alone would leave it unsaved and hide the Save button. A rename changes
+  // no gram, so without the name check a pure rename never showed Save at all.
   const dirty = useMemo(
     () =>
-      items.some((i) => i.removed || i.sourceIndex === undefined || Math.abs(i.grams - i.originalGrams) > 0.5) ||
+      items.some((i) =>
+        i.removed ||
+        i.sourceIndex === undefined ||
+        Math.abs(i.grams - i.originalGrams) > 0.5 ||
+        i.name.trim() !== i.originalName.trim()) ||
       slot !== meal?.meal_slot ||
       title !== meal?.title,
     [items, slot, title, meal],
   );
 
+  // Every kept item needs a name; a blank one cannot be saved or looked up.
+  const blankName = items.some((i) => !i.removed && i.name.trim().length === 0);
+
   function setGrams(index: number, raw: string) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, grams: parseGrams(raw) } : it)));
+  }
+
+  function setName(index: number, name: string) {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, name } : it)));
   }
 
   // "Add a food": the scan missed something entirely. Inline, like every
@@ -168,6 +197,7 @@ export function MealDetailScreen() {
       ...prev,
       {
         name: newName.trim(),
+        originalName: newName.trim(),
         grams: g,
         // Equal, so it never reads "AI said X g" -- there was no AI estimate.
         originalGrams: g,
@@ -192,7 +222,7 @@ export function MealDetailScreen() {
   }
 
   async function save() {
-    if (!mealId) return;
+    if (!mealId || blankName) return;
     setSaving(true);
     try {
       await api.nutrition.correctMeal(mealId, {
@@ -219,16 +249,21 @@ export function MealDetailScreen() {
               // looks nutrition up only when `macros` is absent and stores any
               // block it is sent as-is, so this row's unknown zeros would have
               // been saved as a 0 kcal food.
-              ? { name: i.name, grams: i.grams }
+              ? { name: i.name.trim(), grams: i.grams }
               : {
-                  name: i.name,
+                  name: i.name.trim(),
                   grams: i.grams,
                   // Which detected item this edits. Without it a RENAME cannot be
                   // matched back to the scan -- the name is the thing that changed --
                   // so the app learned nothing from the single most useful
                   // correction a person can make.
                   source_index: i.sourceIndex,
-                  macros: {
+                  // A renamed item sends no macros, for the reason an added one
+                  // does not: correct_meal stores any block it is sent as-is,
+                  // and these rates are the OLD food's -- beef would have been
+                  // saved with the scallops' calories. Absent, the backend looks
+                  // the new name up.
+                  ...(isRenamed(i) ? {} : { macros: {
                     kcal: i.kcalPerGram * i.grams,
                     protein_g: i.proteinPerGram * i.grams,
                     carbs_g: i.carbsPerGram * i.grams,
@@ -236,7 +271,7 @@ export function MealDetailScreen() {
                     fiber_g: i.fiberPerGram * i.grams,
                     sugar_g: i.sugarPerGram * i.grams,
                     sodium_mg: i.sodiumPerGram * i.grams,
-                  },
+                  } }),
                 },
           ),
       });
@@ -356,6 +391,9 @@ export function MealDetailScreen() {
 
             {items.map((item, i) => {
               const added = item.sourceIndex === undefined;
+              const renamed = isRenamed(item);
+              // Nutrition for an added or renamed food is looked up on save.
+              const unknown = added || renamed;
               return (
                 <Card
                   key={i}
@@ -367,9 +405,29 @@ export function MealDetailScreen() {
                 >
                   <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[type.body, { color: c.text, fontWeight: '600', textTransform: 'capitalize' }]}>
-                        {item.name}
-                      </Text>
+                      {added ? (
+                        <Text style={[type.body, { color: c.text, fontWeight: '600', textTransform: 'capitalize' }]}>
+                          {item.name}
+                        </Text>
+                      ) : (
+                        // Renamed in place, like grams: the row keeps its
+                        // source_index, which is what lets the backend learn
+                        // what the camera had called this food.
+                        <TextInput
+                          value={item.name}
+                          onChangeText={(t) => setName(i, t)}
+                          editable={!item.removed}
+                          placeholder="What is this?"
+                          placeholderTextColor={c.textFaint}
+                          maxLength={120}
+                          returnKeyType="done"
+                          style={[type.body, {
+                            color: c.text, fontWeight: '600', paddingVertical: 2,
+                            borderBottomWidth: 1,
+                            borderBottomColor: item.name.trim() ? c.border : c.danger,
+                          }]}
+                        />
+                      )}
                       <Row gap={space.xs} style={{ marginTop: 4 }}>
                         <View style={{
                           width: 6, height: 6, borderRadius: 3,
@@ -380,13 +438,14 @@ export function MealDetailScreen() {
                           {!added && item.grams !== item.originalGrams
                             ? `  ·  AI said ${Math.round(item.originalGrams)} g`
                             : ''}
+                          {renamed ? `  ·  scan said ${item.originalName}` : ''}
                         </Text>
                       </Row>
                     </View>
                     {/* An added food's nutrition is unknown until the backend
                         looks it up on save; a dash, not a made-up 0. */}
-                    <Text style={[type.h2, { color: added ? c.textFaint : c.text }]}>
-                      {added ? '—' : Math.round(item.kcalPerGram * item.grams)}
+                    <Text style={[type.h2, { color: unknown ? c.textFaint : c.text }]}>
+                      {unknown ? '—' : Math.round(item.kcalPerGram * item.grams)}
                     </Text>
                   </Row>
 
@@ -429,7 +488,7 @@ export function MealDetailScreen() {
                   </Row>
 
                   <Row gap={space.lg}>
-                    {added ? (
+                    {unknown ? (
                       <Text style={[type.caption, { color: c.textFaint }]}>
                         Nutrition is looked up when you save
                       </Text>
@@ -518,7 +577,14 @@ export function MealDetailScreen() {
           }}>
             <SafeAreaView edges={['bottom']}>
               {dirty ? (
-                <Button title="Save corrections" loading={saving} onPress={save} />
+                <>
+                  {blankName ? (
+                    <Text style={[type.caption, { color: c.danger, textAlign: 'center', marginBottom: space.sm }]}>
+                      Every food needs a name
+                    </Text>
+                  ) : null}
+                  <Button title="Save corrections" loading={saving} disabled={blankName} onPress={save} />
+                </>
               ) : (
                 <Button title="Matches what I weighed" loading={verifying} onPress={verify} />
               )}
