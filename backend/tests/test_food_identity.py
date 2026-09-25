@@ -64,13 +64,52 @@ def test_the_words_a_model_hedges_with_carry_no_identity():
     assert FI.tokens("some unidentified food") == frozenset()
 
 
-def test_a_dish_the_model_named_is_never_renamed():
-    """The one guard that bounds this whole feature. A stored alias is only
-    ever consulted on a food the model has already said it cannot name, so it
-    can never overwrite a confident identification."""
-    det = {"name": "creamy mushroom sauce", "identification": "named"}
+def test_one_correction_cannot_override_a_confident_identification():
+    """The guard that still bounds this feature. The model's confidence no
+    longer shields a named dish (Gil, 25 Sep 2026: a confident "scallops" kept
+    coming back over his teriyaki beef), but a SINGLE correction is one opinion
+    about one plate: it is offered, never applied, over a confident name."""
+    once = [{"described_as": "scallops", "actual_name": "teriyaki beef", "samples": 1}]
+    det = {"name": "scallops", "identification": "named"}
+    note = FI.apply_to(det, once)
+    assert det["name"] == "scallops", "a confident name overridden on one answer"
+    assert det["identification"] == "named"
+    assert "identified_by" not in det
+    assert "once" in note and "teriyaki beef" in note
+
+
+@pytest.mark.parametrize("identification", ["named", None])
+def test_a_twice_confirmed_correction_overrides_a_confident_identification(identification):
+    """The same answer twice is a fact, whatever the model was sure of. A
+    missing `identification` reads as named (vision._identification_state), so
+    it is covered too."""
+    det = {"name": "creamy dish with mushrooms"}
+    if identification:
+        det["identification"] = identification
+    note = FI.apply_to(det, RAJAS)                    # samples: 3
+    assert det["name"] == "rajas con crema"
+    assert det["identification"] == "named"
+    assert det["identified_by"] == "user"
+    assert "rajas con crema" in note and "3 times" in note
+
+
+def test_the_threshold_is_exactly_min_samples_to_apply():
+    below = [{"described_as": "scallops", "actual_name": "teriyaki beef",
+              "samples": FI.MIN_SAMPLES_TO_APPLY - 1}]
+    at = [{**below[0], "samples": FI.MIN_SAMPLES_TO_APPLY}]
+    det = {"name": "scallops", "identification": "named"}
+    FI.apply_to(det, below)
+    assert det["name"] == "scallops"
+    FI.apply_to(det, at)
+    assert det["name"] == "teriyaki beef"
+
+
+def test_a_named_dish_with_nothing_learned_is_untouched():
+    """Removing the confidence gate must not make a confident name pick up an
+    alias for a different food: matching is as conservative as it was."""
+    det = {"name": "mushroom soup", "identification": "named"}
     assert FI.apply_to(det, RAJAS) is None
-    assert det["name"] == "creamy mushroom sauce"
+    assert det == {"name": "mushroom soup", "identification": "named"}
 
 
 def test_a_described_dish_takes_the_name_the_person_gave_it():
